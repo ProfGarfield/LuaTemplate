@@ -1,0 +1,35 @@
+Rules versus Triggers
+
+For organizational purposes, I have divided the Lua Events in this template into two categories: "Rules" events and "Trigger" events.
+
+In general, rules events are either always active or occur under regularly occurring circumstances, while trigger events happen only at specific times for specific reasons.  If knowledge of an event could in principle 'spoil' the scenario for a player, the event is probably a trigger event.  If, however, you would expect to find the event in a readme, it is probably a rules event.  This is not meant to be a perfect division.
+
+
+These event types are considered "trigger" events.  Any "rules" events associated with these calls are handled in events.lua.
+
+
+#onTurn
+#afterProduction
+#onUnitKilled
+#onSchism
+#onCityTaken
+#onCityProduction
+#onCentauriArrival
+#onCityDestroyed
+#onBribeUnit
+onGameEnds
+onCityFounded
+
+
+
+These events are considered to be 'rules' events, and are modified with files in the LuaRulesEvents folder
+
+#onScenarioLoaded
+#onNegotiation
+#onKeyPress
+#onActivateUnit
+#onResolveCombat
+#onCanBuild
+#onLoad
+#onSave
+

@@ -1,0 +1,113 @@
+Using Flags and Counters
+
+One of the many features that Test Of Time Patch Project Lua Events offers is the ability to add (nearly) arbitrary data to the end of saved game files.  By convention, we call the table where this data is stored the "state table."  (This is due to a naming choice The Nameless One made in an example events file.)  Several modules access the state table behind the scenes to achieve their functionality.  However, 2 modules are designed specifically for the end user to have easer access to state table functionality.  These modules are the flag.lua module, and the counter.lua module.
+
+Using Flags and Counters.
+
+If you intend to use Flags in a particular .lua file, you should have the following line near the top of that file:
+
+    local flag = require("flag")
+
+Similarly, if you need the counter functionality, include the line:
+
+    local counter = require("counter")
+
+
+A "Flag" can take on two possible values, true and false.  These are the "boolean" data types.  A "Counter" can be set to any number (or, at least, any number that Lua can handle).  We distinguish between different flags and counters by their 'key', or name, which is a string data type.
+
+In order to use a flag or counter, we must define it somewhere in our code.  What this means, is that we tell the Lua Console that we want a flag or counter with a given name, and we also give it an initial value.  This is the value that it will have if the game has never been saved with that flag or counter in place.  If you intend only to reference a flag within a single file, it might make sense to define it within that file.  Alternatively, you might find it convenient to define all your flags in a particular file, perhaps object.lua for example.
+
+The command to define a flag is
+
+    flag.define("myFlagKey",initialBool)
+
+For example, If we want to have a flag named "rubiconCrossed", and initialize it to be false, we would write a line
+
+    flag.define("rubiconCrossed",false)
+
+Similarly, to define a counter, we would write:
+
+    counter.define("myCounterKey",initialValue)
+
+For example, if we want a counter named "rebelInfantryKilled", and we want the initial value to be 0, we would add a line
+
+    counter.define("rebelInfantryKilled",0)
+
+
+
+Once we've initialized the flags and counters, we can do things with them.  For example, we might want to check their current value, to determine if something should happen or not.  Both modules provide a "value" function:
+
+    flag.value("myFlagKey) --> boolean
+    counter.value("myCounterKey") --> number
+
+The Flag Module has the following functions:
+
+    flag.value(flagKey) --> bool
+        returns the value of the flag
+    flag.setTrue(flagKey) --> void
+        changes the value of the flag to true
+    flag.setFalse(flagKey) --> void
+        changes the value of the flag to false
+    flag.toggle(flagKey) --> void
+        changes the value of the flag from true to false,
+        or from false to true, depending on the flag's current value
+
+The Counter Module provides the following functions
+
+
+    counter.value(key)--> number
+        returns the value of the key
+    counter.add(key,increment)--> number
+        adds increment to the counter's current value
+        returns the new value of the counter
+    counter.subtract(key,increment)--> number
+        subtracts the increment from the counter's current value
+        returns the new value of the counter
+    counter.setValue(key,number)--> number
+        changes the value of the counter to the number specified
+        returns the new value of the counter
+    counter.setAtLeast(key,minValue)--> number
+        if counter is less than minValue, the counter is set to minValue
+        otherwise, the counter value remains unchanged
+        returns the new value of the counter
+    counter.setAtLeastZero(key)--> number
+        if counter is less than zero, the counter is set to zero
+        otherwise, the counter value remains unchanged
+        returns the new value of the counter
+    counter.setAtMost(key,maxValue)--> number
+        if counter is more than manValue, the counter is set to manValue
+        otherwise, the counter value remains unchanged
+        returns the new value of the counter
+    counter.setAtMostZero(key)--> number
+        if counter is greater than zero, the counter is set to zero
+        otherwise, the counter value remains unchanged
+        returns the new value of the counter
+    counter.setWithin(key,minValue,maxValue)-->number
+        if counter value is less than minValue, set counter to minValue
+        if counter value is more than maxValue, set counter to maxValue
+        otherwise, counterValue remains unchanged
+        returns the new value of the counter
+    counter.isZero(key)-->bool
+        returns true if the value of the counter is exactly 0
+        returns false otherwise
+        note: If your counter values are not integers, it will be possible
+            to have numbers that are very close to 0, but not 0
+            and these will return false
+    counter.isPositive(key)-->bool
+        returns true if the value of the counter is at least 0
+        returns false otherwise
+    counter.isStrictlyPositive(key)-->bool
+        returns true if the value of the counter is strictly greater than 0
+        returns false otherwise
+    counter.isNegative(key)-->bool
+        returns true if the value of the counter is at least 0
+        returns false otherwise
+    counter.isStrictlyNegative(key)-->bool
+        returns true if the value of the counter is strictly greater than 0
+        returns false otherwise
+    counter.isAtLeast(key,minVal)--> bool
+        returns true if the value of the counter is at least minVal
+        returns false otherwise
+    counter.isAtMost(key,maxVal)--> bool
+        returns true if the value of the counter is at most maxVal
+        returns false otherwise

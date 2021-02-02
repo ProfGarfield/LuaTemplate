@@ -1,0 +1,96 @@
+-- The delayedAction is a convenient way to separate an event's 
+-- cause and effect in time.
+--
+-- The following require line is necessary to use the delayedAction module
+-- delayedAction = require("delayedAction")
+--
+-- You will need to link the delayed action module to the state, with the following lines
+--    state.delayedAction = state.delayedAction or {}
+--    delayedAction.linkState(state.delayedAction)
+--
+-- In your event functions, you will also need the lines
+-- delayedAction.doAfterProduction(turn,tribe)
+-- delayedAction.doOnTurn(turn)
+-- in the afterProduction and onTurn events, respectively.
+-- 
+-- A function can be delayed if it meets the following criteria:
+-- 1. The function takes exactly one argument, and that argument is a table
+-- 2. All keys in the table of arguments are numbers or strings
+-- 3. All values in the table of arguments are numbers, strings, or tables
+--      (and the tables must also be of numbers, strings, and tables)
+--  If no arguments are needed, the function can simply accept an empty table
+--
+--
+-- To make a function that you've written available as a delayable function,
+-- use the following function:
+--
+-- delayedAction.makeFunctionDelayable(delayKey,functionToDelay)
+--      delayKey    is a string that you will use to specify this particular
+--                  function when you wish to delay a function action.
+--      functionToDelay     is the function(table)-->void that you wish to delay
+--
+--
+--  You can also make a table of functions delayable at once using
+--
+--  delayedAction.makeTableOfFunctionsDelayable(tableOfDelayableFunctions)
+--
+--  Where the keys of the table are the strings that you will use to
+--  reference the delayed functions
+--
+
+--  Setting up a delayed event:
+--
+--  If you want an event to take place in the next available onTurn event, use
+--  the following function
+--
+--  delayedAction.doNextOpportunity(delayKey,argTable)
+--      delayKey    is the string that you've associated with the function you
+--                  wish to delay
+--
+--      argTable    is the table that should be provided as an argument
+--
+--
+--  If you want an event to take place in the next afterProduction event phase
+--  for a particular tribe, use the following function
+--
+--  delayedAction.doNextOpportunity(delayKey,argTable,tribeOrID)
+--      delayKey    is the string that you've associated with the function you
+--                  wish to delay
+--
+--      argTable    is the table that should be provided as an argument
+--
+--      tribeOrID   is the tribe (or ID number of the tribe) for which you want
+--                  the event to happen in the after production phase
+--                  -1 means the event takes place in the on Turn event phase
+--                  instead
+--
+--  
+--  If you want an event to take place at some point further into the future,
+--  in the onTurn event phase for that turn, use the following function
+--
+--  delayedAction.doInFuture(delayKey,argTable,turn)
+--
+--      delayKey    is the string that you've associated with the function you
+--                  wish to delay
+--
+--      argTable    is the table that should be provided as an argument
+--
+--      turn        is the turn you wish the event to take place
+--
+--  
+--  If you want an event to take place at some point in the future, during
+--  the afterProduction event phase of a specific tribe, use the following
+--  function
+--
+--  delayedAction.doInFuture(delayKey,argTable,turn,tribeID)
+--
+--      delayKey    is the string that you've associated with the function you
+--                  wish to delay
+--
+--      argTable    is the table that should be provided as an argument
+--
+--      turn        is the turn you wish the event to take place
+--
+--      tribeID     is the ID number of the tribe during whose afterProduction 
+--                  event phase you wish the action to take place
+--                  using -1 means the event takes place in the onTurn phase
