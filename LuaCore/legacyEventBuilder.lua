@@ -171,7 +171,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     end
     
     local function removeTrailingSpaces(line)
-        while line:sub(-1)==" " do
+        while line:sub(-1)==" " or line:sub(-1)=="\t" do
             line = line:sub(0,-2)
         end
         return line
@@ -349,7 +349,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                         or line:sub(eqLoc+1)
                     else
                         -- this means we're trying to have a parameter with an = sign, but no open action to put it in
-                        error("Event file "..tostring(fileNumber).." at line number "..tostring(lineNumber).." doesn't have an open action.")
+                        error("Event file "..tostring(fileNumber).." at line number "..tostring(lineNumber).." is:\n"..line.."\nThis appears to be attempting to assign a parameter value.  However, there is not a valid action word for this assignment on a previous line.")
                     end
                 -- The next 3 actions take a single parameter without an = sign
                 elseif actionOpen.playwavefile then
@@ -375,7 +375,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                     eventTable[eventTableIndex]["THEN"][getOpenAction()][line]=true
                 else
                     -- if we get here, there is no open action and a line not recognized
-                    error("Event file "..tostring(fileNumber).." at line number "..tostring(lineNumber).." doesn't have an open action.")
+                    error("Event file "..tostring(fileNumber).." at line number "..tostring(lineNumber).." is:\n"..line.."\nThis is not recognized as a valid action word, and there is not a valid action word on a previous line for this to be interpreted as a parameter.")
                 end
             end
         end
