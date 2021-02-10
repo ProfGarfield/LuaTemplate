@@ -2040,7 +2040,11 @@ gen.moveRemaining = moveRemaining
 -- polygon defined by the table of coordinates, and
 -- false otherwise.  Checking that the map is correct
 -- must be done separately
--- Do not cross the date line with the polygon
+-- the entry:
+-- tableOfCoordinates.doesNotCrossThisX
+-- sets an x coordinate that the polygon does not
+-- cross.  If absent, 0 is used,
+-- meaning the polygon shouldn't cross the date line
 --
 --
 -- Method (not necessary to understand for use)
@@ -2078,7 +2082,15 @@ gen.moveRemaining = moveRemaining
 -- true is returned.  With e sufficiently small, this is unlikely
 -- to "catch" tiles that "shouldn't" be in the polygon
 --
+-- To compensate for crossing the date line, if any x coordinate is
+-- less than tableOfCoordinates.doesNotCrossThisX, that x coordinate is
+-- replaced by x+mapWidth for all calculations (both tile coordinate and
+-- tile x value itself
+-- Note that if doesNotCrossThisX has 0 value, no compensation is made
 function gen.inPolygon(tile,tableOfCoordinates)
+    -- polygon doesn't cross this x value
+    local xBound = tableOfCoordinates.doesNotCrossThisX or 0
+    local width,height,maps = civ.getMapDimensions()
     local function isNumericallyEqual(LHS,RHS)
         return math.abs(LHS-RHS) <= 1e-6
     end
@@ -2134,6 +2146,16 @@ function gen.inPolygon(tile,tableOfCoordinates)
     end
     local e = 1e-3
     local point = {x=tile.x,y=tile.y}
+    local numberOfVertices = #tableOfCoordinates
+    if numberOfVertices == 0 then
+        return false
+    elseif numberOfVertices == 1 then
+        return point.x == tableOfCoordinates[1][1] and point.y == tableOfCoordinates[1][2]
+    end
+    -- compensate for the x boundary
+    if point.x < xBound then
+        point.x = point.x+width
+    end
     local northEast = {x=point.x+e,y=point.y+e}
     local northWest = {x=point.x-e,y=point.y+e}
     local southEast = {x=point.x+e,y=point.y-e}
@@ -2142,18 +2164,20 @@ function gen.inPolygon(tile,tableOfCoordinates)
     local northWestCrossings = 0
     local southEastCrossings = 0
     local southWestCrossings = 0
-    local numberOfVertices = #tableOfCoordinates
-    if numberOfVertices == 0 then
-        return false
-    elseif numberOfVertices == 1 then
-        return point.x == tableOfCoordinates[1][1] and point.y == tableOfCoordinates[1][2]
-    end
     for i=1,numberOfVertices-1 do
         -- note, we'll deal with the segment between the last vertex and the first
         -- as a separate line
         local x1=tableOfCoordinates[i][1]
+        -- compensate for x boundary
+        if x1 < xBound then
+            x1 = x1+width
+        end
         local y1=tableOfCoordinates[i][2]
         local x2=tableOfCoordinates[i+1][1]
+        -- compensate for x boundary
+        if x2 < xBound then
+            x2 = x2+width
+        end
         local y2=tableOfCoordinates[i+1][2]
         if pointInSegment(point.x,point.y,x1,y1,x2,y2) then
             return true
@@ -2174,8 +2198,14 @@ function gen.inPolygon(tile,tableOfCoordinates)
     -- note, we'll deal with the segment between the last vertex and the first
     -- as a separate line
     local x1=tableOfCoordinates[numberOfVertices][1]
+    if x1 < xBound then
+        x1 = x1+width
+    end
     local y1=tableOfCoordinates[numberOfVertices][2]
     local x2=tableOfCoordinates[1][1]
+    if x2 < xBound then
+        x2 = x2+width
+    end
     local y2=tableOfCoordinates[1][2]
     if pointInSegment(point.x,point.y,x1,y1,x2,y2) then
         return true

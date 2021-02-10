@@ -70,6 +70,56 @@ civ.ui.text(pSIT7)
 
 end
 
+local function guessGoodDoesNotCross(vertexTable)
+    local width,height,maps = civ.getMapDimensions()
+    local eligibleDNC = {}
+    for i=0,width-1 do
+        eligibleDNC[i] = true
+    end
+    local vertices = #vertexTable
+    if vertices == 0 then
+        return 0
+    end
+    for i=1,vertices do
+        local vertex1 = vertexTable[i]
+        local vertex2 = vertexTable[i+1] or vertexTable[1]
+        local x1 = vertex1[1]
+        local x2 = vertex2[1]
+        if x1 > x2 then
+            x1,x2=x2,x1
+        end
+        x1 = math.floor(x1)
+        x2 = math.floor(x2)
+        if (x2-x1) < (x1+width-x2) then
+            -- assume dateline not crossed, since shorter distance
+            -- between 2 x values
+            for j=x1,x2 do
+                eligibleDNC[j] = nil
+            end
+        else
+            -- date line crossed
+            for j=0,x1 do
+                eligibleDNC[j] = nil
+            end
+            for j=x2,width-1 do
+                eligibleDNC[j] = nil
+            end
+        end
+    end
+    for i=0,width-1 do
+        if eligibleDNC[i%width] and
+            eligibleDNC[(i+1)%width] and
+            eligibleDNC[(i+2)%width] and
+            eligibleDNC[(i+3)%width] and
+            eligibleDNC[(i+4)%width] 
+        then
+            return (i+2)%width
+        end
+    end
+    return nil
+end
+    
+
 civ.scen.onKeyPress(function(keyID)
     if keyID == 211 --[[tab]] then
         local changePolygonDialog = civ.ui.createDialog()
@@ -84,6 +134,7 @@ civ.scen.onKeyPress(function(keyID)
         civ.createUnit(polygonCornerMarkerUnitTable[activePolygon],civ.getTribe(0),tile)
     elseif keyID == 214 --[[backspace]] then
         local activePolygonVertexTable = polygonTable[activePolygon]
+        activePolygonVertexTable.doesNotCrossThisX = activePolygonVertexTable.doesNotCrossThisX or guessGoodDoesNotCross(activePolygonVertexTable)
         local dialog = civ.ui.createDialog()
         dialog.title = "Options for Polygon "..tostring(activePolygon)
         dialog:addOption("Fill Polygon "..tostring(activePolygon).."  with marker units.",1)
@@ -158,7 +209,7 @@ civ.scen.onKeyPress(function(keyID)
                 local t=activePolygonVertexTable[i]
                 outputString = outputString.."{"..tostring(t[1])..","..tostring(t[2]).."},"
             end
-            outputString = outputString.."}"
+            outputString = outputString.."doesNotCrossThisX="..tostring(activePolygonVertexTable.doesNotCrossThisX).."}"
             print(outputString)
         end
     end
