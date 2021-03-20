@@ -158,6 +158,9 @@ local unitTypeBuild = {}
 local improvementBuild = {}
 local wonderBuild = {}
 
+
+-- canBuildFunctions.hideProcessingList() -- uncomment if you don't want the list of stuff being processed printed in the console
+
 canBuildFunctions.supplyUnitTypeParameters(unitTypeBuild)
 canBuildFunctions.supplyImprovementParameters(improvementBuild)
 canBuildFunctions.supplyWonderParameters(wonderBuild)

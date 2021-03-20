@@ -752,7 +752,10 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
                 tile.terrainType = thenTable["changeterrain"]["terraintype"]
                 -- a bug/feature of the legacy macro language is that the top unit on the tile is
                 -- deleted when the terrain is changed
-                civ.deleteUnit(tile.units())
+                local firstUnit = tile.units()
+                if firstUnit then
+                    civ.deleteUnit(firstUnit)
+                end
             end
         end
     end
@@ -855,7 +858,7 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
             end
             local eligibleCitiesListSize = #eligibleCitiesList
             if eligibleCitiesListSize > 0 then
-                eligibleCitiesList=table.sort(eligibleCitiesList,function(a,b) return a.rating > b.rating end)
+                table.sort(eligibleCitiesList,function(a,b) return a.rating > b.rating end)
                 local giveCity = nil
                 if thenTable["bestowimprovement"]["randomize"] then
                     giveCity = eligibleCitiesList[math.random(1,math.min(eligibleCitiesListSize,10))].city

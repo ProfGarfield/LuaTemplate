@@ -157,6 +157,25 @@ local gen = require("generalLibrary")
 -- all location values except functions are converted into a single table
 -- indexed by tileID numbers, with a true value meaning it is in a table
 -- city values are in a separate table indexed by city id numbers
+
+local nameOfThingBeingProcessed = nil -- This stores the name of the unit/improvement/wonder being processed,
+-- to hopefully identify errors more easily
+local typeOfThingBeingProcessed = nil -- This stores the type of thing being processed as a string
+
+local showCurrentProcess = true
+
+local function changeNameOfThingBeingProcessed(idNumber)
+    if typeOfThingBeingProcessed == "unitType" then
+        nameOfThingBeingProcessed = civ.getUnitType(idNumber).name
+    elseif typeOfThingBeingProcessed == "improvement" then
+        nameOfThingBeingProcessed = civ.getImprovement(idNumber).name
+    elseif typeOfThingBeingProcessed == "wonder" then
+        nameOfThingBeingProcessed = civ.getWonder(idNumber).name
+    end
+end
+
+
+
 local function postProcessParameterTable(parameterTable)
     local function makeNewLocationParameters(existingLocationTable)
         local width,height,maps = civ.getMapDimensions()
@@ -237,6 +256,10 @@ local function postProcessParameterTable(parameterTable)
         end
     end
     for key,value in pairs(parameterTable) do
+        changeNameOfThingBeingProcessed(key)
+        if showCurrentProcess then
+            print("Currently Processing "..nameOfThingBeingProcessed.." ("..tostring(key)..")")
+        end
         postProcessParameters(value)
     end
 end
@@ -289,15 +312,22 @@ local function parameterTableErrorCheck(parameterTable,pTableName)
         if type(entry) ~= "table" then
             error(pTableName.." entry "..tostring(index).." is not a table.")
         end
+        local integerErrorIndex = false
         for entryIndex,__ in pairs(entry) do
             if not allowedParameterKeys[entryIndex] then
                 print(pTableName.." entry "..tostring(index).." has invalid parameter: "..entryIndex)
+                if type(entryIndex) == "number" then
+                    integerErrorIndex = true
+                end
                 throwError = true
             end
         end
-        if throwError then
-            error(pTableName.." has invalid parameters.  See the list printed above.")
+        if integerErrorIndex then
+            print("Note: having numbers as invalid parameters usually means you've forgotten to use { and } to make a table for another parameter.")
         end
+    end
+    if throwError then
+        error(pTableName.." has invalid parameters.  See the list printed above.")
     end
 end
 
@@ -311,6 +341,7 @@ local wonderParameters = {}
 -- provide parameter tables
 local function supplyUnitTypeParameters(unitTypeParametersTable)
     if type(unitTypeParametersTable) == "table" then
+        typeOfThingBeingProcessed = "unitType"
         unitTypeParameters = unitTypeParametersTable
         parameterTableErrorCheck(unitTypeParametersTable,"Unit Type Parameters")
         postProcessParameterTable(unitTypeParameters)
@@ -321,6 +352,7 @@ end
 canBuildFunctions.supplyUnitTypeParameters = supplyUnitTypeParameters
 local function supplyImprovementParameters(improvementParametersTable)
     if type(improvementParametersTable) == "table" then
+        typeOfThingBeingProcessed = "improvement"
         improvementParameters = improvementParametersTable
         parameterTableErrorCheck(improvementParametersTable,"Improvement Parameters")
         postProcessParameterTable(improvementParameters)
@@ -331,6 +363,7 @@ end
 canBuildFunctions.supplyImprovementParameters = supplyImprovementParameters
 local function supplyWonderParameters(wonderParametersTable)
     if type(wonderParametersTable) == "table" then
+        typeOfThingBeingProcessed = "wonder"
         wonderParameters = wonderParametersTable
         parameterTableErrorCheck(wonderParametersTable,"Wonder Parameters")
         postProcessParameterTable(wonderParameters)
@@ -619,6 +652,9 @@ end
 canBuildFunctions.customCanBuild = customCanBuild
 
 
+function canBuildFunctions.hideProcessingList()
+    showCurrentProcess = false
+end
 
 
 
