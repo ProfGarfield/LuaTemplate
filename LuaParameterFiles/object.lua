@@ -1,5 +1,13 @@
 local flag = require("flag")
 
+-- In the LuaCore folder, there is a script that will generate
+-- an object file, called makeObject.lua
+-- Use Load Script from the console to run makeObject.lua
+-- to create the object.lua file.  The file will be created
+-- in your main Test of Time directory, with form 12345678object.lua.
+-- The number is derived from the current time, so that existing
+-- files won't be overwritten by accident.
+
 local object = {}
 
 -- Civilization Advances
