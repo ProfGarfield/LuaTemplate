@@ -1,4 +1,7 @@
-
+-- Deprecated, replaced with initiateCombat.lua
+--
+-- If you really want this, uncomment relevant code
+-- in events.lua
 local object = require("object")
 local combatResolution = {}
 

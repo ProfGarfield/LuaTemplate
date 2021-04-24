@@ -196,6 +196,23 @@ local function onUnitKilled(winner,loser)
 end
 log.onUnitKilled=onUnitKilled
 
+-- combat log for when both sides survive
+local function onCombatNoKill(attacker,defender)
+    attackMadeSinceInfoLastGathered =true
+    --casualtyCounter[loser.owner.id][loser.type.id] = 1 + (casualtyCounter[loser.owner.id][loser.type.id] or 0)
+    local newCombatRecord = {turn=civ.getTurn()}
+    local aggressor = attacker
+    local victim = defender
+    newCombatRecord.aggressorWin = true -- set to true, since both survived
+    newCombatRecord.victimWin = true -- set to true, since both survived
+    newCombatRecord.aggressorTribeID = aggressor.owner.id
+    newCombatRecord.aggressorUnitTypeID = aggressor.type.id
+    newCombatRecord.victimTribeID = victim.owner.id
+    newCombatRecord.victimUnitTypeID = victim.type.id
+    newCombatRecord.victimLocation = {victim.location.x,victim.location.y,victim.location.z}
+    combatLog[#combatLog+1] = newCombatRecord
+end
+log.onCombatNoKill=onCombatNoKill
 -- cityCapturedRecord
 --  .capturingTribeID = integer
 --  .losingTribeID = integer
@@ -297,16 +314,19 @@ local function makeCombatSummary(tableOfCombatInfo)
             unitTypeSurvival[combatRecord.aggressorUnitTypeID] = unitTypeSurvival[combatRecord.aggressorUnitTypeID] or {}
             unitTypeSurvival[combatRecord.aggressorUnitTypeID][combatRecord.aggressorTribeID] =
             (unitTypeSurvival[combatRecord.aggressorUnitTypeID][combatRecord.aggressorTribeID] or 0) +1
-            unitTypeLosses[combatRecord.victimUnitTypeID] = unitTypeLosses[combatRecord.victimUnitTypeID] or {}
-            unitTypeLosses[combatRecord.victimUnitTypeID][combatRecord.victimTribeID] = 
-            (unitTypeLosses[combatRecord.victimUnitTypeID][combatRecord.victimTribeID] or 0) +1
         else
             unitTypeLosses[combatRecord.aggressorUnitTypeID] = unitTypeLosses[combatRecord.aggressorUnitTypeID] or {}
             unitTypeLosses[combatRecord.aggressorUnitTypeID][combatRecord.aggressorTribeID] =
             (unitTypeLosses[combatRecord.aggressorUnitTypeID][combatRecord.aggressorTribeID] or 0) +1
+        end
+        if combatRecord.victimWin then
             unitTypeSurvival[combatRecord.victimUnitTypeID] = unitTypeSurvival[combatRecord.victimUnitTypeID] or {}
             unitTypeSurvival[combatRecord.victimUnitTypeID][combatRecord.victimTribeID] = 
             (unitTypeSurvival[combatRecord.victimUnitTypeID][combatRecord.victimTribeID] or 0) +1
+        else
+            unitTypeLosses[combatRecord.victimUnitTypeID] = unitTypeLosses[combatRecord.victimUnitTypeID] or {}
+            unitTypeLosses[combatRecord.victimUnitTypeID][combatRecord.victimTribeID] = 
+            (unitTypeLosses[combatRecord.victimUnitTypeID][combatRecord.victimTribeID] or 0) +1
         end
     end
     return unitTypeLosses, unitTypeSurvival

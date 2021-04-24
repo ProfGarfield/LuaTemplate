@@ -1,3 +1,9 @@
+-- Deprecated.  To be replaced with functionality directly
+-- in combat using initiateCombat.lua instead
+--
+-- If you really want this functionality, search for attackBonus
+-- in events.lua, and uncomment the relevant portions
+
 local attackBonus = require("attackBonus")
 
 local object = require("object")

@@ -1,4 +1,3 @@
--- not yet integrated into template
 
 local onInitiateCombat = {}
 
@@ -8,7 +7,7 @@ function onInitiateCombat.makeCoroutine(attacker,defender,attackerDie,attackerPo
                                         -- turns, set this variable
     return coroutine.create(function()
         local round = 0
-        while(round < maxCombatRounds, attacker.hitpoints >=0 and defender.hitpoints >= 0) do
+        while(round < maxCombatRounds and attacker.hitpoints >0 and defender.hitpoints > 0) do
 
             if false then
                 -- If the coroutine yields true as its first value, 

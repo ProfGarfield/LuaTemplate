@@ -49,10 +49,9 @@ local canBuildFunctions = require("canBuild")
 local keyPressEvents = require("keyPressEvents")
 local munitions = require("munitions")
 local munitionsSettings = require("munitionsSettings")
-local attackBonusSettings = require("attackBonusSettings")
+--local attackBonusSettings = require("attackBonusSettings")
 local delayedAction = require("delayedAction")
 local eventTools = require("eventTools")
-local combatResolution = require("combatResolution")
 local promotion = require("promotion")
 local promotionSettings = require("promotionSettings")
 local simpleSettings = require("simpleSettings")
@@ -66,6 +65,7 @@ legacy.supplyLegacyEventsTable(legacyEventTable)
 local delay = require("delayedAction")
 local diplomacy = require("diplomacy")
 local cityYield = require("calculateCityYield")
+local onInitiateCombat = require("initiateCombat")
 
 
 local triggerEvents = require("triggerEvents")
@@ -182,7 +182,7 @@ local function doOnUnitActivation(unit,source)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
     end
-    attackBonusSettings.attackBonus(unit)
+    --attackBonusSettings.attackBonus(unit)
     unitActivation.activateFunction(unit,source)
     if simpleSettings.enableCustomUnitSelection then
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)
@@ -292,20 +292,23 @@ civ.scen.onUnitKilled(function (loser,winner)
 end)
 
 
-civ.scen.onResolveCombat(function(defaultResolutionFunction,defender,attacker)
-    if firstRoundOfCombat then
-        aggressor = attacker
-        victim = defender
-        aggressorVetStatus = aggressor.veteran
-        aggressorLocation = aggressor.location
-        victimVetStatus = victim.veteran
-        firstRoundOfCombat = false
-        return (combatResolution.firstRound(defaultResolutionFunction,defender,attacker) and
-                combatResolution.everyRound(defaultResolutionFunction,defender,attacker))
-    else
-        return combatResolution.everyRound(defaultResolutionFunction,defender,attacker)
-    end
-end)
+-- deprecated and replaced by civ.scen.onInitiateCombat
+
+--local combatResolution = require("combatResolution")
+--civ.scen.onResolveCombat(function(defaultResolutionFunction,defender,attacker)
+--    if firstRoundOfCombat then
+--        aggressor = attacker
+--        victim = defender
+--        aggressorVetStatus = aggressor.veteran
+--        aggressorLocation = aggressor.location
+--        victimVetStatus = victim.veteran
+--        firstRoundOfCombat = false
+--        return (combatResolution.firstRound(defaultResolutionFunction,defender,attacker) and
+--                combatResolution.everyRound(defaultResolutionFunction,defender,attacker))
+--    else
+--        return combatResolution.everyRound(defaultResolutionFunction,defender,attacker)
+--    end
+--end)
 
 civ.scen.onCityTaken(function (city,defender)
     if simpleSettings.rehomeUnitsInCapturedCity then
@@ -369,3 +372,17 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
     local fCh,sChBW,sChAW,tChBC,tChAC = cityYield.onCalculateCityYield(city,food,shields,trade)
     return fCh+extraFood,sChBW+extraShields,sChAW,tChBC+extraTrade,tChAC
 end)
+
+
+civ.scen.onInitiateCombat( function(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower)
+
+    aggressorLocation = attacker.location
+    aggressorVetStatus = attacker.veteran
+    aggressor = attacker
+    victimVetStatus = defender.veteran
+    victim = defender
+
+    return onInitiateCombat.makeCoroutine(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower)
+end)
+
+    

@@ -23,6 +23,7 @@ local civlua = require("civluaModified")
 local flag = require("flag")
 local diplomacy = require("diplomacy")
 local delayedAction = require("delayedAction")
+local log = require("log")
 local triggerEvents = {}
 
 
@@ -121,6 +122,7 @@ function triggerEvents.unitDefeated(loser,winner,aggressor,victim,loserLocation,
     context[getContext()]["unitDefeated"](loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     universal["unitDefeated"](loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     legacy.doUnitKilledEvents(loser,winner)
+    log.onUnitKilled(winner,loser)
 
 end
 
