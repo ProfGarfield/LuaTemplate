@@ -197,6 +197,12 @@ end
 delayedAction.doOnTurn = doOnTurn
 
 
+local function doBeforeProduction(turn,tribe)
+
+    -- at the moment, this is just here for future availability,
+    -- so that there is something to reference in the template
+end
+delayedAction.doBeforeProduction = doBeforeProduction
 
 return delayedAction
 

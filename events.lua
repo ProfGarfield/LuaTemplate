@@ -16,7 +16,19 @@ local scenarioFolder = string.gsub(eventsPath,"events.lua","")
 local scenarioFolderPath = string.gsub(eventsPath, "events.lua", "?.lua")
 --print(scenarioFolderPath)
 if string.find(package.path, scenarioFolderPath, 1, true) == nil then
-    package.path = scenarioFolderPath..";"..scenarioFolder.."LuaCore\\?.lua"..
+    local luaCoreScenarioFolder = scenarioFolder
+    -- if the name of the scenario folder has AltLuaCore in the name
+    -- it doesn't look in the existing scenario folder for the luaCore, but
+    -- instead looks in <ToTDir>\Template\LuaCore
+    -- where <ToTDir> is your test of time directory, from civ.getToTDir()
+    if string.find(string.lower(scenarioFolderPath),string.lower("AltLuaCore")) then
+        luaCoreScenarioFolder = civ.getToTDir().."\\Template\\"
+        print("WARNING: Your scenario folder name contaions AltLuaCore, so the Lua Console will attempt to look for Lua Core files in "..luaCoreScenarioFolder.."\\LuaCore instead of this scenario directory.")
+    end
+    -- this can allow you to only update one folder with new LuaCore files, and just
+    -- copy the current lua core when you are actually ready to release
+
+    package.path = scenarioFolderPath..";"..luaCoreScenarioFolder.."LuaCore\\?.lua"..
     ";"..scenarioFolder.."LuaRulesEvents\\?.lua"..";"..scenarioFolder.."LuaTriggerEvents\\?.lua"
     ..";"..scenarioFolder.."LuaParameterFiles\\?.lua"
     -- comment out next line to rely only on files within the scenario folder, uncomment to access the lua folder
@@ -53,6 +65,8 @@ local legacyEventTable = require("getLegacyEvents")
 legacy.supplyLegacyEventsTable(legacyEventTable)
 local delay = require("delayedAction")
 local diplomacy = require("diplomacy")
+local cityYield = require("calculateCityYield")
+
 
 local triggerEvents = require("triggerEvents")
 local log = require("log")
@@ -69,6 +83,7 @@ gen.setMusicDirectory(musicFolder)
 
 for i=0,7 do
     flag.define("tribe"..tostring(i).."AfterProductionNotDone",true)
+    flag.define("tribe"..tostring(i).."BeforeProductionNotDone",true)
 end
 
 local state = {}
@@ -120,6 +135,7 @@ civ.scen.onTurn(function(turn)
     -- this makes doAfterProduction work
     for i=0,7 do
         flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone")
+        flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone")
     end
     delayedAction.doOnTurn(turn)
 
@@ -306,10 +322,10 @@ civ.scen.onCityDestroyed(function (city)
 end)
 
 civ.scen.onScenarioLoaded(function ()
+    scenarioLoaded.scenarioLoadedFn()
     if civ.getActiveUnit() then
         doOnUnitActivation(civ.getActiveUnit(),false)
     end
-    scenarioLoaded.scenarioLoadedFn()
     eventTools.maintainUnitActivationTable()
 end)
 
@@ -324,3 +340,32 @@ civ.scen.onBribeUnit(triggerEvents.onBribeUnit)
 civ.scen.onGameEnds(triggerEvents.onGameEnds)
 
 civ.scen.onCityFounded(triggerEvents.onCityFounded)
+
+local function doBeforeProduction(turn,tribe)
+    triggerEvents.beforeProduction(turn,tribe)
+
+end
+local baseProduction = gen.computeBaseProduction
+civ.scen.onCalculateCityYield( function(city,food,shields,trade)
+    -- note the use of civ.getCurrentTribe().id instead of city.owner.id
+    -- this is because investigating a city can calculate the yield without it being
+    -- that player's turn
+    local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
+    -- for production changes during the beforeProductionEvent
+    if flag.value("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone") then
+        flag.setFalse("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone")
+        doBeforeProduction(civ.getTurn(),civ.getCurrentTribe())
+        -- if doBeforeProduction changed the tile production, we have to compensate for that
+        -- for the current city
+        local correctFood,correctShields,correctTrade = baseProduction(city)
+        extraFood = correctFood-food
+        food = correctFood
+        extraShields = correctShields - shields
+        shields = correctShields
+        extraTrade = correctTrade - trade
+        trade = correctTrade
+    end
+    -- if doBeforeProduction 
+    local fCh,sChBW,sChAW,tChBC,tChAC = cityYield.onCalculateCityYield(city,food,shields,trade)
+    return fCh+extraFood,sChBW+extraShields,sChAW,tChBC+extraTrade,tChAC
+end)

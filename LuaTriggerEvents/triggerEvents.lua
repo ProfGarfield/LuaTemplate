@@ -58,6 +58,7 @@ local contextFolders = #contextNames
 local triggerFileNames = {
 "onTurn",
 "afterProduction",
+"beforeProduction",
 "onUnitKilled",
 "onCityTaken",
 "onCityProduction",
@@ -158,6 +159,17 @@ function triggerEvents.afterProduction(turn,tribe)
     context[getContext()]["afterProduction"](turn,tribe)
     universal["afterProduction"](turn,tribe)
     delay.doAfterProduction(turn,tribe)
+	
+end 
+
+
+function triggerEvents.beforeProduction(turn,tribe)
+    context[getContext()]["beforeProduction"](turn,tribe)
+    universal["beforeProduction"](turn,tribe)
+	delay.doBeforeProduction(turn,tribe) -- at the moment this
+    -- is an empty function, but we might want to use it,
+    -- so it is here for future compatibility
+
 	
 end 
 

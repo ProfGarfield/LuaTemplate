@@ -308,7 +308,8 @@
 --#gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
 --#gen.getRandomNearbyOpenTileForTribe(tile,distance,allowedTiles,tribe) --> tile
 --#gen.createUnit(unitType,tribe,locations,options) --> table of units
---
+-- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
+-- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
 
 --
 -- FUNCTION IMPLEMENTATIONS
@@ -543,20 +544,27 @@ gen.toTile = toTile
 
 -- by default, the map is considered flat
 -- use gen.declareMapRound to say the map is round
-local flatMap = true
+-- with TOTPP v 16, we can access directly whether world is flat
+-- reference to the variable flatMap has been removed in this
+-- file, the variable itself is left to avoid errors
+-- with the declareMap functions.
+local flatMap = civ.game.rules.flatWorld
+print(flatMap)
 -- gen.isMapFlat()-->boolean
 function gen.isMapFlat()
-    return flatMap
+    return civ.game.rules.flatWorld
 end
 
 -- gen.isMapRound()-->boolean
 function gen.isMapRound()
-    return not flatMap
+    return not civ.game.rules.flatWorld
 end
 
 -- gen.declareMapFlat()-->void
 -- tells this module that the map should be considered flat
 -- for things like distances and adjacent squares
+-- no longer has practical effect, since above
+-- functions access world shape directly with TOTPP v16
 function gen.declareMapFlat()
     flatMap = true
 end
@@ -574,7 +582,7 @@ end
 -- quicker (though this probably will never matter)
 local function tileDist(locA,locB,zDist)
     zDist = zDist or 0
-    if flatMap then
+    if civ.game.rules.flatWorld then
         return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
     else
         local xMax,yMax,zMax=civ.getMapDimensions()
@@ -611,7 +619,7 @@ local function distance(tileUnitCityA,tileUnitCityB,zDist)
     else
         error("gen.distance: second argument must be a tile (or coordinates of a tile), or a unit or a city.")
     end
-    if flatMap then
+    if civ.game.rules.flatWorld then
         return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
     else
         local xMax,yMax,zMax=civ.getMapDimensions()
@@ -2552,7 +2560,7 @@ end
 local function getAdjacentTiles(tile)
     tile = toTile(tile)
     local xVal,yVal,zVal = tile.x,tile.y,tile.z
-    if flatMap then
+    if civ.game.rules.flatWorld then
         return {civ.getTile(xVal-2,yVal,zVal),
                 civ.getTile(xVal-1,yVal+1,zVal),
                 civ.getTile(xVal,yVal+2,zVal),
@@ -2834,7 +2842,7 @@ function gen.cityRadiusTiles(input)
     local xVal = tile.x
     local yVal = tile.y
     local zVal = tile.z
-    if flatMap then
+    if civ.game.rules.flatWorld then
         return {
         [1] = civ.getTile(xVal+1,yVal-1,zVal),
         [2] = civ.getTile(xVal+2,yVal,zVal),
@@ -2927,7 +2935,7 @@ function gen.getTilesInRadius(centre,radius,minRadius,maps)
     local function addTileRing(centreX,centreY,rad,map,table,firstUnusedIndex,width) --> next unused index
         local index = firstUnusedIndex
         local twoDist = 2*rad
-        if flatMap then
+        if civ.game.rules.flatWorld then
             for i=1,twoDist do
                 local nextTile = civ.getTile(centreX+i,centreY+twoDist-i,map)
                 if nextTile then
@@ -3102,6 +3110,7 @@ function gen.linkGeneralLibraryState(stateTable)
         error("gen.linkGeneralLibraryState: linkGeneralLibraryState takes a table as an argument.")
     end
     genStateTable.limitedExecutions = genStateTable.limitedExecutions or {}
+    genStateTable.persistentRandom = genStateTable.persistentRandom or {}
 end
 
 -- gen.limitedExecutions(key,maxTimes,limitedFunction)--> void
@@ -3180,6 +3189,7 @@ function gen.copyUnitAttributes(parent,child)
     end
     child.attributes = parent.attributes
     child.veteran = parent.veteran
+    child.domainSpec = parent.domainSpec
 end
 
 -- gen.nearbyUnits(center,radius) --> iterator providing units
@@ -3565,5 +3575,225 @@ function gen.createUnit(unitType,tribe,locations,options)
     return returnUnits
 end
 
+-- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
+-- returns the tile production values, presuming that the city
+-- given is the one working the tile
+-- That is to say, returns the values that would be seen on the tile in the city window
+-- Doesn't check if that city is actually working the tile
+
+local function getTileProduction(tile,city)
+    tile = toTile(tile)
+    local terrain = tile.terrain
+    local baseTerrain = tile.baseTerrain
+    local trade = terrain.trade
+    local shields = terrain.shields
+    local food = terrain.food
+    if baseTerrain.type == 10 then
+        -- the ocean has a different computation than
+        -- other terrain in several areas
+        -- road and river don't add trade to ocean
+        -- colossus always adds trade to ocean, even if it doesn't
+        -- have any trade production
+        if civ.getWonder(2).city == city and applyWonderBonus(civ.getWonder(2),city.owner) then
+            trade = trade+1
+        end
+        local tribeGovernment = city.owner.government
+        if tribeGovernment >= 5 or (tribeGovernment >= 2 and gen.isWeLoveTheKing(city)) then
+            -- republic/democracy bonus, wltkd for other gov'ts
+            if trade >= 1 then
+                trade = trade+1
+            end
+        elseif (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
+            -- despotism penalty if wltkd not in place, or anarchy always
+            if trade >= 3 then
+                trade = trade -1
+            end
+        end
+        -- highways apply to ocean
+        if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)) then
+            trade = (3*trade)//2
+        end
+
+        -- shields
+        -- mining doesn't increase ocean shield production
+
+        -- apply offshore platform
+        if city:hasImprovement(civ.getImprovement(31)) then
+            shields = shields+1
+        end
+        -- King Richard's Crusade
+        if civ.getWonder(8).city == city and applyWonderBonus(civ.getWonder(8),city.owner) then
+            shields = shields+1
+        end
+        -- railroads apply to ocean
+        if gen.hasRailroad(tile) or (tile.city and city.owner:hasTech(civ.getTech(67))) then
+            shields = (3*shields)//2
+        end
+        -- despotism seems to happen after railroads
+        if (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
+            -- despotism penalty if wltkd not in place, or anarchy always
+            if shields >= 3 then
+                shields = shields -1
+            end
+        end
+        -- irrigation doesn't increase food production on the ocean
+        -- Farmland doesn't affect it either
+
+        -- apply harbour
+        if city:hasImprovement(civ.getImprovement(30)) then
+            food = food+1
+        end
+        if (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
+            -- despotism penalty if wltkd not in place, or anarchy always
+            if food >= 3 then
+                food = food -1
+            end
+        end
+
+    else
+        -- calculation for non-ocean tiles
+
+        -- river adds 1 trade to all tiles (except ocean)
+        if tile.river  then
+            trade = trade+1
+        end
+        -- road
+        -- If the tile has a road, it gets +1 trade if it already has some trade,
+        -- or if totpp.roadTrade says it should (baseTerrain.type+1, since id starts counting
+        -- at 0, but isBit1 starts counting from 1
+        -- Oceans don't get +1 road trade, ever
+        if (gen.hasRoad(tile) or tile.city) and (isBit1(totpp.roadTrade[tile.z],baseTerrain.type+1) or trade > 0) then 
+            trade = trade+1
+        end
+        -- apply colossus
+        if civ.getWonder(2).city == city and trade >= 1 and applyWonderBonus(civ.getWonder(2),city.owner) then
+            -- colossus adds 1 trade to each tile that already has a trade arrow,
+            -- (also adds 1 trade to ocean even if no trade arrow, see above)
+            trade = trade+1
+        end
+        -- republic/democracy trade bonus happens before highways are applied
+        -- despotism penalty happens before highways
+        local tribeGovernment = city.owner.government
+        if tribeGovernment >= 5 or (tribeGovernment >= 2 and gen.isWeLoveTheKing(city)) then
+            -- republic/democracy bonus, wltkd for other gov'ts
+            if trade >= 1 then
+                trade = trade+1
+            end
+        elseif (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
+            -- despotism penalty if wltkd not in place, or anarchy always
+            if trade >= 3 then
+                trade = trade -1
+            end
+        end
+        -- apply highways bonus
+        if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)) then
+            trade = (3*trade)//2
+        end
+        --shields
+        -- Apply mine bonus.  
+        -- A city gives the mine bonus only if the irrigation bonus is 0
+        if gen.hasMine(tile) or (tile.city and baseTerrain.irrigateBonus == 0)  then
+            shields = shields + baseTerrain.mineBonus
+        end
+        -- grasslands without shields don't produce shields, except with KRC, which gives +1
+        -- Or, the 1 shield minimum from being on a city square
+        if baseTerrain.type == 2 and not tile.grasslandShield then
+            shields = 0
+        end
+        -- cities (except on ocean) guarantee 1 shield of production
+        if tile.city then
+            shields = math.max(1,shields)
+        end
+        -- KRC happens after 1 shield minimum, before the railroad bonus
+        -- King Richard's Crusade
+        if civ.getWonder(8).city == city and applyWonderBonus(civ.getWonder(8),city.owner) then
+            shields = shields+1
+        end
+        if gen.hasRailroad(tile) or (tile.city and city.owner:hasTech(civ.getTech(67))) then
+            shields = (3*shields)//2
+        end
+        -- despotism seems to happen after railroads
+        if (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
+            -- despotism penalty if wltkd not in place, or anarchy always
+            if shields >= 3 then
+                shields = shields -1
+            end
+        end
+        -- tiles with city or irrigation get the irrigation bonus, regardless of whether
+        -- the tile can actually be irrigated
+        if tile.city or gen.hasIrrigation(tile) then
+            food = food + baseTerrain.irrigateBonus
+        end
+        -- don't need refrigeration tech to take advantage of farm production, just supermarket
+        -- city tile counts as farmland even without refrigeration
+        if city:hasImprovement(civ.getImprovement(24)) and (tile.city or gen.hasFarmland(tile)) then
+            food = (3*food)//2
+        end
+        -- 4 food production pre farmland results in 5 production after applying supermarket,
+        -- meaning that the despotism penalty applies after supermarkets (6-1=5 instead of 3*3/2 = 4)
+        if (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
+            -- despotism penalty if wltkd not in place, or anarchy always
+            if food >= 3 then
+                food = food -1
+            end
+        end
+    end
+    return food, shields, trade
+end
+gen.getTileProduction = getTileProduction
+
+-- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
+-- Computes the resources harvested by the city from the terrain
+-- includes superhighway/supermarket/railroad bonus, but not factories/powerplants
+function gen.computeBaseProduction(city)
+    local tileList = gen.cityRadiusTiles(city)
+    local cityWorkers = city.workers
+    local foodTotal = 0
+    local shieldTotal = 0
+    local tradeTotal = 0
+    for workerIndex,tile in pairs(tileList) do
+        if isBit1(cityWorkers,workerIndex) then
+            local tileFood,tileShields,tileTrade = getTileProduction(tile,city)
+            foodTotal = foodTotal+tileFood
+            shieldTotal = shieldTotal+tileShields
+            tradeTotal = tradeTotal+tileTrade
+            --print(tile.x,tile.y,tileShields, shieldTotal)
+        end
+    end
+    return foodTotal,shieldTotal,tradeTotal
+end
+
+-- gen.persistentRandom(key) --> number between 0 and 1
+-- checks the persistentRandom table (within the state table)
+-- for a value associated with key. If it exits, the value is
+-- returned.  If it does not exist, a random number between
+-- 0 and 1 is generated, stored in the table under the key,
+-- and also returned
+-- example of use: WWII scenario with seasons
+-- You may want to have some games where the 1941 spring starts
+-- in April, and other games where it starts in May.  When
+-- determining whether to load winter or summer terrain stats during
+-- 1941, you would use gen.persistentRandom("EarlySpring1941") < 0.5
+-- as part of the season check in April, and load summer if the value is less than 0.5
+-- and winter otherwise.  This way, each when each player starts their
+-- game that month, they will all either get winter or summer terrain
+function gen.persistentRandom(key)
+    genStateTable.persistentRandom[key] = genStateTable.persistentRandom[key] or math.random()
+    return genStateTable.persistentRandom[key]
+end
+
+-- gen.clearPersistentRandom(key) --> void
+-- sets the value associated with the key in the
+-- persistentRandom table.  This could either be for reuse of the key,
+-- or to prevent the key from staying in the state table indefinitely
+function gen.clearPersistentRandom(key)
+    genStateTable.persistentRandom[key] = nil
+end
+
+-- gen.getPersistentRandomTable() --> table
+-- returns the persistentRandom table
+function gen.getPersistentRandomTable()
+    return genStateTable.persistentRandom
+end
     
 return gen
