@@ -310,7 +310,10 @@
 --#gen.createUnit(unitType,tribe,locations,options) --> table of units
 -- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
 -- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
-
+-- gen.persistentRandom(key) --> number between 0 and 1
+-- gen.clearPersistentRandom(key) --> void
+-- gen.getPersistentRandomTable() --> table
+-- gen.mergeTableValues(table,table,...) --> table
 --
 -- FUNCTION IMPLEMENTATIONS
 --
