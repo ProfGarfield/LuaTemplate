@@ -49,7 +49,7 @@ local canBuildFunctions = require("canBuild")
 local keyPressEvents = require("keyPressEvents")
 local munitions = require("munitions")
 local munitionsSettings = require("munitionsSettings")
---local attackBonusSettings = require("attackBonusSettings")
+local attackBonusSettings = require("attackBonusSettings")
 local delayedAction = require("delayedAction")
 local eventTools = require("eventTools")
 local promotion = require("promotion")
@@ -182,7 +182,7 @@ local function doOnUnitActivation(unit,source)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
     end
-    --attackBonusSettings.attackBonus(unit)
+    attackBonusSettings.attackBonus(unit)
     unitActivation.activateFunction(unit,source)
     if simpleSettings.enableCustomUnitSelection then
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)

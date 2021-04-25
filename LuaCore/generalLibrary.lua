@@ -3795,5 +3795,28 @@ end
 function gen.getPersistentRandomTable()
     return genStateTable.persistentRandom
 end
+
+
+-- gen.mergeTableValues(table,table,...) --> table
+--  accepts an arbitrary number of tables as
+--  arguments and returns a table with all
+--  the values from all the tables.
+--  Table keys are lost, and replaced by
+--  integers starting at 1.
+--  Duplicate values will appear multiple times
+--
+--
+function gen.mergeTableValues(...)
+    local argTable = {...}
+    local output = {}
+    local index = 1
+    for __,table in pairs(argTable) do
+        for __,value in pairs(table) do
+            output[index] = value
+            index=index+1
+        end
+    end
+    return output
+end
     
 return gen

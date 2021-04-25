@@ -1,8 +1,4 @@
--- Deprecated.  To be replaced with functionality directly
--- in combat using initiateCombat.lua instead
---
--- If you really want this functionality, search for attackBonus
--- in events.lua, and uncomment the relevant portions
+-- You may wish to consider changing combat stats in initiateCombat instead of this module.
 
 local attackBonus = require("attackBonus")
 
