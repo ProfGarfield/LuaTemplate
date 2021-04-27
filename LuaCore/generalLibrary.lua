@@ -3616,6 +3616,12 @@ local function getTileProduction(tile,city)
         if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)) then
             trade = (3*trade)//2
         end
+        -- pollution occurs after highway bonus
+        -- 6 trade  -> 9 (highway) -> 5 (pollution) observed
+        -- 6 trade -> 3 (pollution) -> 4 (highway) NOT observed
+        if gen.hasPollution(tile) then
+            trade = trade - (trade//2)
+        end
 
         -- shields
         -- mining doesn't increase ocean shield production
@@ -3639,6 +3645,12 @@ local function getTileProduction(tile,city)
                 shields = shields -1
             end
         end
+        -- despotism is applied before pollution
+        -- 6 ->5 (despotism)->3 (pollution) observed
+        -- 6 ->3 (pollution) -> 2 (despotism) not observed
+        if gen.hasPollution(tile) then
+            shields = shields - (shields//2)
+        end
         -- irrigation doesn't increase food production on the ocean
         -- Farmland doesn't affect it either
 
@@ -3651,6 +3663,15 @@ local function getTileProduction(tile,city)
             if food >= 3 then
                 food = food -1
             end
+        end
+        -- harbour is applied before pollution
+        -- 7 ->8 (harbour) -> 4 (Pollution) observed
+        -- 7 -> 4 (pollution) ->5 (harbour) Not observed
+        -- despotism is applied before pollution
+        -- 6 ->5 (despotism)->3 (pollution) observed
+        -- 6 ->3 (pollution) -> 2 (despotism) not observed
+        if gen.hasPollution(tile) then
+            food = food - (food//2)
         end
 
     else
@@ -3688,10 +3709,23 @@ local function getTileProduction(tile,city)
                 trade = trade -1
             end
         end
+        -- Well known highways happen after republic/democracy bonus.  They also happen after despotism
+        -- penalty.  4 trade square (3+1 for road) becomes 4 after highway and despotism,
+        --  4->3 (despotism)->4(highway)  Observed`
+        --  4 -> 6 (highway) -> 5 (despotism) Not observed
         -- apply highways bonus
         if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)) then
             trade = (3*trade)//2
         end
+        -- pollution occurs after highway bonus
+        -- 6 trade (5+road) -> 9 (highway) -> 5 (pollution) observed
+        -- 6 trade -> 3 (pollution) -> 4 (highway) NOT observed
+        if gen.hasPollution(tile) then
+            trade = trade - (trade//2)
+        end
+
+        -- pollution occurs after despotism penalty, since 6 ->5 ->3 and not 6->3->2
+        -- a bit more detail is below with the pollution penalty for food
         --shields
         -- Apply mine bonus.  
         -- A city gives the mine bonus only if the irrigation bonus is 0
@@ -3722,6 +3756,13 @@ local function getTileProduction(tile,city)
                 shields = shields -1
             end
         end
+        -- pollution occurs after despotism penalty, since 6 ->5 ->3 and not 6->3->2
+        -- a bit more detail is below with the pollution penalty for food
+        if gen.hasPollution(tile) then
+            shields = shields - (shields//2)
+        end
+
+
         -- tiles with city or irrigation get the irrigation bonus, regardless of whether
         -- the tile can actually be irrigated
         if tile.city or gen.hasIrrigation(tile) then
@@ -3732,6 +3773,7 @@ local function getTileProduction(tile,city)
         if city:hasImprovement(civ.getImprovement(24)) and (tile.city or gen.hasFarmland(tile)) then
             food = (3*food)//2
         end
+
         -- 4 food production pre farmland results in 5 production after applying supermarket,
         -- meaning that the despotism penalty applies after supermarkets (6-1=5 instead of 3*3/2 = 4)
         if (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
@@ -3739,6 +3781,16 @@ local function getTileProduction(tile,city)
             if food >= 3 then
                 food = food -1
             end
+        end
+
+        -- pollution occurs after farmland, since 6 food before farm becomes 9 with farm then
+        -- 5 after pollution.  Pollution before farm would mean 6 becomes 3 with pollution, then
+        -- 4 after pollution
+        -- pollution occurs after despotism.  6 food becomes 5 with despotism, becomes 3 after pollution
+        -- If pollution were factored before despotism, 6 would become 3, which would become 2,
+        -- 6->5->3 holds with and without farmland
+        if gen.hasPollution(tile) then
+            food = food - (food//2)
         end
     end
     return food, shields, trade
