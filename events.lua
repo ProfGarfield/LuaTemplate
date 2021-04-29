@@ -4,12 +4,16 @@
 --
 
 
--- note: console is the only global.  If you need a variable to
+-- note: console and global are the only globals.  If you need a variable to
 -- be accessible from the console, put it in the console table, 
 -- and access it via console.myVariable
+-- If you want to share values between files, use global.myValue
+-- (from a technical stand point, you can use either one for
+-- either purpose
 -- Put this before requirements, in case any required items
 -- are checking if there is a console table
 console = {}
+_global = {}
 local eventsPath = string.gsub(debug.getinfo(1).source, "@", "")
 local scenarioFolder = string.gsub(eventsPath,"events.lua","")
 --print(scenarioFolder)
@@ -125,6 +129,8 @@ local function linkStateTableToModules()
     diplomacy.linkState(state.diplomacyState)
     state.munitionsState = state.munitionsState or {}
     munitions.linkState(state.munitionsState)
+    state.globalState = state.globalState or {}
+    _global.state = state.globalState
 
 end
 

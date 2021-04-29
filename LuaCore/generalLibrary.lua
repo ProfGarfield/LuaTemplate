@@ -2785,8 +2785,59 @@ end
 -- if you want to have a 'console' table to access certain functions from the console,
 -- you should declare it (but you don't have to fill it) before running this function
 function gen.noGlobal()
-    gen.errorForNilKey(_G,"Global")
-    gen.noNewKey(_G,"Global")
+    local mt = getmetatable(_G) or {}
+    setmetatable(_G,mt)
+    mt.__index = function(myTable,key) 
+        error("\nThe variable name '"..key.."' doesn't match any available local variables.\n"
+        .."Consider the following possibilities:\n"
+        .."Is '"..key.."' misspelled?\n"
+        .."Was '"..key.."' misspelled on the line where it was defined?\n"
+        .."(That is, was 'local "..key.."' misspelled?)\n"
+        .."Was 'local "..key.."' defined inside a lower level code block?\n"
+        .."For example:\n"
+        .."if x > 3 then\n"
+        .."    local "..key.." = 3\n"
+        .."else\n"
+        .."    local "..key.." = x\n"
+        .."end\n"
+        .."print("..key..")\n"
+        .."If so, define '"..key.."' before the code block:\n"
+        .."local "..key.." = nil -- add this line\n"
+        .."if x > 3 then\n"
+        .."    "..key.." = 3 -- remove local from this line\n"
+        .."else\n"
+        .."    "..key.." = x -- remove local from this line\n"
+        .."end\n"
+        .."print("..key..")\n"
+        .."If you really did mean to access a global variable, write:\n"
+        .."_global."..key.."\n"
+        .."If you are trying to work in the console, use the command:\n"
+        .."console.restoreGlobal()\n"
+        .."to restore access to global variables (locals don't work well in the console)")
+    end
+
+    mt.__newindex = function(myTable,key)
+        error("\nYou appear to have forgotten to put \'local\' before '"..key.."' the first time you used it.\n"
+        .."If you really did mean to make a global variable, write:\n"
+        .."_global."..key.."\n"
+        .."If you are trying to define a variable in the console, use the command:\n"
+        .."console.restoreGlobal()\n"
+        .."to restore access to global variables (locals don't work well in the console)")
+    end
+    print('Global variables are disabled')
+end
+
+
+
+function gen.restoreGlobal()
+    local mt = getmetatable(_G) or {}
+    setmetatable(_G,mt)
+    mt.__index = nil
+    mt.__newindex = nil
+    print("You can now use global variables, including in the console.")
+end
+if rawget(_G,"console") then
+    _G.console.restoreGlobal = gen.restoreGlobal
 end
 
 local state = "stateNotLinked"
