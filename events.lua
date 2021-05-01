@@ -13,6 +13,10 @@
 -- Put this before requirements, in case any required items
 -- are checking if there is a console table
 console = {}
+console.commands = function() print('These are keys currently stored in the console table.\n')
+    for k,__ in pairs(console) do
+        print('console.'..k)
+    end end
 _global = {}
 local eventsPath = string.gsub(debug.getinfo(1).source, "@", "")
 local scenarioFolder = string.gsub(eventsPath,"events.lua","")
@@ -137,7 +141,7 @@ end
 
 
 linkStateTableToModules()
-civ.scen.onTurn(function(turn)
+local onTurnFn = function(turn)
     -- this makes doAfterProduction work
     for i=0,7 do
         flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone")
@@ -151,7 +155,9 @@ civ.scen.onTurn(function(turn)
             gen.clearWeLoveTheKing(city)
         end
     end
-end)
+end
+civ.scen.onTurn(onTurnFn)
+console.onTurn = function() onTurnFn(civ.getTurn()) end
 
 civ.scen.onCanBuild(function(defaultBuildFunction,city,item)
     return canBuildFunctions.customCanBuild(defaultBuildFunction,city,item)
@@ -170,6 +176,7 @@ local function doOnLoad(buffer)-->void
     -- buffer itself is used
     state = civlua.unserialize(lualzw.decompress(buffer) or buffer)
     linkStateTableToModules()
+    print("Enter console.commands() to see a list of keys in the console table.  Some give access to functions in modules, others will run event code.")
 end
 civ.scen.onLoad(doOnLoad)
 
@@ -204,6 +211,7 @@ local function doAfterProduction(turn,tribe)
     triggerEvents.afterProduction(turn,tribe)
     eventTools.maintainUnitActivationTable()
 end
+console.afterProduction = function() doAfterProduction(civ.getTurn(),civ.getCurrentTribe()) end
 gen.linkActivationFunction(doOnUnitActivation)
 civ.scen.onActivateUnit(function(unit,source)
     if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone") then
@@ -354,6 +362,7 @@ local function doBeforeProduction(turn,tribe)
     triggerEvents.beforeProduction(turn,tribe)
 
 end
+console.beforeProduction = function () doBeforeProduction(civ.getTurn(),civ.getCurrentTribe()) end
 local baseProduction = gen.computeBaseProduction
 civ.scen.onCalculateCityYield( function(city,food,shields,trade)
     -- note the use of civ.getCurrentTribe().id instead of city.owner.id
