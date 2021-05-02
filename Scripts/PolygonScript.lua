@@ -1,4 +1,28 @@
+local fileName = "PolygonScript.lua"
+local scriptPath = string.gsub(debug.getinfo(1).source, "@", "")
+local scriptFolder = string.gsub(scriptPath,fileName,"")
+local scriptFolderPath = string.gsub(scriptPath, fileName, "?.lua")
+local function removeLastFolder(text)
+    text = string.sub(text,1,-2)
+    if string.sub(text,-1,-1) == "\\" then
+        return text
+    else
+        return removeLastFolder(text)
+    end
+end
+--if string.find(package.path, scriptFolderPath, 1, true) == nil then
+    package.path = ""
+            ..scriptFolder.."?.lua;"
+            ..removeLastFolder(scriptFolder).."?.lua;"
+            ..removeLastFolder(scriptFolder).."LuaCore\\?.lua;"
+--end
+print(scriptFolder)
+print(removeLastFolder(scriptFolder))
+print("")
+print(package.path)
+
 local gen = require("generalLibrary")
+
 
 local dialog = civ.ui.createDialog()
 dialog:addOption("Start doing Polygon Stuff.",1)

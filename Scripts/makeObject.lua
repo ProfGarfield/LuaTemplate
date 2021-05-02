@@ -79,7 +79,34 @@ fileOutput =
 -- Map Locations (tiles/squares)
 -- recommended key prefix 'l'
 
+]]
 
+currentOutput = ""
+local locationOutput = ""
+local cityOutput = ""
+local cityRow = nil
+for player = 0,7 do
+    locationOutput = locationOutput.."\n-- Locations of cities starting the scenario owned by the "..civ.getTribe(player).name..":\n\n"
+    cityOutput = cityOutput.."\n--Cities starting the scenario owned by the "..civ.getTribe(player).name..":\n\n"
+    for city in civ.iterateCities() do
+        if city.owner.id == player then
+            local cL = city.location
+            row = "object."..scrubKey(city.name,"l")
+            row = paddRow(row)
+            row = row.."=civ.getTile("..tostring(cL.x)..","..tostring(cL.y)..","..tostring(cL.z)..")"
+            locationOutput=locationOutput..row.."\n"
+            cityRow = "object."..scrubKey(city.name,"c")
+            cityRow = paddRow(cityRow)
+            cityRow = cityRow.."=civ.getTile("..tostring(cL.x)..","..tostring(cL.y)..","..tostring(cL.z)..").city"
+            cityOutput = cityOutput..cityRow.."\n"
+        end
+    end
+end
+
+fileOutput = fileOutput..locationOutput
+io.write(fileOutput)
+fileOutput =
+[[
 
 -- Cities
 -- recommended key prefix 'c'
@@ -94,8 +121,21 @@ fileOutput =
 
 --Find these by entering "for city in civ.iterateCities() do print(city.id, city.name) end" in the console
 
+-- All the cities existing when you made generated this template are listed here.
+-- If you wish to use these objects, change the line if false then below to if true then
+-- It is your job to eliminate any cities that could be destroyed from this list if you use it
+-- If you are not sure, it is recommended to reference cities from their locations instead
+--
+
+if false then
+]]
+
+fileOutput = fileOutput..cityOutput.."\nend\n"
+io.write(fileOutput)
+fileOutput =
 
 
+[[
 
 -- Unit Types
 -- recommended key prefix 'u'
