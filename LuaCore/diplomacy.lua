@@ -51,8 +51,41 @@ local function linkState(tableInState)
     end
     diplomacyState.diplomaticOffers = diplomacyState.diplomaticOffers or {}
     diplomacyState.expectedTreaties = initializeExpectedTreaties(diplomacyState.expectedTreaties)
+    diplomacyState.allowedTreatyChanges = diplomacyState.allowedTreatyChanges or {[0]={},{},{},{},{},{},{},{}}
 end
 diplomacy.linkState = linkState
+
+local alwaysAllowedTreatyChanges = {[0]={},{},{},{},{},{},{},{}}
+
+local function negotiationTreaty(tribe1ID,tribe2ID)
+    return diplomacyState.allowedTreatyChanges[tribe1ID][tribe2ID] or alwaysAllowedTreatyChanges[tribe1ID][tribe2ID]
+end
+
+local function enableTreatyChanges(tribe1,tribe2)
+    if type(diplomacyState)=="string" then
+        error("diplomacy.enableTreatyChanges: enableTreatyChanges should only be used within an event, and not as part of the setup scripts.  Either use 'diplomacy.alwaysEnableTreatyChanges', or place diplomacy.enableTreatyChanges within an event, such as onScenarioLoaded or onTurn.")
+    end
+    diplomacyState.allowedTreatyChanges[tribe1.id][tribe2.id]=true
+    diplomacyState.allowedTreatyChanges[tribe2.id][tribe1.id]=true
+end
+diplomacy.enableTreatyChanges = enableTreatyChanges
+
+
+local function disableTreatyChanges(tribe1,tribe2)
+    if type(diplomacyState)=="string" then
+        error("diplomacy.disableTreatyChanges: disableTreatyChanges should only be used within an event, and not as part of the setup scripts.  Place it within an event function such as onTurn.")
+    end
+    diplomacyState.allowedTreatyChanges[tribe1.id][tribe2.id]=nil
+    diplomacyState.allowedTreatyChanges[tribe2.id][tribe1.id]=nil
+end
+diplomacy.disableTreatyChanges = disableTreatyChanges
+
+local function alwaysEnableTreatyChanges(tribe1,tribe2)
+    alwaysAllowedTreatyChanges[tribe1.id][tribe2.id]=true
+    alwaysAllowedTreatyChanges[tribe2.id][tribe1.id]=true
+end
+diplomacy.alwaysEnableTreatyChanges = alwaysEnableTreatyChanges
+
 
 -- checkSymmetricBit1(int1,int2,bitNumber,errorMessage)-->bool
 -- if the bitNumber'th bit in int1 and int2 are both 1,
@@ -86,6 +119,8 @@ local function setEventTreatiesOnly(eventTreatiesMsg)
 end
 diplomacy.setEventTreatiesOnly = setEventTreatiesOnly
 
+
+
 -- checkTreaties()
 --  
 local function checkTreaties()
@@ -94,10 +129,16 @@ local function checkTreaties()
         local treatyRestored = false
         for senderTribeID=0,7 do
             for receiverTribeID = 0,7 do
-                if expectedTreatiesTable[senderTribeID][receiverTribeID]~=civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]
-                then
-                    civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]=expectedTreatiesTable[senderTribeID][receiverTribeID]
-                    treatyRestored=true
+                -- if tribes have been allowed to change their treaties
+                if negotiationTreaty(senderTribeID,receiverTribeID) then
+                    expectedTreatiesTable[senderTribeID][receiverTribeID]=civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]
+                else
+                    -- tribes haven't been allowed to change their treaties
+                    if expectedTreatiesTable[senderTribeID][receiverTribeID]~=civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]
+                    then
+                        civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]=expectedTreatiesTable[senderTribeID][receiverTribeID]
+                        treatyRestored=true
+                    end
                 end
             end
         end

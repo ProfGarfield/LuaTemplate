@@ -259,7 +259,6 @@ for map = 0,n_maps-1 do
     end
 end
 fileOutput = fileOutput..currentOutput
-print(type(fileOutput))
 io.write(fileOutput)
 
 
