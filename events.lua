@@ -397,7 +397,7 @@ civ.scen.onInitiateCombat( function(attacker,defender,attackerDie,attackerPower,
     aggressor = attacker
     victimVetStatus = defender.veteran
     victim = defender
-    if not diplomacy.warExists(attacker.owner,defender.owner) then
+    if diplomacy.contactExists(attacker.owner,defender.owner) and not diplomacy.warExists(attacker.owner,defender.owner) then
         return coroutine.create(function() end)
     end
     return onInitiateCombat.makeCoroutine(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower)
