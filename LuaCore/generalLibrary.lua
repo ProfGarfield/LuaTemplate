@@ -110,7 +110,7 @@
 --#gen.clearMoved(unit)-->void
 --#gen.isSeeTwoSpaces(unitType)-->boolean
 --#gen.giveSeeTwoSpaces(unitType)-->void
---#gen.removeSeeTowSpaces(unitType)-->void
+--#gen.removeSeeTwoSpaces(unitType)-->void
 --#gen.isIgnoreZOC(unitType)-->boolean
 --#gen.giveIgnoreZOC(unitType)-->void
 --#gen.removeIgnoreZOC(unitType)-->void
@@ -1267,10 +1267,13 @@ function gen.giveSeeTwoSpaces(unitType)
     unitType.flags = setBit1(unitType.flags,1)
 end
 
--- gen.removeSeeTowSpaces(unitType)-->void
+-- gen.removeSeeTwoSpaces(unitType)-->void
+-- Note: The typo is preserved, on the off chance that
+-- someone used it
 function gen.removeSeeTowSpaces(unitType) 
     unitType.flags = setBit0(unitType.flags,1)
 end
+gen.removeSeeTwoSpaces = gen.removeSeeTowSpaces
 
 -- gen.isIgnoreZOC(unitType)-->boolean
 function gen.isIgnoreZOC(unitType) 
