@@ -552,7 +552,6 @@ gen.toTile = toTile
 -- file, the variable itself is left to avoid errors
 -- with the declareMap functions.
 local flatMap = civ.game.rules.flatWorld
-print(flatMap)
 -- gen.isMapFlat()-->boolean
 function gen.isMapFlat()
     return civ.game.rules.flatWorld

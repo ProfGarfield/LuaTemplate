@@ -150,6 +150,172 @@ text.getLinesPerWindow = getLinesPerWindow
 -- ==============================================================
 --
 
+-- the imageTable is the table where the text module will
+-- look for imageObjects, when provided with a table key.
+-- The imageTable can have other kinds of values also
+-- In the Lua Scenario Template, it is the object file
+--
+-- This system allows for an image object to be stored in the state
+-- table and referenced later.  The key corresponding to the image in the
+-- imageTable is found, and stored, and then that key is referenced
+-- when the image is needed.
+
+local imageTable = "imageTableNotSet"
+local tableName = ""
+
+local function setImageTable(table,tableNm)
+    if type(tableName) ~="string" then
+        error("setImageTable: second argument must be a string, and should be the name of this table."
+            .."The name provided will be given as part of error messages, to help you debug.")
+    end
+    if type(table) ~="table" then
+        error("setImageTable: first argument must be a table, but a "..type(table)..
+        "was provided instead.")
+    else
+        imageTable = table
+        tableName = tableNm
+    end
+end
+text.setImageTable = setImageTable
+
+    -- used to do a protected call on the imageTable,
+    -- since trying to access a nil value from the
+    -- object table results in an error, and
+    -- we want a better error message
+local function tableAccess(table,key)
+    return table[key]
+end
+
+-- text.toImage(input) --> imageObject
+-- input: one of
+--      imageObject --> returns this input
+--      string --> returns imageTable[input] if it is an imageObject, error otherwise
+--      table --> returns civ.ui.loadImage(table[1],table[2],table[3],table[4],table[5])
+
+local function toImage(input)
+    if type(input) == "table" then
+        -- the table contains the arguments for civ.ui.loadImage
+        return civ.ui.loadImage(input[1],input[2],input[3],input[4],input[5])
+    elseif type(input) == "string" then
+        -- this corresponds to a key for the image table
+        if type(imageTable) == "string" then
+            error("text.toImage: The 'Image Table' has not been set.\n"
+                .."Your input was this: "..input.."\n"
+                .."If this is a key to a table, and table["..input.."] is the image you want\n"
+                .."to use, then you have not run text.setImageTable(imageTable,tableNameString).\n"
+                .."If your input is a file path to access the image, use the following as your argument:\n"
+                .."{[1]=\""..input.."\",}")
+        end
+        
+        local bool, val = pcall(tableAccess,imageTable,input)
+        if bool and civ.isImage(val) then
+            return val
+        else
+            error("text.toImage: "..tableName.."[\""..input.."\"] is not an image.\n"
+            .."If "..input.."\n"
+            .."is the file path to access the image, then you should write it as:\n"
+            .."{[1]=\""..input.."\",}")
+        end
+    elseif civ.isImage(input) then
+        return input
+    else
+        error("text.toImage: argument 1 has type "..type(input).."\n"
+        .."but only tables, strings, and imageObjects are acceptable.")
+    end
+end
+text.toImage = toImage
+
+-- returns an error if any table or sub table consists of stuff other
+-- than numbers and strings
+local function validateArgumentTable(table,functionName)
+    for key,value in pairs(table) do
+        if type(key) ~= "string" and type(key) ~="number" then
+            error(functionName..": the table submitted as an argument can only have numbers and strings as keys.")
+        end
+        if type(value) ~="string" and type(value) ~="number" and type(value) ~="table" then
+            error(functionName..": the table submitted as an argument can only have numbers, strings, and tables as values.")
+        end
+        if type(value) == "table" then
+            validateArgumentTable(value)
+        end
+    end
+end
+
+-- text.toStateImage(imageInput) --> string or stateSaveableTable
+-- added this, since it makes more sense in the documentation
+-- text.stateImageReference(imageInput) --> string or stateSaveableTable
+--      transforms the imageInput to a reference that
+--      can be saved in the state table, either the
+--      key referencing the image in the imageTable,
+--      or the table of commands to load the image with civ.ui.loadImage
+
+
+local function stateImageReference(imageInput)
+    if type(imageInput) == "table" then
+        validateArgumentTable(imageInput,"stateImageReference")
+        local bool, result = pcall(civ.ui.loadImage,imageInput[1],imageInput[2],imageInput[3],imageInput[4],imageInput[5])
+        if bool then
+            return imageInput
+        else
+            error("stateImageReference: the table\n"
+                .."{[1]=\""..tostring(imageInput[1]).."\",\n"
+                .." [2]="..tostring(imageInput[2])..", [3]="..tostring(imageInput[3])..",\n"
+                .." [4]="..tostring(imageInput[4])..", [5]="..tostring(imageInput[5])..",}\n"
+                .."Does not load a valid image when its values are provided to\n"
+                .."civ.ui.loadImage.")
+        end
+    elseif type(imageInput) == "string" then
+        if type(imageTable) == "string" then
+            error("text.stateImageReference: The 'Image Table' has not been set.\n"
+                .."Your input was this: "..input.."\n"
+                .."If this is a key to a table, and table["..input.."] is the image you want\n"
+                .."to use, then you have not run text.setImageTable(imageTable,tableNameString).\n"
+                .."If your input is a file path to access the image, use the following as your argument:\n"
+                .."{[1]=\""..input.."\",}")
+        end
+        local bool,result = pcall(tableAccess,imageTable,imageInput)
+        if bool and civ.isImage(result) then
+            return imageInput
+        else
+            error("text.stateImageReference: "..tableName.."[\""..imageInput.."\"] is not an image.\n"
+            .."If "..imageInput.."\n"
+            .."is the file path to access the image, then you should write it as:\n"
+            .."{[1]=\""..imageInput.."\",}")
+        end
+    elseif civ.isImage(imageInput) then
+        local imgKey = nil
+        for key,value in pairs(imageTable) do
+            if civ.isImage(value) and value == imageInput then
+                imgKey = key
+                break
+            end
+        end
+        if imgKey then
+            return imgKey
+        else
+            error("stateImageReference: the image provided is not in the "..tableName.." table.\n"
+            .."An imageObject can't be saved to the state table directly, and\n"
+            .."the imageOjbect provided is not a value in the "..tableName.." table,\n"
+            .."so the corresponding key can't be saved in the state table.\n"
+            .."If you think the image you provided IS in the "..tableName.." table,"
+            .."you can provide the key it is saved in.  This error may be a result\n"
+            .."of the fact that img1 = civ.ui.loadImage(\"myImage.bmp\")\n"
+            .."img2 = civ.ui.loadImage(\"myImage.bmp\")\n"
+            .."img1 == img2 returns false, since 2 different imageObjects are created.\n"
+            .."Alternatively, you can provide a table `argTable` as an argument such that\n"
+            .."civ.ui.loadImage(argTable[1],argTable[2],argTable[3],argTable[4],argTable[5])\n"
+            .."loads your desired image.")
+        end
+    else
+        error("text.stateImageReference: argument 1 has type "..type(input).."\n"
+        .."but only tables, strings, and imageObjects are acceptable.")
+    end
+end
+text.stateImageReference = stateImageReference
+text.toStateImage = stateImageReference
+
+
+
 
 -- linesInText(string) --> number
 -- Determines how many lines of text are in a string, so that text boxes can be kept
@@ -222,13 +388,15 @@ local function addMultiLineTextToDialog(text,dialog)
 end
 text.addMultiLineTextToDialog = addMultiLineTextToDialog
 
---  text.simple(string or tableOfStrings,title="") --> void
+--  text.simple(string or tableOfStrings,title="",imageInfo=nil) --> void
 --  shows a text box with the string and title, splitting
 --  into multiple text boxes if the string is very long.
 --  If a table of strings is input, each string is shown in
 --  order starting at tableOfStrings[1]
-local function simple(stringOrTable,boxTitle)
+--
+local function simple(stringOrTable,boxTitle,imageInfo)
     boxTitle = boxTitle or ""
+    imageInfo = imageInfo and toImage(imageInfo)
     if type(stringOrTable)=="string" then
         local remainingString = stringOrTable
         local textToShow = nil
@@ -236,6 +404,9 @@ local function simple(stringOrTable,boxTitle)
             textToShow,remainingString = splitTextForWindow(remainingString)
             local textBox = civ.ui.createDialog()
             textBox.title = boxTitle
+            if imageInfo then
+                textBox:addImage(imageInfo)
+            end
             if textToShow then
                 addMultiLineTextToDialog(textToShow,textBox)
                 textBox:show()
@@ -246,7 +417,7 @@ local function simple(stringOrTable,boxTitle)
             if type(stringOrTable[i]) ~= "string" then
                 error("text.simple must have a string or a table of strings as the first argument.")
             end
-            simple(stringOrTable[i],boxTitle)
+            simple(stringOrTable[i],boxTitle,imageInfo)
         end
     else
         error("text.simple must have a string or a table of strings as the first argument.")
@@ -269,6 +440,7 @@ text.simple = simple
 --      an AI
 --      false or nil means message will only be shown when the tribe is
 --      played by a human
+--  .messageImage = stateTableReady image
 
 -- Archived Message Specification
 --  .messageBody =string
@@ -284,13 +456,14 @@ text.simple = simple
 --      If false, player must ask to display hidden messages
 --  .markedForPurging = bool or nil
 --      If true, message will be purged when purging operation is run
+--  .messageImage = stateTableReady image
 --
 -- Largest index is the most recently archived item, and will be displayed first
 -- in the archive
 
--- text.addToArchive(tribe or TribeID,messageBody,messageTitle,archiveTitle)-->void
+-- text.addToArchive(tribe or TribeID,messageBody,messageTitle,archiveTitle,imageInfo)-->void
 -- Adds a message to a tribe's archive
-local function addToArchive(tribeID,messageBody,messageTitle,archiveTitle)
+local function addToArchive(tribeID,messageBody,messageTitle,archiveTitle,imageInfo)
     if civ.isTribe(tribeID) then
         tribeID = tribeID.id
     end
@@ -300,17 +473,32 @@ local function addToArchive(tribeID,messageBody,messageTitle,archiveTitle)
     archivedMessage.archiveTitle = archiveTitle
     archivedMessage.notHidden = true
     archivedMessage.archiveTurn = civ.getTurn()
+    archivedMessage.messageImage = imageInfo and stateImageReference(imageInfo)
     local archiveTable = textState.archive[tribeID]
     archiveTable[#archiveTable+1] = archivedMessage
 end
 text.addToArchive=addToArchive
 
 --  text.displayNextOpportunity(tribe or tableOfTribes,messageBody,messageTitle="",
---              archiveTitle=nil, broadcast=nil)
+--              archiveTitle=nil, broadcast=nil,imageInfo = nil)
 --  Displays a message to a tribe (either object or id) at the next possible opportunity,
 --  either immediately (if the tribe is active), or after the next production phase
+--  imageInfo and broadcast can be in either order.  The function will figure it out
+--  I would have made broadcast last, but can't for backwards compatibility
+--  broadcast is either boolean or nil, anything else goes to image
 local function displayNextOpportunity(tribeOrTable,messageBody,messageTitle,
-                archiveTitle,broadcast)
+                archiveTitle,arg5,arg6)
+    local broadcast = nil
+    local stateReadyImage = nil
+    local function setArgument(arg)
+        if type(arg) == "boolean" then
+            broadcast = arg
+        elseif type(arg) ~= "nil" then
+            stateReadyImage = stateImageReference(arg)
+        end
+    end
+    setArgument(arg5)
+    setArgument(arg6)
     if type(messageBody)~="string" then
         error("text.displayNextOpportunity: messageBody (arg 2) must be a string. Current Type is "..type(messageBody)..".")
     end
@@ -331,10 +519,10 @@ local function displayNextOpportunity(tribeOrTable,messageBody,messageTitle,
         local tribeID = tribeOrTable
         if civ.getTribe(tribeID) == civ.getCurrentTribe() then
             if civ.getTribe(tribeID).isHuman or broadcast then
-                simple(messageBody,messageTitle)
+                simple(messageBody,messageTitle,stateReadyImage)
             end
             if archiveTitle then
-                addToArchive(tribeOrTable,messageBody,messageTitle,archiveTitle)
+                addToArchive(tribeOrTable,messageBody,messageTitle,archiveTitle,stateReadyImage)
             end
         else
             local pendingMessage = {}
@@ -342,12 +530,13 @@ local function displayNextOpportunity(tribeOrTable,messageBody,messageTitle,
             pendingMessage.messageTitle=messageTitle
             pendingMessage.archiveTitle=archiveTitle
             pendingMessage.broadcast = broadcast
+            pendingMessage.messageImage = stateReadyImage
             local pendingMessageList = textState.pendingMessages[tribeID]
             pendingMessageList[#pendingMessageList+1] = pendingMessage
         end
     elseif type(tribeOrTable) == "table" then
         for __,tribe in pairs(tribeOrTable) do
-            displayNextOpportunity(tribe,messageBody,messageTitle,archiveTitle,broadcast)
+            displayNextOpportunity(tribe,messageBody,messageTitle,archiveTitle,broadcast,stateReadyImage)
         end
     end
 end
@@ -363,10 +552,10 @@ local function displayAccumulatedMessages()
     for i=1,#pendingMessagesTable do
         local message = pendingMessagesTable[i]
         if civ.getCurrentTribe() == civ.getPlayerTribe() or message.broadcast then
-            simple(message.messageBody,message.messageTitle)
+            simple(message.messageBody,message.messageTitle,message.messageImage)
         end
         if message.archiveTitle then
-            addToArchive(tribeID,message.messageBody,message.messageTitle,message.archiveTitle)
+            addToArchive(tribeID,message.messageBody,message.messageTitle,message.archiveTitle,message.messageImage)
         end
     end
     -- remove all pending messages for the active tribe, since they have been displayed
@@ -390,7 +579,28 @@ text.displayAccumulatedMessages = displayAccumulatedMessages
 -- canCancel if true, offers a 'cancel' option on each page, returns 0 if selected
 --           if false, there is no cancel option
 -- menuPage is the "page" of the menu that is to be opened
-local function menu(menuTable,menuText,menuTitle,canCancel, menuPage)
+-- imageInfo a way to get an image, either key for the imageTable, an imageObject,
+--          or a table of arguments for civ.ui.loadImage
+--  Arguments 4,5,6 (canCancel,imageInfo,menuPage) can be in any order; the code will
+--  figure out which is which
+--local function menu(menuTable,menuText,menuTitle,canCancel, menuPage,imageInfo)
+local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6)
+    local canCancel = false
+    local menuPage = 1
+    local image = nil
+    local function setArgument(arg)
+        if type(arg) == "boolean" then
+            canCancel = arg
+        elseif type(arg) =="number" then
+            menuPage = arg
+        elseif type(arg) ~= "nil" then
+            image = toImage(arg)
+        end
+    end
+    setArgument(arg4)
+    setArgument(arg5)
+    setArgument(arg6)
+
     local menuTextLines = linesInText(menuText)
     menuTitle = menuTitle or ""
     menuPage = menuPage or 1
@@ -421,11 +631,19 @@ local function menu(menuTable,menuText,menuTitle,canCancel, menuPage)
         if canCancel then
             menuDialog:addOption("Cancel",0)
         end
+        if image then
+            menuDialog:addImage(image)
+        end
         return menuDialog:show(),1
     end
     -- menu has too many options, so must be split into multiple pages
     local numberOfPages = math.ceil(menuTableEntries/optionsPerPage)
     local menuDialog = civ.ui.createDialog()
+    if menuPage > numberOfPages then
+        menuPage = numberOfPages
+    elseif menuPage < 1 then
+        menuPage = 1
+    end
     menuDialog.title = menuTitle.." Page "..tostring(menuPage).." of "..tostring(numberOfPages)
     addMultiLineTextToDialog(menuText,menuDialog)
     if menuPage < numberOfPages then
@@ -451,11 +669,14 @@ local function menu(menuTable,menuText,menuTitle,canCancel, menuPage)
     if canCancel then
         menuDialog:addOption("Cancel",0)
     end
+    if image then
+        menuDialog:addImage(image)
+    end
     local choice = menuDialog:show()
     if choice == -2 then
-        return menu(menuTable,menuText,menuTitle,canCancel,menuPage+1)
+        return menu(menuTable,menuText,menuTitle,canCancel,menuPage+1,image)
     elseif choice == -1 then
-        return menu(menuTable,menuText,menuTitle,canCancel,menuPage-1)
+        return menu(menuTable,menuText,menuTitle,canCancel,menuPage-1,image)
     elseif choice == 0 then
         return 0,menuPage
     else
@@ -483,7 +704,7 @@ local function displayArchivedMessage(archivedMessage,archivePage,displayArchive
     archivePage = archivePage or 1
     showHidden = showHidden or false
     tribe = tribe or civ.getCurrentTribe()
-    simple(archivedMessage.messageBody,archivedMessage.messageTitle)
+    simple(archivedMessage.messageBody,archivedMessage.messageTitle,archivedMessage.messageImage)
     local chosenOption = nil
     repeat
         local menuOptionList = {}

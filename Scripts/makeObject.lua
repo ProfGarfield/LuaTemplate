@@ -42,8 +42,11 @@ io.output(file)
 
 local fileOutput = 
 [[local flag = require("flag")
+local counter = require("counter")
+local text = require("text")
 
 local object = {}
+
 
 -- Civilization Advances
 -- recommended key prefix 'a'
@@ -305,6 +308,14 @@ fileOutput =
 -- of splitting the text into multiple parts
 -- recommended prefix 'x'
 
+
+-- Images
+-- For optimal integration with the image functionality of the
+-- text module, it is recommended that you load all your
+-- images here.
+-- recommended prefix `m`
+--
+text.setImageTable(object,"object")-- The string "object" provides a name of the table for error messages.
 
 
 -- Flag and Counter Definitions
