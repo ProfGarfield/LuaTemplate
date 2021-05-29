@@ -1062,16 +1062,26 @@ local function simpleTabulation(tabulationData,title,borderWidth,page)
 end
 text.simpleTabulation=simpleTabulation
 
--- text.simpleTabTableToText(tabulationData,title="",borderWidth=4) --> string
+
+-- text.simpleTabTableToText(tabulationData,borderWidth=4) --> string
 --      Produces formatted text based on the entries in in tabulationData
 --          tabulationData[m][n] is the value of the nth column in row m
 --          tabulationData[0][n] is the header for the nth column (optional)
 --          first row could also be used as the header
 --          columns are left aligned
+--          Two copies of borderWidth, since this was the old argument list 
+-- text.simpleTabTableToText(tabulationData,title="",borderWidth=4) --> string
+-- and title isn't actually necessary.  But, need backward compatibility
 
-local function simpleTabTableToText(tabulationData,title,borderWidth)
-    title = title or ""
-    borderWidth = borderWidth or 4
+local function simpleTabTableToText(tabulationData,borderWidth1,borderWidth2)
+    
+    borderWidth = 4
+    if type(borderWidth1) == "number" then
+        borderWidth = borderWidth1
+    end
+    if type(borderWidth2) == "number" then
+        borderWidth = borderWidth2
+    end
     local columnTable = {}
     local columnTotal= #tabulationData[1]
     for i=1,columnTotal do
