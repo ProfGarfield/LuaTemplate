@@ -631,6 +631,49 @@ local function distance(tileUnitCityA,tileUnitCityB,zDist)
 end
 gen.distance = distance
 
+
+-- gen.gameMechanicDistance(itemOnMap1,itemOnMap2)
+--  provides a distance measure that is believed to be used
+--  for internal distance calculations (such as caravan payments
+--  or city corruption)
+--  This distance is scaled to match the "Communism Palace Distance",
+--  (based on the corruption work by Knighttime)
+--  Diagonal movement is "1" distance, corner to corner is 1.5 (rounded down)
+function gen.gameMechanicDistance(tileUnitCityA,tileUnitCityB)
+    local locA = nil
+    local locB = nil
+    if type(tileUnitCityA)=="table" then
+        locA=toTile(tileUnitCityA)
+    elseif civ.isUnit(tileUnitCityA) or civ.isCity(tileUnitCityA) then
+        locA=tileUnitCityA.location
+    elseif civ.isTile(tileUnitCityA) then
+        locA = tileUnitCityA
+    else
+        error("gen.gameMechanicDistance: first argument must be a tile (or coordinates of a tile), or a unit or a city.")
+    end
+    if type(tileUnitCityB)=="table" then
+        locB=toTile(tileUnitCityB)
+    elseif civ.isUnit(tileUnitCityB) or civ.isCity(tileUnitCityB) then
+        locB=tileUnitCityB.location
+    elseif civ.isTile(tileUnitCityB) then
+        locB = tileUnitCityB
+    else
+        error("gen.gameMechanicDistance: second argument must be a tile (or coordinates of a tile), or a unit or a city.")
+    end
+    local xMax,yMax,zMax=civ.getAtlasDimensions()
+    local xDiff = nil
+    if civ.game.rules.flatWorld then
+        xDiff = math.abs(locA.x-locB.x)
+    else
+        xDiff = math.min(math.abs(locA.x-locB.x),xMax-math.abs(locA.x-locB.x))
+    end
+    local yDiff = math.abs(locA.y-locB.y)
+    local dist = math.floor(math.min(xDiff,yDiff)+(math.abs(xDiff-yDiff)*0.5*1.5))
+    return dist
+end
+
+
+
 -- gen.hasIrrigation(tile)-->boolean
 -- returns true if tile has irrigation but no farm
 -- returns false otherwise
