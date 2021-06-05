@@ -204,13 +204,15 @@ civ.scen.onKeyPress(function(keyID)
         elseif choice == 3 then
             for z=0,3 do
                 for __,tileCoord in pairs(activePolygonVertexTable) do
-                    local tile = civ.getTile(tileCoord[1],tileCoord[2],z) 
-                    if tile then
-                        for unitOnTile in tile.units do
-                            if unitOnTile.type == polygonCornerMarkerUnitTable[activePolygon] and
-                                unitOnTile.owner == civ.getTribe(0) then
-                                civ.deleteUnit(unitOnTile)
-                                civ.ui.redrawTile(tile)
+                    if type(tileCoord) == "table" then
+                        local tile = civ.getTile(tileCoord[1],tileCoord[2],z) 
+                        if tile then
+                            for unitOnTile in tile.units do
+                                if unitOnTile.type == polygonCornerMarkerUnitTable[activePolygon] and
+                                    unitOnTile.owner == civ.getTribe(0) then
+                                    civ.deleteUnit(unitOnTile)
+                                    civ.ui.redrawTile(tile)
+                                end
                             end
                         end
                     end
@@ -219,9 +221,11 @@ civ.scen.onKeyPress(function(keyID)
         elseif choice == 4 then
             for z=0,3 do
                 for __,tileCoord in pairs(activePolygonVertexTable) do
-                    local tile = civ.getTile(tileCoord[1],tileCoord[2],z) 
-                    if tile then
-                        civ.createUnit(polygonCornerMarkerUnitTable[activePolygon],civ.getTribe(0),tile)
+                    if type(tileCoord) == "table" then
+                        local tile = civ.getTile(tileCoord[1],tileCoord[2],z) 
+                        if tile then
+                            civ.createUnit(polygonCornerMarkerUnitTable[activePolygon],civ.getTribe(0),tile)
+                        end
                     end
                 end
             end
