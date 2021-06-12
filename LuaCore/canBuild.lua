@@ -11,11 +11,21 @@ local gen = require("generalLibrary")
 --      .forbiddenTribes = {[tribeID]=bool}
 --          if canBuildObjectType[item.id].forbiddenTribes[tribeID] is true, then the tribe with
 --          tribeID can't build item, false or nil/absent means it can
+--              
+--              Alternate Usage
+--          .forbiddenTribes = tribeObject or table of tribeObjects
+--          if tribeObject is in the table, that tribe can't build the item
+--
 --
 --      .forbiddenMaps = {[0] = bool,[1]=bool,[2]=bool,[3]=bool}
 --          if canBuildObjectType[item.id].forbiddenMaps[mapCityIsOn] = true, then city can't build the item
 --              false or nil means it can
 --          absent means all maps are allowed
+--
+--              Alternate Usage
+--              .forbiddenMaps = mapObject or table of mapObjects
+--              if mapObject is in the table, the object can't be built by cities on that map
+--
 --      .location = {xCoord,yCoord} or {xCoord,yCoord,zCoord} or tileObject or cityObject or integer or function(tileObject)-->boolean or table of these kinds of objects
 --          {xCoord,yCoord} if the city is located at (xCoord,yCoord) on any map, it can build the object
 --          {xCoord,yCoord,zCoord} means the city must be located at those coordinates to build the object
@@ -240,7 +250,7 @@ local function postProcessParameterTable(parameterTable)
         -- tables themselves
         local wrapKeyTable ={"allImprovements","someImprovements","forbiddenImprovements",
             "allTechs","someTechs","forbiddenTechs","allWonders","someWonders","forbiddenAlternateProduction",
-            "requireSomeAsAlternateProduction",}
+            "requireSomeAsAlternateProduction","forbiddenTribes","forbiddenMaps"}
         for __,value in pairs(wrapKeyTable) do
             --if parameters[value] then
                 --print(parameters[value])
@@ -253,6 +263,36 @@ local function postProcessParameterTable(parameterTable)
             for key,value in pairs(parameters.alternateParameters) do
                 postProcessParameters(value)
             end
+        end
+        if parameters.forbiddenTribes then
+            local replacementTable = {}
+            for key,value in pairs(parameters.forbiddenTribes) do
+                if type(value) == "boolean" then
+                    replacementTable[key] = value
+                elseif civ.isTribe(value) then
+                    replacementTable[value.id]=true
+                else
+                    error("canBuild processing: values in the forbiddenTribes table should either"..
+                    " be booleans or tribeObjects.  However,\n\n"..
+                    tostring(value).."\n\n has been provided.")
+                end
+            end
+            parameters.forbiddenTribes = replacementTable
+        end
+        if parameters.forbiddenMaps then
+            local replacementTable = {}
+            for key,value in pairs(parameters.forbiddenMaps) do
+                if type(value) == "boolean" then
+                    replacementTable[key] = value
+                elseif civ.isMap(value) then
+                    replacementTable[value.id]=true
+                else
+                    error("canBuild processing: values in the forbiddenMaps table should either"..
+                    " be booleans or mapObjects.  However,\n\n"..
+                    tostring(value).."\n\n has been provided.")
+                end
+            end
+            parameters.forbiddenMaps = replacementTable
         end
     end
     for key,value in pairs(parameterTable) do

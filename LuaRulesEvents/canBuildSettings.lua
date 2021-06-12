@@ -9,11 +9,20 @@ local canBuildFunctions = require("canBuild")
 --      .forbiddenTribes = {[tribeID]=bool}
 --          if canBuildObjectType[item.id].forbiddenTribes[tribeID] is true, then the tribe with
 --          tribeID can't build item, false or nil/absent means it can
+--              
+--              Alternate Usage
+--          .forbiddenTribes = tribeObject or table of tribeObjects
+--          if tribeObject is in the table, that tribe can't build the item
 --
 --      .forbiddenMaps = {[0] = bool,[1]=bool,[2]=bool,[3]=bool}
 --          if canBuildObjectType[item.id].forbiddenMaps[mapCityIsOn] = true, then city can't build the item
 --              false or nil means it can
 --          absent means all maps are allowed
+--
+--              Alternate Usage
+--              .forbiddenMaps = mapObject or table of mapObjects
+--              if mapObject is in the table, the object can't be built by cities on that map
+--
 --      .location = {xCoord,yCoord} or {xCoord,yCoord,zCoord} or tileObject or cityObject or integer or function(tileObject)-->boolean or table of these kinds of objects
 --          {xCoord,yCoord} if the city is located at (xCoord,yCoord) on any map, it can build the object
 --          {xCoord,yCoord,zCoord} means the city must be located at those coordinates to build the object
