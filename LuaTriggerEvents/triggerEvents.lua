@@ -22,7 +22,6 @@ local gen = require("generalLibrary")
 local civlua = require("civluaModified")
 local flag = require("flag")
 local diplomacy = require("diplomacy")
-local delayedAction = require("delayedAction")
 local log = require("log")
 local triggerEvents = {}
 

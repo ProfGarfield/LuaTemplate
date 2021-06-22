@@ -40,6 +40,7 @@ local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."object.lua"
 local file = io.open(fileLocation,"a")
 io.output(file)
 
+
 local fileOutput = 
 [[local flag = require("flag")
 local counter = require("counter")
