@@ -7,6 +7,7 @@ local logSettings = require("logSettings")
 local simpleSettings = require("simpleSettings")
 local diplomacySettings = require("diplomacySettings")
 local text = require("text")
+local consolidated = require("consolidatedEvents")
 
 
 
@@ -95,6 +96,7 @@ local function doKeyPress(keyID)
     if keyPressFunctions[keyID] then
         keyPressFunctions[keyID]()
     end
+    consolidated.onKeyPress(keyID)
     generalKeyPress(keyID)
 end
 

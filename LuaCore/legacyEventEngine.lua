@@ -13,7 +13,7 @@ local func = require("functions")
 
 -- this is the last date that I've modified this file (or, at least remembered to change this line
 -- yyyy-mm-dd
-local currentModifyDate = "2020-12-07"
+local currentModifyDate = "2021-08-22"
 
 
 local eventTable = {} --require(legacyEventTableName)
@@ -195,6 +195,22 @@ local function stringToUnitType(inputString)
     return nil
 end
 
+local function verifyNegotiationANDIFTable(ANDIFTable,eventNumber)
+    if (ANDIFTable["talkermask"] and ANDIFTable["listenermask"] )
+        or (ANDIFTable["talker"] and ANDIFTable["listener"]
+            and ANDIFTable["talkertype"] and ANDIFTable["listenertype"]) then
+            return true
+    else
+        print("Your Negotiation event (with number "..tostring(eventNumber)..") is missing information.")
+        print("These are the supplied items:")
+        for key,value in pairs(ANDIFTable) do
+            print(tostring(key).."="..tostring(value))
+        end
+        print("You are expected to either have both talkermask= and listenermask=, or to have all four of talker=, talkertype=,listener=,listenertype=.")
+        error("legacyEventEngine: A Negotiation trigger is missing information, see the above information.")
+    end
+end
+
 local function canTalkByTriggers(talkerLeaderID,listenerLeaderID)
     for i=1,#eventTable do
         -- g_EventNumber is for error reporting
@@ -203,6 +219,7 @@ local function canTalkByTriggers(talkerLeaderID,listenerLeaderID)
         g_EventNumber = i
         local ANDIFTable=eventTable[i]["IF"]
         if ANDIFTable["negotiation"] then
+            verifyNegotiationANDIFTable(ANDIFTable,g_EventNumber)
             if ANDIFTable["talkermask"] and 
                 ANDIFTable["talkermask"]:sub(-(talkerLeaderID+1),-(talkerLeaderID+1))=="1"
                 and ANDIFTable["listenermask"] and
@@ -213,6 +230,7 @@ local function canTalkByTriggers(talkerLeaderID,listenerLeaderID)
             -- if no talker/listener mask, then use the "tribe colour" of the leader to 
             -- get a tribe for comparisons
             local talkerCorrect = false
+            local talkerTypeCorrect = false
             local talkerTribe = civ.getTribe(1+(talkerLeaderID%7))
             if ANDIFTable["talker"] and (ANDIFTable["talker"]==string.lower(talkerTribe.name)
                 or ANDIFTable["talker"]==string.lower("anybody"))
@@ -220,14 +238,15 @@ local function canTalkByTriggers(talkerLeaderID,listenerLeaderID)
             end
             if ANDIFTable["talkertype"] then
                 if ANDIFTable["talkertype"] == "humanorcomputer" then
-                    talkerCorrect = true
+                    talkerTypeCorrect = true
                 elseif ANDIFTable["talkertype"] == "human" and talkerTribe.isHuman then
-                    talkerCorrect = true
+                    talkerTypeCorrect = true
                 elseif ANDIFTable["talkertype"] == "computer" and not talkerTribe.isHuman then
-                    talkerCorrect = true
+                    talkerTypeCorrect = true
                 end
             end
             local listenerCorrect = false
+            local listenerTypeCorrect = false
             local listenerTribe =civ.getTribe(1+(listenerLeaderID%7)) 
             if ANDIFTable["listener"] and (ANDIFTable["listener"]==string.lower(listenerTribe.name)
                 or ANDIFTable["listener"]==string.lower("anybody"))
@@ -235,19 +254,20 @@ local function canTalkByTriggers(talkerLeaderID,listenerLeaderID)
             end
             if ANDIFTable["listenertype"] then
                 if ANDIFTable["listenertype"] == "humanorcomputer" then
-                    listenerCorrect = true
+                    listenerTypeCorrect = true
                 elseif ANDIFTable["listenertype"] == "human" and listenerTribe.isHuman then
-                    listenerCorrect = true
+                    listenerTypeCorrect = true
                 elseif ANDIFTable["listenertype"] == "computer" and not listenerTribe.isHuman then
-                    listenerCorrect = true
+                    listenerTypeCorrect = true
                 end
             end
-            if talkerCorrect and listenerCorrect then 
+            if talkerCorrect and talkerTypeCorrect and listenerCorrect and listenerTypeCorrect then 
                 return false
             end
         end
         local ANDIFTable=eventTable[i]["AND"]
         if ANDIFTable and ANDIFTable["negotiation"] then
+            verifyNegotiationANDIFTable(ANDIFTable,g_EventNumber)
             if ANDIFTable["talkermask"] and 
                 ANDIFTable["talkermask"]:sub(-(talkerLeaderID+1),-(talkerLeaderID+1))=="1"
                 and ANDIFTable["listenermask"] and
@@ -258,34 +278,36 @@ local function canTalkByTriggers(talkerLeaderID,listenerLeaderID)
             -- if no talker/listener mask, then use the "tribe colour" of the leader to 
             -- get a tribe for comparisons
             local talkerCorrect = false
+            local talkerTypeCorrect = false
             local talkerTribe = civ.getTribe(1+(talkerLeaderID%7))
             if ANDIFTable["talker"] and ANDIFTable["talker"]==string.lower(talkerTribe.name)
                 then talkerCorrect=true
             end
             if ANDIFTable["talkertype"] then
                 if ANDIFTable["talkertype"] == "humanorcomputer" then
-                    talkerCorrect = true
+                    talkerTypeCorrect = true
                 elseif ANDIFTable["talkertype"] == "human" and talkerTribe.isHuman then
-                    talkerCorrect = true
+                    talkerTypeCorrect = true
                 elseif ANDIFTable["talkertype"] == "computer" and not talkerTribe.isHuman then
-                    talkerCorrect = true
+                    talkerTypeCorrect = true
                 end
             end
             local listenerCorrect = false
+            local listenerTypeCorrect = false
             local listenerTribe =civ.getTribe(1+(listenerLeaderID%7)) 
             if ANDIFTable["listener"] and ANDIFTable["listener"]==string.lower(listenerTribe.name)
                 then listenerCorrect = true
             end
             if ANDIFTable["listenertype"] then
                 if ANDIFTable["listenertype"] == "humanorcomputer" then
-                    listenerCorrect = true
+                    listenerTypeCorrect = true
                 elseif ANDIFTable["listenertype"] == "human" and listenerTribe.isHuman then
-                    listenerCorrect = true
+                    listenerTypeCorrect = true
                 elseif ANDIFTable["listenertype"] == "computer" and not listenerTribe.isHuman then
-                    listenerCorrect = true
+                    listenerTypeCorrect = true
                 end
             end
-            if talkerCorrect and listenerCorrect then 
+            if talkerCorrect and talkerTypeCorrect and listenerCorrect and listenerTypeCorrect then 
                 return false
             end
         end

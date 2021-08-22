@@ -2,6 +2,7 @@ local gen = require("generalLibrary")
 local object = require("object")
 local flag = require("flag")
 local counter = require("counter")
+local consolidated = require("consolidatedEvents")
 
 local beforeProduction = {}
 
@@ -14,6 +15,7 @@ local beforeProduction = {}
 -- production values if you investigate the city with a diplomat
 -- (or look at the city in cheat mode)
 function beforeProduction.beforeProduction(turn,tribe)
+    consolidated.beforeProduction(turn,tribe)
 
 end
 

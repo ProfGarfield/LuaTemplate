@@ -6,6 +6,7 @@
 -- is relevant, instead of maintaining different tables for
 -- each time you want to check if something is a tank.
 
+local gen = require("generalLibrary")
 local traits = {version=1}
 
 --      traitTables
@@ -343,6 +344,150 @@ function traits.listPosessedTraits(object,...)
     end
     return outputTable,outputCount
 end
+
+-- returns a table
+
+
+-- returns a table of the combined traits of all
+-- technologies owned by the tribe
+-- (after resolving conditional traits) in
+-- the form table[traitString]= true
+-- for the traits that exist
+function traits.ownedTechTraitsTable(tribe)
+    if not civ.isTribe(tribe) then
+        error("traits.ownedTechTraitsTable: argument must be a tribeObject")
+    end
+    local outputTable = {}
+    for techID,traitTable in pairs(techTraits) do
+        if tribe:hasTech(civ.getTech(techID)) then
+            for trait,boolOrFn in pairs(traitTable) do
+                if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
+                    outputTable[trait] = true
+                end
+            end
+        end
+    end
+    return outputTable
+end
+
+-- returns a table of the combined traits of all
+-- wonders owned by the tribe
+-- (after resolving conditional traits) in the
+-- form table[traitString]=true
+-- for the traits that are possessed.
+
+function traits.ownedWonderTraitsTable(tribe)
+    if not civ.isTribe(tribe) then
+        error("traits.ownedWonderTraitsTable: argument must be a tribeObject")
+    end
+    local outputTable = {}
+    for wonderID, traitTable in pairs(wonderTraits) do
+        local wdr = civ.getWonder(wonderID)
+        if wdr.city and wdr.city.owner == tribe then
+            for trait,boolOrFn in pairs(traitTable) do
+                if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
+                    outputTable[trait] = true
+                end
+            end
+        end
+    end
+    return outputTable
+end
+
+-- returns a table of the combined traits of all
+-- improvements constructed within the city
+-- (after resolving conditional traits) in
+-- the form of table[traitString]=true
+-- for the traits that are found
+-- if ignoreWonderEquivalent is true, city improvements from owned
+-- wonders are excluded
+
+local improvementEquivalentWonders = {
+    [gen.original.wPyramids]= gen.original.iGranary               ,
+    [gen.original.wGreatWall]= gen.original.iCityWalls              ,
+    [gen.original.wMichelangelosChapel]=gen.original.iCathedral     ,
+    [gen.original.wWomensSuffrage]= gen.original.iPoliceStation         ,
+    [gen.original.wHooverDam]= gen.original.iHydroPlant              ,
+    [gen.original.wSETIProgram]= gen.original.iResearchLab            ,
+}
+    
+
+function traits.cityImprovementTraitsTable(city,ignoreWonderEquivalent)
+    if not civ.isCity(city) then
+        error("traits.cityImprovementTraitsTable: argument must be a cityObject")
+    end
+    local outputTable = {}
+    for improvementId, traitTable in pairs(improvementTraits) do
+        if city:hasImprovement(civ.getImprovement(improvementId)) then
+            for trait,boolOrFn in pairs(traitTable) do
+                if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
+                    outputTable[trait] = true
+                end
+            end
+        end
+    end
+    if not ignoreWonderEquivalent then
+        for wonder,improvement in pairs(improvementEquivalentWonders) do
+            if gen.applyWonderBonus(wonder,city.owner) then
+                for trait, boolOrFn in pairs(improvementTraits[improvement.id]) do
+                    if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
+                        outputTable[trait] = true
+                    end
+                end
+            end
+        end
+    end
+    return outputTable
+end
+
+-- returns a table of the combined traits of all
+-- wonders within the city
+-- (after resolving conditional traits) in
+-- the form of table[traitString]=true
+-- for the traits that are found
+function traits.cityWonderTraitsTable(city)
+    if not civ.isCity(city) then
+        error("traits.cityImprovementTraitsTable: argument must be a cityObject")
+    end
+    local outputTable = {}
+    for wonderId, traitTable in pairs(wonderTraits) do
+        local wdr = civ.getWonder(wonderID)
+        if wdr.city == city  then
+            for trait,boolOrFn in pairs(traitTable) do
+                if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
+                    outputTable[trait] = true
+                end
+            end
+        end
+    end
+    return outputTable
+end
+
+
+
+
+
+-- Considers the list of traits
+--  if the tribe has any trait, or
+--  any technology the tribe owns has a trait,
+--  or any wonder the tribe owns has a trait,
+--  return true
+--  return false if none are associated
+
+--function traits.anyAssociatedWithTribe(tribeObject,...)
+--    if not civ.isTribe(tribeObject) then
+--        error("traits.anyAssociatedWithTribe: first argument must be a tribe object.")
+--    end
+--    local arglist = {...}
+--    local newArgs = {}
+--    local index = 1
+--    for submittedTrait in iterateTraitStrings(arglist,"traits.anyAssociatedWithTribe") do
+--        newArgs[index] = submittedTrait
+--        index = index+1
+--    end
+--    
+--
+--end
 
 
 return traits

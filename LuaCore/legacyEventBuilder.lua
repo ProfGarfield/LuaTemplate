@@ -443,6 +443,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
         file = io.open(currentFolder.."\\"..eventOutputFileName,"a")
         io.output(file)
         io.write(outputString)
+        io.close(file)
     end
     return eventTable
 end
