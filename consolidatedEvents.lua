@@ -84,7 +84,8 @@ end
 -- On Can Build not included here
 
 -- On Centauri Arrival
--- Not successfully tested
+-- This is available with games started as an extended original game,
+-- but not with games started as a standard game (I think, this hasn't been looked at too closely)
 function events.onCentauriArrival(tribe)
     --civ.ui.text(tribe.name.." has reached Alpha Centauri.")
 
