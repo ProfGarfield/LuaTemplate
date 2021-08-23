@@ -315,9 +315,46 @@
 -- gen.getPersistentRandomTable() --> table
 -- gen.mergeTableValues(table,table,...) --> table
 --
+--      Stuff below hasn't been documented on website
 --
 --  gen.original is a table of objects with keys based on 
 --  the name of the item in the original game
+--
+--
+-- gen.isTileRevealed(tile,tribe) -> boolean
+-- gen.revealTile(tile,tribe) -> void
+-- gen.coverTile(tile,tribe) -> void
+-- gen.isCityCharted(city,tribe) --> bool
+-- gen.chartCity(city,tribe,visibleSize=nil) --> void
+-- gen.unchartCity(city,tribe) --> void
+-- gen.isIrrigationCharted(tile,tribe) --> bool
+-- gen.chartIrrigation(tile,tribe) --> void
+-- gen.unchartIrrigation(tile,tribe) --> void
+-- gen.isMineCharted(tile,tribe) --> bool
+-- gen.chartMine(tile,tribe) --> void
+-- gen.unchartMine(tile,tribe) --> void
+-- gen.isFarmlandCharted(tile,tribe) --> bool
+-- gen.chartFarmland(tile,tribe) --> void
+-- gen.unchartFarmland(tile,tribe) --> void
+-- gen.isRoadCharted(tile,tribe) --> bool
+-- gen.chartRoad(tile,tribe) --> void
+-- gen.unchartRoad(tile,tribe) --> void
+-- gen.isRailroadCharted(tile,tribe) --> bool
+-- gen.chartRailroad(tile,tribe) --> void
+-- gen.unchartRailroad(tile,tribe) --> void
+-- gen.unchartTransportation(tile,tribe) --> void
+-- gen.isFortressCharted(tile,tribe) --> bool
+-- gen.chartFortress(tile,tribe) --> void
+-- gen.unchartFortress(tile,tribe) --> void
+-- gen.isAirbaseCharted(tile,tribe) --> bool
+-- gen.chartAirbase(tile,tribe) --> void
+-- gen.unchartAirbase(tile,tribe) --> void
+-- gen.isPollutionCharted(tile,tribe) --> bool
+-- gen.chartPollution(tile,tribe) --> void
+-- gen.unchartPollution(tile,tribe) --> void
+-- gen.isTransporterCharted(tile,tribe) --> bool
+-- gen.chartTransporter(tile,tribe) --> void
+-- gen.unchartTransporter(tile,tribe) --> void
 --
 -- FUNCTION IMPLEMENTATIONS
 --
@@ -3974,6 +4011,9 @@ function gen.mergeTableValues(...)
     return output
 end
 
+
+-- Not yet documented below here
+
 gen.original = {}
 
 
@@ -4195,5 +4235,179 @@ gen.original.wUnitedNations           = civ.getWonder(24)
 gen.original.wApolloProgram           = civ.getWonder(25)
 gen.original.wSETIProgram             = civ.getWonder(26)
 gen.original.wCureforCancer           = civ.getWonder(27)
+
+-- gen.isTileRevealed(tile,tribe) -> boolean
+-- returns true if tile is revealed, false otherwise
+function gen.isTileRevealed(tile,tribe)
+    tile = toTile(tile)
+    return isBit1(tile.visibility,tribe.id+1)
+end
+
+-- gen.revealTile(tile,tribe) -> void
+-- makes tile visible to tribe
+function gen.revealTile(tile,tribe)
+    tile = toTile(tile)
+    tile.visibility = gen.setBit1(tile.visibility,tribe.id+1)
+end
+
+-- gen.coverTile(tile,tribe) -> void
+-- covers a tile so it isn't visible to tribe (if it ever was)
+function gen.coverTile(tile,tribe)
+    tile = toTile(tile)
+    tile.visibility = gen.setBit0(tile.visibility,tribe.id+1)
+end
+
+-- gen.isCityCharted(city,tribe) --> bool
+-- returns true if city is "knownTo" tribe (that is,
+-- will appear on the map if the tile is visible), false otherwise
+function gen.isCityCharted(city,tribe)
+    return isBit1(city.knownTo,tribe.id+1) and city.sizeForTribe[tribe] ~= 0
+end
+
+-- gen.chartCity(city,tribe,visibleSize=nil) --> void
+-- makes city visible to tribe on the map, setting it to visibleSize if provided.
+-- If city.sizeForTribe[tribe] == 0 (the default value) after this, it is set to 1
+-- since a city does not appear if city.sizeForTribe[tribe] == 0
+-- does not change the visibility of the tile
+function gen.chartCity(city,tribe,visibleSize)
+    if visibleSize then
+        city.sizeForTribe[tribe] = visibleSize
+    end
+    city.sizeForTribe[tribe] = math.max(1,city.sizeForTribe[tribe])
+    city.knownTo = setBit1(city.knownTo,tribe.id+1)
+end
+
+-- gen.unchartCity(city,tribe) --> void
+-- makes a city invisible to tribe (but doesn't cover the tile in black)
+-- by changing the knownTo field
+function gen.unchartCity(city,tribe) 
+    city.knownTo = setBit0(city.knownTo,tribe.id+1)
+end
+
+
+local function buildChartingFunctions(name,bitString)
+    gen["is"..name.."Charted"] = function(tile,tribe)
+        tile = toTile(tile)
+        return checkBits(tile.visibleImprovements[tribe],bitString)
+    end
+    gen["chart"..name] = function(tile,tribe)
+        tile = toTile(tile)
+        tile.visibleImprovements[tribe] = setBits(tile.visibleImprovements[tribe],bitString)
+    end
+    local unBitString = string.gsub(bitString,"1","0")
+    gen["unchart"..name] = function(tile,tribe)
+        tile = toTile(tile)
+        if checkBits(tile.visibleImprovements[tribe],bitString) then
+            tile.visibleImprovements[tribe] = setBits(tile.visibleImprovements[tribe],unBitString)
+        end
+    end
+end
+
+
+-- gen.isIrrigationCharted(tile,tribe) --> bool
+-- returns true if tribe sees Irrigation on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartIrrigation(tile,tribe) --> void
+-- charts Irrigation on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartIrrigation(tile,tribe) --> void
+-- uncharts Irrigation on the tribe's map of tile, if Irrigation has been charted.
+-- If Irrigation is not charted, the chart remains unchanged
+buildChartingFunctions("Irrigation","hgfe01ba")
+
+-- gen.isMineCharted(tile,tribe) --> bool
+-- returns true if tribe sees Mine on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartMine(tile,tribe) --> void
+-- charts Mine on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartMine(tile,tribe) --> void
+-- uncharts Mine on the tribe's map of tile, if Mine has been charted.
+-- If Mine is not charted, the chart remains unchanged
+buildChartingFunctions("Mine","hgfe10ba")
+
+-- gen.isFarmlandCharted(tile,tribe) --> bool
+-- returns true if tribe sees Farmland on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartFarmland(tile,tribe) --> void
+-- charts Farmland on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartFarmland(tile,tribe) --> void
+-- uncharts Farmland on the tribe's map of tile, if Farmland has been charted.
+-- If Farmland is not charted, the chart remains unchanged
+buildChartingFunctions("Farmland","hgfe11ba")
+
+-- gen.isRoadCharted(tile,tribe) --> bool
+-- returns true if tribe sees Road on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartRoad(tile,tribe) --> void
+-- charts Road on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartRoad(tile,tribe) --> void
+-- uncharts Road on the tribe's map of tile, if Road has been charted.
+-- If Road is not charted, the chart remains unchanged
+buildChartingFunctions("Road","hgf1dcba")
+
+-- gen.isRailroadCharted(tile,tribe) --> bool
+-- returns true if tribe sees Railroad on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartRailroad(tile,tribe) --> void
+-- charts Railroad on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartRailroad(tile,tribe) --> void
+-- uncharts Railroad on the tribe's map of tile, if Railroad has been charted.
+-- If Railroad is not charted, the chart remains unchanged
+buildChartingFunctions("Railroad","hg11dcba")
+gen.unchartRailroad = function(tile,tribe)
+    tile = toTile(tile)
+    if checkBits(tile.visibleImprovements[tribe],"hg11dcba") then
+        tile.visibleImprovements[tribe] = setBits(tile.visibleImprovements[tribe],"hg0edcba")
+    end
+end
+-- gen.unchartTransportation(tile,tribe) --> void
+-- uncharts road and railroad on the tribe's map of tile
+function gen.unchartTransportation(tile,tribe)
+    tile = toTile(tile)
+    tile.visibleImprovements[tribe] = setBits(tile.visibleImprovements[tribe],"hg00dcba")
+end
+
+-- gen.isFortressCharted(tile,tribe) --> bool
+-- returns true if tribe sees Fortress on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartFortress(tile,tribe) --> void
+-- charts Fortress on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartFortress(tile,tribe) --> void
+-- uncharts Fortress on the tribe's map of tile, if Fortress has been charted.
+-- If Fortress is not charted, the chart remains unchanged
+buildChartingFunctions("Fortress","h1fedc0a")
+
+-- gen.isAirbaseCharted(tile,tribe) --> bool
+-- returns true if tribe sees Airbase on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartAirbase(tile,tribe) --> void
+-- charts Airbase on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartAirbase(tile,tribe) --> void
+-- uncharts Airbase on the tribe's map of tile, if Airbase has been charted.
+-- If Airbase is not charted, the chart remains unchanged
+buildChartingFunctions("Airbase","h1fedc1a")
+
+-- gen.isPollutionCharted(tile,tribe) --> bool
+-- returns true if tribe sees Pollution on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartPollution(tile,tribe) --> void
+-- charts Pollution on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartPollution(tile,tribe) --> void
+-- uncharts Pollution on the tribe's map of tile, if Pollution has been charted.
+-- If Pollution is not charted, the chart remains unchanged
+buildChartingFunctions("Pollution","1gfedc0a")
+
+-- gen.isTransporterCharted(tile,tribe) --> bool
+-- returns true if tribe sees Transporter on the tile, and false otherwise
+-- does not consider if tile is revealed to the tribe
+-- gen.chartTransporter(tile,tribe) --> void
+-- charts Transporter on the tribe's map of tile, uncharting any conflicting improvements
+-- gen.unchartTransporter(tile,tribe) --> void
+-- uncharts Transporter on the tribe's map of tile, if Transporter has been charted.
+-- If Transporter is not charted, the chart remains unchanged
+buildChartingFunctions("Transporter","1gfedc1a")
+
+if rawget(_G,"console") then
+    _G["console"].gen = gen
+end
 
 return gen
