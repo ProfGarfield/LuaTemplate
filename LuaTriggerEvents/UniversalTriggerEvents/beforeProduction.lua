@@ -3,6 +3,7 @@ local object = require("object")
 local flag = require("flag")
 local counter = require("counter")
 local consolidated = require("consolidatedEvents")
+local discreteEvents = require("discreteEventsRegistrar")
 
 local beforeProduction = {}
 
@@ -16,6 +17,7 @@ local beforeProduction = {}
 -- (or look at the city in cheat mode)
 function beforeProduction.beforeProduction(turn,tribe)
     consolidated.beforeProduction(turn,tribe)
+    discreteEvents.performBeforeProduction(turn,tribe)
 
 end
 

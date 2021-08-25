@@ -62,7 +62,7 @@ end
 -- ===============================================================================
 --      You can delete any unneeded function here.  It won't cause an error.
 --      If you want to add a function back in, you can copy the relevant code
---      from consolidator.lua
+--      from consolidator.lua in the LuaCore directory
 
 
 

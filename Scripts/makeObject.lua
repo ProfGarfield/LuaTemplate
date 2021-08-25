@@ -1,15 +1,6 @@
 local equalsColumn = 32 -- the = will be in this column, unless the table and key push it further out
 
-local terrainTypesPerMap={[0]=11,[1]=11,[2]=11,[3]=11}
 local width,height,n_maps = civ.getAtlasDimensions()
-for i=0,n_maps-1 do
-    local question = civ.ui.createDialog()
-    question:addText("How many terrain types does map "..tostring(i).." have?")
-    for j=16,11,-1 do
-        question:addOption(tostring(j),j)
-    end
-    terrainTypesPerMap[i]=question:show()
-end
 
 
 
@@ -252,9 +243,9 @@ currentOutput = ""
 
 
 for map = 0,n_maps-1 do
-    for terrainIndex = 0,terrainTypesPerMap[map]-1  do
-        local bTer = civ.getBaseTerrain(map,terrainIndex)
-        if bTer then
+    for terrainIndex = 0,15  do
+        local exists, bTer = pcall(civ.getBaseTerrain,map,terrainIndex)
+        if exists and bTer then
             row = "object."..scrubKey(bTer.name,"b")
             row = paddRow(row)
             row = row.."=civ.getBaseTerrain("..tostring(map)..","..tostring(terrainIndex)..")  --"..bTer.abbrev
@@ -264,7 +255,6 @@ for map = 0,n_maps-1 do
 end
 fileOutput = fileOutput..currentOutput
 io.write(fileOutput)
-
 
 fileOutput=
 [[
@@ -278,10 +268,10 @@ currentOutput = ""
 
 
 for map = 0,n_maps-1 do
-    for terrainIndex = 0,terrainTypesPerMap[map]-1 do
+    for terrainIndex = 0,15 do
         for resource = 0,2 do
-            if not (terrainIndex == 2 and resource > 0) then
-                local ter = civ.getTerrain(map,terrainIndex,resource)
+            local exists, ter = pcall(civ.getTerrain,map,terrainIndex,resource)
+            if exists and ter then
                 row = "object."..scrubKey(ter.name,"t")
                 row = paddRow(row)
                 row = row.."=civ.getTerrain("..tostring(map)..","..tostring(terrainIndex)..","..tostring(resource)..")"
@@ -291,13 +281,14 @@ for map = 0,n_maps-1 do
                     row = row.." -- Whale Resource"
                 end
                 currentOutput = currentOutput..row.."\n"
-                
             end
         end
     end
 end
 fileOutput = fileOutput..currentOutput
 io.write(fileOutput)
+
+
 
 fileOutput =
 [[

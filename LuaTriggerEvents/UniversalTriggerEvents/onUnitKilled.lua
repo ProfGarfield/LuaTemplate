@@ -1,5 +1,6 @@
 
 local consolidated = require("consolidatedEvents")
+local discreteEvents = require("discreteEventsRegistrar")
 local unitKilledEvents = {}
 
 -- This will only run when a unit is killed in combat (i.e. not when an event
@@ -8,6 +9,7 @@ local unitKilledEvents = {}
 --
 function unitKilledEvents.unitKilledInCombat(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetSatus)
     consolidated.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetSatus)
+    discreteEvents.performOnUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetSatus)
 
 
 end

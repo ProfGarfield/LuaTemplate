@@ -356,6 +356,44 @@
 -- gen.chartTransporter(tile,tribe) --> void
 -- gen.unchartTransporter(tile,tribe) --> void
 --
+-- gen.isInvisibleUntilAttack(unitType) --> bool
+-- gen.giveInvisibleUntilAttack(unitType) --> void
+-- gen.removeInvisibleUntilAttack(unitType) --> void
+-- gen.isNonDisbandable(unitType) --> bool
+-- gen.giveNonDisbandable(unitType) --> void
+-- gen.removeNonDisbandable(unitType) --> void
+-- gen.isZeroRangeAirUnitDamageOverride(unitType) --> bool
+-- gen.giveZeroRangeAirUnitDamageOverride(unitType) --> void
+-- gen.removeZeroRangeAirUnitDamageOverride(unitType) --> void
+-- gen.isCannotBuyOffBarbarian(unitType) --> bool
+-- gen.giveCannotBuyOffBarbarian(unitType) --> void
+-- gen.removeCannotBuyOffBarbarian(unitType) --> void
+-- gen.isCanCrossImpassableTerrain(unitType) --> bool
+-- gen.giveCanCrossImpassableTerrain(unitType) --> void
+-- gen.removeCanCrossImpassableTerrain(unitType) --> void
+-- gen.isBarbarianWillNotExpire(unitType) --> bool
+-- gen.giveBarbarianWillNotExpire(unitType) --> void
+-- gen.removeBarbarianWillNotExpire(unitType) --> void
+-- gen.isOverrideSPR(unitType) --> bool
+-- gen.giveOverrideSPR(unitType) --> void
+-- gen.removeOverrideSPR(unitType) --> void
+-- gen.isReducePopulationWhenBuilt(unitType) --> bool
+-- gen.giveReducePopulationWhenBuilt(unitType) --> void
+-- gen.removeReducePopulationWhenBuilt(unitType) --> void
+-- gen.isRequiresFoodSupport(unitType) --> bool
+-- gen.giveRequiresFoodSupport(unitType) --> void
+-- gen.removeRequiresFoodSupport(unitType) --> void
+-- gen.isCanFoundCities(unitType) --> bool
+-- gen.giveCanFoundCities(unitType) --> void
+-- gen.removeCanFoundCities(unitType) --> void
+-- gen.isCanImproveTiles(unitType)--> bool
+-- gen.giveCanImproveTiles(unitType,ignoreError=false) --> void
+-- gen.removeCanImproveTiles(unitType,ignoreError=false) --> void
+--
+--
+--
+--
+--
 -- FUNCTION IMPLEMENTATIONS
 --
 
@@ -4405,6 +4443,130 @@ buildChartingFunctions("Pollution","1gfedc0a")
 -- uncharts Transporter on the tribe's map of tile, if Transporter has been charted.
 -- If Transporter is not charted, the chart remains unchanged
 buildChartingFunctions("Transporter","1gfedc1a")
+
+function buildAdvancedFlags(name,bitNumber)
+    gen["is"..name] = function(unitType)
+        return isBit1(unitType.advancedFlags,bitNumber)
+    end
+    gen["give"..name] = function(unitType)
+        unitType.advancedFlags = setBit1(unitType.advancedFlags,bitNumber)
+    end
+    gen["remove"..name] = function(unitType)
+        unitType.advancedFlags = setBit0(unitType.advancedFlags,bitNumber)
+    end
+end
+
+-- gen.isInvisibleUntilAttack(unitType) --> bool
+-- gen.giveInvisibleUntilAttack(unitType) --> void
+-- gen.removeInvisibleUntilAttack(unitType) --> void
+buildAdvancedFlags("InvisibleUntilAttack",1)
+
+-- gen.isNonDisbandable(unitType) --> bool
+-- gen.giveNonDisbandable(unitType) --> void
+-- gen.removeNonDisbandable(unitType) --> void
+buildAdvancedFlags("NonDisbandable",2)
+
+-- gen.isZeroRangeAirUnitDamageOverride(unitType) --> bool
+-- gen.giveZeroRangeAirUnitDamageOverride(unitType) --> void
+-- gen.removeZeroRangeAirUnitDamageOverride(unitType) --> void
+buildAdvancedFlags("ZeroRangeAirUnitDamageOverride",3)
+
+-- gen.isCannotBuyOffBarbarian(unitType) --> bool
+-- gen.giveCannotBuyOffBarbarian(unitType) --> void
+-- gen.removeCannotBuyOffBarbarian(unitType) --> void
+buildAdvancedFlags("CannotBuyOffBarbarian",4)
+
+-- gen.isCanCrossImpassableTerrain(unitType) --> bool
+-- gen.giveCanCrossImpassableTerrain(unitType) --> void
+-- gen.removeCanCrossImpassableTerrain(unitType) --> void
+buildAdvancedFlags("CanCrossImpassableTerrain",5)
+
+-- gen.isBarbarianWillNotExpire(unitType) --> bool
+-- gen.giveBarbarianWillNotExpire(unitType) --> void
+-- gen.removeBarbarianWillNotExpire(unitType) --> void
+buildAdvancedFlags("BarbarianWillNotExpire",7)
+
+
+-- gen.isOverrideSPR(unitType) --> bool
+-- gen.giveOverrideSPR(unitType) --> void
+-- gen.removeOverrideSPR(unitType) --> void
+buildAdvancedFlags("OverrideSPR",8)
+
+function buildAdvancedSettlerFlags(name,bitNumber)
+    gen["is"..name] = function(unitType)
+        -- a ~= b is xor when a and b are booleans
+        return unitType.role == 5 ~= isBit1(unitType.advancedFlags,bitNumber)
+    end
+    gen["give"..name] = function(unitType)
+        if unitType.role == 5 then
+            -- if settler, the functionality is default, so set flag to 0
+            unitType.advancedFlags = setBit0(unitType.advancedFlags,bitNumber)
+        else
+            -- if not settler, the functionality is not default, so set flag to 1
+            unitType.advancedFlags = setBit1(unitType.advancedFlags,bitNumber)
+        end
+    end
+    gen["remove"..name] = function(unitType)
+        if unitType.role == 5 then
+            -- if settler, the functionality is default, so set flag to 1 to remove it
+            unitType.advancedFlags = setBit1(unitType.advancedFlags,bitNumber)
+        else
+            -- if not settler, the functionality is not default, so set flag to 0 to remove it
+            unitType.advancedFlags = setBit0(unitType.advancedFlags,bitNumber)
+        end
+    end
+end
+
+--gen.isReducePopulationWhenBuilt(unitType) --> bool
+--gen.giveReducePopulationWhenBuilt(unitType) --> void
+--gen.removeReducePopulationWhenBuilt(unitType) --> void
+buildAdvancedSettlerFlags("ReducePopulationWhenBuilt",10)
+
+--gen.isRequiresFoodSupport(unitType) --> bool
+--gen.giveRequiresFoodSupport(unitType) --> void
+--gen.removeRequiresFoodSupport(unitType) --> void
+buildAdvancedSettlerFlags("RequiresFoodSupport",11)
+
+
+--gen.isCanFoundCities(unitType) --> bool
+--gen.giveCanFoundCities(unitType) --> void
+--gen.removeCanFoundCities(unitType) --> void
+buildAdvancedSettlerFlags("CanFoundCities",12)
+
+
+-- gen.isCanImproveTiles(unitType)--> bool
+gen.isCanImproveTiles = function(unitType)
+    return unitType.role == 5 and isBit0(unitType.advancedFlags,13)
+end
+-- gen.giveCanImproveTiles(unitType,ignoreError=false) --> void
+-- bestows the ability to improve tiles to units with settler role
+-- units without settler role produce an error, unless ignoreError
+-- is set to true
+gen.giveCanImproveTiles = function(unitType,ignoreError)
+    if unitType.role == 5 then
+        -- if settler, the functionality is default, so set flag to 0
+        unitType.advancedFlags = setBit0(unitType.advancedFlags,13)
+    elseif not ignoreError then
+        error("gen.giveCanImproveTiles: only units with the settler role (unitType.role == 5) can be given the ability to improve tiles.  If you wish to suppress this error and have gen.giveCanImproveTiles simply do nothing when applied to non-settler role units, use\ngen.giveCanImproveTiles(unitType,true)")
+    end
+end
+-- gen.removeCanImproveTiles(unitType,ignoreError=false) --> void
+-- removes the ability to improve tiles from units with settler role
+-- units without settler role produce an error, unless ignoreError
+-- is set to true
+gen.removeCanImproveTiles = function(unitType,ignoreError)
+    if unitType.role == 5 then
+        -- if settler, the functionality is default, so set flag to 1 to remove it
+        unitType.advancedFlags = setBit1(unitType.advancedFlags,13)
+    elseif not ignoreError then
+        error("gen.removeCanImproveTiles: only units with the settler role (unitType.role == 5) can be given the ability to improve tiles.  If you wish to suppress this error and have gen.giveCanImproveTiles simply do nothing when applied to non-settler role units, use\ngen.removeCanImproveTiles(unitType,true)")
+    end
+end
+
+
+
+
+
 
 if rawget(_G,"console") then
     _G["console"].gen = gen
