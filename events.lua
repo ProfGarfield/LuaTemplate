@@ -75,6 +75,7 @@ local diplomacy = require("diplomacy")
 local cityYield = require("calculateCityYield")
 local onInitiateCombat = require("initiateCombat")
 local setTraits = require("setTraits")
+require("discreteEvents")
 
 
 local triggerEvents = require("triggerEvents")
