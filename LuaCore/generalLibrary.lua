@@ -355,7 +355,7 @@
 -- gen.isTransporterCharted(tile,tribe) --> bool
 -- gen.chartTransporter(tile,tribe) --> void
 -- gen.unchartTransporter(tile,tribe) --> void
---
+-- gen.chartTruthfully(tile,tribe) --> void
 -- gen.isInvisibleUntilAttack(unitType) --> bool
 -- gen.giveInvisibleUntilAttack(unitType) --> void
 -- gen.removeInvisibleUntilAttack(unitType) --> void
@@ -389,7 +389,14 @@
 -- gen.isCanImproveTiles(unitType)--> bool
 -- gen.giveCanImproveTiles(unitType,ignoreError=false) --> void
 -- gen.removeCanImproveTiles(unitType,ignoreError=false) --> void
---
+-- gen.makeDataTable(inputTable={},tableName="unnamed data table") --> dataTable
+-- gen.forbidReplacement(dataTable) --> void
+-- gen.allowReplacement(dataTable) --> void
+-- gen.forbidNewKeys(dataTable) --> void
+-- gen.allowNewKeys(dataTable) --> void
+-- gen.forbidNilValueAccess(dataTable) --> void
+-- gen.allowNilValueAccess(dataTable) --> void
+--  
 --
 --
 --
@@ -4444,6 +4451,16 @@ buildChartingFunctions("Pollution","1gfedc0a")
 -- If Transporter is not charted, the chart remains unchanged
 buildChartingFunctions("Transporter","1gfedc1a")
 
+-- gen.chartTruthfully(tile,tribe) --> void
+function gen.chartTruthfully(tile,tribe)
+    gen.revealTile(tile,tribe)
+    if tile.city then
+        gen.chartCity(tile.city,tribe,tile.city.size)
+    end
+    tile.visibleImprovements[tribe] = tile.improvements
+end
+
+
 function buildAdvancedFlags(name,bitNumber)
     gen["is"..name] = function(unitType)
         return isBit1(unitType.advancedFlags,bitNumber)
@@ -4563,6 +4580,116 @@ gen.removeCanImproveTiles = function(unitType,ignoreError)
     end
 end
 
+-- gen.makeDataTable(inputTable={},tableName="unnamed data table) --> dataTable
+--  makes a 'dataTable', which functions as a table, but with the ability to disable
+--  overwriting values for existing keys
+--  adding new keys
+--  requesting nil values (values for keys that don't exist)
+--  this functionality is achieved with a metatable
+function gen.makeDataTable(inputTable,tableName)
+    inputTable = inputTable or {}
+    tableName = tableName or "unnamed data table"
+    if type(tableName) ~= "string" then
+        error("gen.makeDataTable: tableName argument (arg 2) must be a string.")
+    end
+    local metatable = {}
+    metatable.dataRecord = {}
+    for key,value in pairs(inputTable) do
+        metatable.dataRecord[key] = value
+        inputTable[key] = nil
+    end
+    metatable.type = "dataTable"
+    metatable.forbidReplacement = false
+    metatable.forbidNilValueAccess = false
+    metatable.forbidNewKeys = false
+    metatable.__newindex = function(inputTbl,key,value)
+        if metatable.dataRecord[key] ~= nil then
+            if metatable.forbidReplacement then
+                error("gen.makeDataTable: the table "..tableName.." can't have the values for existing keys reassigned.  The key "..tostring(key).." has already been assigned a value of "..tostring(metatable.dataRecord[key]).." and is now being assigned the value of "..tostring(value).." .")
+            else
+                metatable.dataRecord[key] = value
+            end
+        else
+            if metatable.forbidNewKeys then
+                error("gen.makeDataTable: the table "..tableName.." can't have values assigned to keys that do not already have values.  The key "..tostring(key).." has not already been assigned a value.")
+            else
+                metatable.dataRecord[key] = value
+            end
+        end
+    end
+    metatable.__index = function(inputTbl,key)
+        local val = metatable.dataRecord[key]
+        if val == nil and metatable.forbidNilValueAccess then
+            error("gen.makeDataTable: the table "..tableName.." is not allowed to access values for keys that don't exist.  The key "..tostring(key).." does not have a value associated with it.")
+        else
+            return val
+        end
+    end
+    metatable.__pairs = function(inputTbl)
+        return pairs(metatable.dataRecord)
+    end
+    metatable.__ipairs = function(inputTbl)
+        return ipairs(metatable.dataRecord)
+    end
+
+    inputTable = setmetatable(inputTable,metatable)
+    return inputTable
+end
+
+-- gen.forbidReplacement(dataTable) --> void
+function gen.forbidReplacement(dataTable)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.forbidReplacement: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.forbidReplacement = true
+end
+
+-- gen.allowReplacement(dataTable) --> void
+function gen.allowReplacement(dataTable)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.allowReplacement: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.forbidReplacement = false
+end
+
+
+-- gen.forbidNewKeys(dataTable) --> void
+function gen.forbidNewKeys(dataTable)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.forbidNewKeys: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.forbidNewKeys = true
+end
+
+-- gen.allowNewKeys(dataTable) --> void
+function gen.allowNewKeys(dataTable)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.allowNewKeys: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.forbidNewKeys = false
+end
+
+-- gen.forbidNilValueAccess(dataTable) --> void
+function gen.forbidNilValueAccess(dataTable)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.forbidNilValueAccess: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.forbidNilValueAccess = true
+end
+
+-- gen.allowNilValueAccess(dataTable) --> void
+function gen.allowNilValueAccess(dataTable)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.allowNilValueAccess: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.forbidNilValueAccess = false
+end
 
 
 

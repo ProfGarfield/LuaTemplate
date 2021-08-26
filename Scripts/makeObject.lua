@@ -36,9 +36,12 @@ local fileOutput =
 [[local flag = require("flag")
 local counter = require("counter")
 local text = require("text")
+local gen = require("generalLibrary")
 
-local object = {}
-
+local object = gen.makeDataTable({},"object")
+-- This line forbids reassignment of keys of the object table
+-- This should prevent errors
+gen.forbidReplacement(object)
 
 -- Civilization Advances
 -- recommended key prefix 'a'
@@ -322,9 +325,8 @@ text.setImageTable(object,"object")-- The string "object" provides a name of the
 -- this will give you an if you try to access a key not entered into
 -- the object table, which could be helpful for debugging, but it
 -- means that no nil value can ever be returned for table object
--- If you need that ability, comment out this section
-setmetatable(object,{__index = function(myTable,key)
-    error("The object table doesn't have a value associated with "..tostring(key)..".") end})
+-- If you need that ability, comment out this line
+gen.forbidNilValueAccess(object)
 
 return object
 ]]

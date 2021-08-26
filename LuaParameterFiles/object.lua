@@ -1,4 +1,5 @@
 local flag = require("flag")
+local gen = require("generalLibrary")
 
 -- In the LuaCore folder, there is a script that will generate
 -- an object file, called makeObject.lua
@@ -8,7 +9,10 @@ local flag = require("flag")
 -- The number is derived from the current time, so that existing
 -- files won't be overwritten by accident.
 
-local object = {}
+local object = gen.makeDataTable({},"object")
+-- This line forbids reassignment of keys of the object table
+-- This should prevent errors
+gen.forbidReplacement(object)
 
 -- Civilization Advances
 -- recommended key prefix 'a'
@@ -366,11 +370,9 @@ object.wWonder27                     = civ.getWonder(27)
 
 
 
--- this will give you an if you try to access a key not entered into
+-- this will give you an error if you try to access a key not entered into
 -- the object table, which could be helpful for debugging, but it
 -- means that no nil value can ever be returned for table object
--- If you need that ability, comment out this section
-setmetatable(object,{__index = function(myTable,key)
-    error("The object table doesn't have a value associated with "..tostring(key)..".") end})
+gen.forbidNilValueAccess(object)
 
 return object

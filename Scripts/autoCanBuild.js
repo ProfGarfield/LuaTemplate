@@ -3,9 +3,20 @@ const settingGeneratorForm = document.getElementById('setting-generator');
 const listGeneratorDiv = document.getElementById('list-generator');
 const settingOutputCode = document.getElementById('setting-output-code');
 const chooseItemSelect = document.getElementById('choose-item');
-const generateCodeButton = document.getElementById('generate-code-button')
+const generateCodeButton = document.getElementById('generate-code-button');
+
+const listsCatalogueArray = JSON.parse(localStorage.getItem("Saved Lists") || "[]");
+
+window.onbeforeunload = function(event) {
+    localStorage.setItem("ListsCatalogue",JSON.stringify(listsCatalogueArray))
+};
 
 makeItemSelection(chooseItemSelect,[]);
+
+
+function updateListCatalogue() {
+
+}
 
 
 function makeForbiddenTribesBoxes() {
@@ -218,8 +229,8 @@ function makeItemSelection(selectNode,excluded) {
     wonderOptGp.label = "Wonders";
     selectNode.appendChild(wonderOptGp);
     createOptionsFromArray(unitOptGp,unitList,excluded)
-    createOptionsFromArray(improvementOptGp,unitList,excluded)
-    createOptionsFromArray(wonderOptGp,unitList,excluded)
+    createOptionsFromArray(improvementOptGp,improvementList,excluded)
+    createOptionsFromArray(wonderOptGp,wonderList,excluded)
 
 
 }
@@ -276,22 +287,43 @@ function unhideSelection(selectArray,code) {
 }
 
 
+let listNumberCount = 0;
 
 function makeListCreatorForm(optionsArrays,optionsArraysTitles,listStorageArray) {
+    listNumberCount ++;
     const makeListForm = document.createElement('form');
     const listNameDiv = document.createElement('div');
-    listNameDiv.innerHTML =
-        `<label for="list-name"> Select a variable name for this list:</label>
-        <input type="text" id="list-name" class="variable-name-input">`;
+    const listNameLabel = document.createElement('label');
+    listNameLabel.htmlFor = `list-name-${listNumberCount}`;
+    listNameLabel.textContent = "Select a variable name for this list:";
+    listNameDiv.appendChild(listNameLabel);
+    const listNameInput = document.createElement('input');
+    listNameInput.type = "text";
+    listNameInput.id = `list-name-${listNumberCount}`;
+    listNameInput.className="variable-name-input";
+    listNameDiv.appendChild(listNameInput);
     makeListForm.appendChild(listNameDiv);
     const codeOutputDiv = document.createElement('div');
-    codeOutputDiv.innerHTML=`<code id="list-code"></code><button type="submit" id="generate-list-code-button">Generate List Code</button>`
+    const generateListButton = document.createElement('button');
+    generateListButton.type = "submit";
+    generateListButton.textContent = "Generate List Code"
+    codeOutputDiv.appendChild(generateListButton);
+    const saveListButton = document.createElement('button');
+    saveListButton.textContent = "Add to List Catalogue"
+
+    codeOutputDiv.appendChild(saveListButton);
+    codeOutputDiv.appendChild(document.createElement('br'))
+    codeOutputDiv.appendChild(document.createElement('br'))
+    const codeOutputElement = document.createElement('code');
+    codeOutputDiv.appendChild(codeOutputElement);
     makeListForm.appendChild(codeOutputDiv);
+    makeListForm.appendChild(document.createElement('br'))
     const selectElementList = []
     const emptyChoiceList = []
     for (let i = 0; i < optionsArrays.length; i++) {
         const selectElement = document.createElement('select')
         const emptyChoice = document.createElement('option')
+        emptyChoice.textContent = optionsArraysTitles[i];
         selectElementList.push(selectElement);
         emptyChoiceList.push(emptyChoice);
         selectElement.appendChild(emptyChoice);
@@ -340,8 +372,22 @@ function makeListCreatorForm(optionsArrays,optionsArraysTitles,listStorageArray)
             addButton.disabled = true;
         }
     });
+    makeListForm.addEventListener('submit', e => {
+        e.preventDefault();
+        let codeString = "local ";
+        codeString = codeString+listNameInput.value+" = {"
+        for (let i = 0; i < listStorageArray.length; i++) {
+            codeString = codeString+listStorageArray[i]+", ";
+        }
+        codeString = codeString +"}";
+        codeOutputElement.textContent = codeString;
+    });
     return makeListForm;
 }
+// an array of saved lists
+// arguments are:
+// {"code":variableName, listStorageArray:[codeOfItem],optionsArrays:[optionsArray], optionsArraysTitles:[string]}
+
 
 
 // initialize Page
@@ -349,5 +395,5 @@ makeForbiddenTribesBoxes();
 makeForbiddenMapsBoxes();
 updateHeadings();
 const sampleListValueArray = []
-listGeneratorDiv.appendChild(makeListCreatorForm([unitList,improvementList,wonderList],["unit","improvement","wonder"],sampleListValueArray))
+listGeneratorDiv.appendChild(makeListCreatorForm([unitList,improvementList,wonderList],["units","improvements","wonders"],sampleListValueArray))
 
