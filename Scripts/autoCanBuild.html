@@ -1,122 +1,156 @@
 <!doctype html>
 <html lang="en">
     <head>
-<style>
-.number-input { width: 20px; }
-#setting-generator {
-    width: 900px;
-    float:left;
-}
-#list-generator {
-    width: 900px;
-    float:right;
-}
-
-</style>
-
+        <style>
+        #content, html, body {
+            height: 98%;
+        }
+        .number-input { width: 20px; }
+        #left-hand-side{
+            width: 48%;
+            float:left;
+            height: 100%;
+            overflow-y: auto;
+        }
+        #setting-generator {
+            padding-bottom: 80%;
+        }
+        #right-hand-side {
+            width: 48%;
+            float:right;
+            height: 100%;
+            overflow-y: auto;
+        }
+        #list-generator {
+            padding-bottom: 80%;
+        }
+        </style>
     </head>
 
     <body>
-        <form action="autoCanBuild.html" id="setting-generator" novalidate>
-            <fieldset>
-                <label for="choose-item">Choose an item:</label>
-                <select name="choose-item" id="choose-item">
-                </select>
-            </fieldset>
-            <fieldset id="forbidden-tribes">
-                <legend id="forbidden-tribes-legend"></legend>
-            </fieldset>
-            <fieldset id="forbidden-maps">
-                <legend id="forbidden-maps-legend"></legend>
-            </fieldset>
-            <fieldset id="location">
-                <legend id="location-legend"></legend>
-            </fieldset>
-            <fieldset id="forbidden-location">
-                <legend id="forbidden-location-legend"></legend>
-            </fieldset>
-            <fieldset id="all-improvements">
-                <legend id="all-improvements-legend"></legend>
-            </fieldset>
-            <fieldset id="some-improvements">
-                <legend id="some-improvements-legend"></legend>
-                <label for="number-of-improvements">Minimum number of improvements:</label>
-                <input type="text" id="number-of-improvements" value="0" class="number-input">
-            </fieldset>
-            <fieldset id="forbidden-improvements">
-                <legend id="forbidden-improvements-legend"></legend>
-            </fieldset>
-            <fieldset id="all-wonders">
-                <legend id="all-wonders-legend"></legend>
-            </fieldset>
-            <fieldset id="some-wonders">
-                <legend id="some-wonders-legend"></legend>
-                <label for="number-of-wonders">Minimum number of wonders:</label>
-                <input type="text" id="number-of-wonders" value="0" class="number-input">
-            </fieldset>
-            <fieldset id="all-techs">
-                <legend id="all-techs-legend"></legend>
-            </fieldset>
-            <fieldset id="some-techs">
-                <legend id="some-techs-legend"></legend>
-                <label for="number-of-techs">Minimum number of technologies:</label>
-                <input type="text" id="number-of-techs" value="0" class="number-input">
-            </fieldset>
-            <fieldset id="forbidden-techs">
-                <legend id="forbidden-techs-legend"></legend>
-            </fieldset>
-            <fieldset id="all-flags-match">
-                <legend id="all-flags-match-legend"></legend>
-            </fieldset>
-            <fieldset id="some-flags-match">
-                <legend id="some-flags-match-legend"></legend>
-                <label for="number-of-flags">Minimum number of flags:</label>
-                <input type="text" id="number-of-flags" value="0" class="number-input">
-            </fieldset>
-            <fieldset id="city-population">
-                <legend id="city-population-legend"></legend>
-                <label for="minimum-population">Minimum population:</label>
-                <input type="text" id="minimum-population" class="number-input">
-                <label for="maximum-population">maximum population:</label>
-                <input type="text" id="maximum-population" class="number-input">
-            </fieldset>
-            <fieldset id="turn-restriction">
-                <legend id="turn-restriction-legend"></legend>
-                <label for="first-turn">First turn available:</label>
-                <input type="text" id="first-turn" class="number-input">
-                <label for="last-turn">Last turn available:</label>
-                <input type="text" id="last-turn" class="number-input">
-            </fieldset>
-            <fieldset id="forbidden-alternate-production">
-                <legend id="forbidden-alternate-production-legend"></legend>
-            </fieldset>
-            <fieldset id="require-some-as-alternate-production">
-                <legend id="require-some-as-alternate-production-legend"></legend>
-                <label for="number-of-alternate-production">Minimum number of alternate production:</label>
-                <input type="text" id="number-of-alternate-production" value="0" class="number-input">
-            </fieldset>
-            <fieldset id="binary-settings">
-                <ul>
-                    <li><input type="checkbox" class="binary-settings-checkbox" id="computer-only-checkbox"><span>Only tribes controlled by an AI can build <span class="item-name"></span>.</span></li>
-                    <li><input type="checkbox" class="binary-settings-checkbox" id="human-only-checkbox"><span>Only tribes controlled by a human can build <span class="item-name"></span>.</span></li>
-                    <li><input type="checkbox" class="binary-settings-checkbox" id="coastal-only-checkbox"><span>Only cities with the "coastal" attribute can build <span class="item-name"></span>.</span></li>
-                    <li><input type="checkbox" class="binary-settings-checkbox" id="shipbuild-only-checkbox"><span>Only cities with the "can build ships" attribute can build <span class="item-name"></span>.</span></li>
-                    <li><input type="checkbox" class="binary-settings-checkbox" id="hydro-only-checkbox"><span>Only cities with the "can build hydro plant" attribute can build <span class="item-name"></span>.</span></li>
-                    <li><input type="checkbox" class="binary-settings-checkbox" id="override-default-checkbox"><span>Ignore Civ II's standard requirements for building <span class="item-name"></span> and consider only the requirements set forth here.</span></li>
+        <div id='left-hand-side'>
+            <form action="autoCanBuild.html" id="setting-generator" novalidate>
+                <fieldset>
+                    <label for="choose-item">Choose an item:</label>
+                    <select name="choose-item" id="choose-item">
+                    </select>
+                </fieldset>
+                <fieldset id="forbidden-tribes">
+                    <legend id="forbidden-tribes-legend"></legend>
+                </fieldset>
+                <fieldset id="forbidden-maps">
+                    <legend id="forbidden-maps-legend"></legend>
+                </fieldset>
+                <fieldset id="location">
+                    <legend id="location-legend"></legend>
+                    <select id="location-select"></select>
+                </fieldset>
+                <fieldset id="forbidden-location">
+                    <legend id="forbidden-location-legend"></legend>
+                    <select id="forbidden-location-select"></select>
+                </fieldset>
+                <fieldset id="all-improvements">
+                    <legend id="all-improvements-legend"></legend>
+                    <select id="all-improvements-select"></select>
+                </fieldset>
+                <fieldset id="some-improvements">
+                    <legend id="some-improvements-legend"></legend>
+                    <label for="number-of-improvements">Minimum number of improvements:</label>
+                    <input type="text" id="number-of-improvements" value="0" class="number-input">
+                    <select id="some-improvements-select"></select>
+                </fieldset>
+                <fieldset id="forbidden-improvements">
+                    <legend id="forbidden-improvements-legend"></legend>
+                    <select id="forbidden-improvements-select"></select>
+                </fieldset>
+                <fieldset id="all-wonders">
+                    <legend id="all-wonders-legend"></legend>
+                    <select id="all-wonders-select"></select>
+                </fieldset>
+                <fieldset id="some-wonders">
+                    <legend id="some-wonders-legend"></legend>
+                    <label for="number-of-wonders">Minimum number of wonders:</label>
+                    <input type="text" id="number-of-wonders" value="0" class="number-input">
+                    <select id="some-wonders-select"></select>
+                </fieldset>
+                <fieldset id="all-techs">
+                    <legend id="all-techs-legend"></legend>
+                    <select id="all-techs-select"></select>
+                </fieldset>
+                <fieldset id="some-techs">
+                    <legend id="some-techs-legend"></legend>
+                    <label for="number-of-techs">Minimum number of technologies:</label>
+                    <input type="text" id="number-of-techs" value="0" class="number-input">
+                    <select id="some-techs-select"></select>
+                </fieldset>
+                <fieldset id="forbidden-techs">
+                    <legend id="forbidden-techs-legend"></legend>
+                    <select id="forbidden-techs-select"></select>
+                </fieldset>
+                <fieldset id="all-flags-match">
+                    <legend id="all-flags-match-legend"></legend>
+                    <select id="all-flags-match-select"></select>
+                    <ol id="all-flags-match-list"></ol>
+                </fieldset>
+                <fieldset id="some-flags-match">
+                    <legend id="some-flags-match-legend"></legend>
+                    <label for="number-of-flags">Minimum number of flags:</label>
+                    <input type="text" id="number-of-flags" value="0" class="number-input">
+                    <select id="some-flags-match-select"></select>
+                    <ol id="some-flags-match-list"></ol>
+                </fieldset>
+                <fieldset id="city-population">
+                    <legend id="city-population-legend"></legend>
+                    <label for="minimum-population">Minimum population:</label>
+                    <input type="text" id="minimum-population" class="number-input">
+                    <label for="maximum-population">maximum population:</label>
+                    <input type="text" id="maximum-population" class="number-input">
+                </fieldset>
+                <fieldset id="turn-restriction">
+                    <legend id="turn-restriction-legend"></legend>
+                    <label for="first-turn">First turn available:</label>
+                    <input type="text" id="first-turn" class="number-input">
+                    <label for="last-turn">Last turn available:</label>
+                    <input type="text" id="last-turn" class="number-input">
+                </fieldset>
+                <fieldset id="forbidden-alternate-production">
+                    <legend id="forbidden-alternate-production-legend"></legend>
+                    <select id="forbidden-alternate-production-select"></select>
+                </fieldset>
+                <fieldset id="require-some-as-alternate-production">
+                    <legend id="require-some-as-alternate-production-legend"></legend>
+                    <label for="number-of-alternate-production">Minimum number of alternate production:</label>
+                    <input type="text" id="number-of-alternate-production" value="0" class="number-input">
+                    <select id="require-some-as-alternate-production-select"></select>
+                </fieldset>
+                <fieldset id="binary-settings">
+                    <ul>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="computer-only-checkbox"><span>Only tribes controlled by an AI can build <span class="item-name"></span>.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="human-only-checkbox"><span>Only tribes controlled by a human can build <span class="item-name"></span>.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="coastal-only-checkbox"><span>Only cities with the "coastal" attribute can build <span class="item-name"></span>.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="shipbuild-only-checkbox"><span>Only cities with the "can build ships" attribute can build <span class="item-name"></span>.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="hydro-only-checkbox"><span>Only cities with the "can build hydro plant" attribute can build <span class="item-name"></span>.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="override-default-checkbox"><span>Ignore Civ II's standard requirements for building <span class="item-name"></span> and consider only the requirements set forth here.</span></li>
+                    </ul>
+                </fieldset>
+
+
+
+                <div id="setting-output">
+                    <button type="submit" id="generate-code-button">Generate Code</button>
+                    <br>
+                    <code id="setting-output-code"></code>
+                </div>
+            </form>
+        </div>
+        <div id="right-hand-side">
+            <div id="list-catalogue">
+                <ul id="list-catalogue-list">
                 </ul>
-            </fieldset>
-
-
-
-            <div id="setting-output">
-                <button type="submit" id="generate-code-button">Generate Code</button>
-                <br>
-                <code id="setting-output-code"></code>
             </div>
-        </form>
+            <div id="list-generator">
 
-        <div id="list-generator">
-
+            </div>
         </div>
 
         <script src="object.js"></script>

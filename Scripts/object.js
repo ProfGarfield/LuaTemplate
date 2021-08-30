@@ -30,10 +30,10 @@ const wonderList = [
 ]
 
 const cityLocationList = [
-    {cityName:"Sample City 0",cityId:0,tribeId:2,code:"object.lSampleCity0",xyz:[0,2,0]},
-    {cityName:"Sample City 1",cityId:1,tribeId:1,code:"object.lSampleCity1",xyz:[11,13,0]},
-    {cityName:"Sample City 2",cityId:2,tribeId:1,code:"object.lSampleCity2",xyz:[22,44,1]},
-    {cityName:"Sample City 3",cityId:3,tribeId:0,code:"object.lSampleCity3",xyz:[21,63,0]},
+    {name:"Sample City 0",id:0,tribeId:2,code:"object.lSampleCity0",xyz:[0,2,0]},
+    {name:"Sample City 1",id:1,tribeId:1,code:"object.lSampleCity1",xyz:[11,13,0]},
+    {name:"Sample City 2",id:2,tribeId:1,code:"object.lSampleCity2",xyz:[22,44,1]},
+    {name:"Sample City 3",id:3,tribeId:0,code:"object.lSampleCity3",xyz:[21,63,0]},
 ]
 
 const advancesList = [
@@ -44,9 +44,26 @@ const advancesList = [
     {name:"SampleTech4",id:4,code:"object.aSampleTech4"},
 ]
 
+// id exists only for consistency with other objects
+const flagsList = [
+    {name:'Flag: "SampleFlag1"', id:1,code:"SampleFlag1"},
+    {name:'Flag: "SampleFlag4"', id:2,code:"SampleFlag4"},
+    {name:'Flag: "SampleFlag3"', id:3,code:"SampleFlag3"},
+    {name:'Flag: "SampleFlag2"', id:4,code:"SampleFlag2"},
+]
+// id exists only for consistency with other objects
+const countersList = [
+    {name:'Counter: "SampleCounter1"', id:1,code:"SampleCounter1"},
+    {name:'Counter: "SampleCounter4"', id:2,code:"SampleCounter4"},
+    {name:'Counter: "SampleCounter3"', id:3,code:"SampleCounter3"},
+    {name:'Counter: "SampleCounter2"', id:4,code:"SampleCounter2"},
+]
+
 const fullList = {}
-const fullArray = [...unitList,...tribeList,...improvementList,...wonderList,...cityLocationList,...advancesList]
+const fullArray = [...unitList,...tribeList,...improvementList,...wonderList,...cityLocationList,...advancesList,...flagsList,...countersList]
 
 fullArray.map( value => {
             fullList[value.code] = value;
     });
+
+
