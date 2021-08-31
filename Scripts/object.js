@@ -1,3 +1,6 @@
+// run the script makeObjectJS.lua once you have finalized object.lua
+// in order to generate an object.js file fitting your scenario
+
 const unitList = [
     {name:"Sample Unit 0",id:0,code:"object.uSampleUnit0"},
     {name:"Sample Unit 1",id:1,code:"object.uSampleUnit1"},
@@ -66,4 +69,5 @@ fullArray.map( value => {
             fullList[value.code] = value;
     });
 
+const testObject = true;
 

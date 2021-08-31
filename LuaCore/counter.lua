@@ -62,6 +62,9 @@ local function linkState(tableInStateTable)
     end
 end
 
+-- this allows for object.js to be built
+counter.eventsKeyList = {}
+
 counter.linkState = linkState
 
 -- Specifies a key for a counter, and that counter's initial value.
@@ -73,6 +76,10 @@ local function define(key,initialValue,moduleName)
     end
     if type(key) ~= "string" then
         error("The counter module only allows strings for counter names.  Consider using the function tostring to make the conversion if necessary.")
+    end
+    -- log key for object.js if no module is specified
+    if not moduleName then
+        counter.eventsKeyList[#counter.eventsKeyList+1] = key
     end
     -- the moduleName is prefixed to prevent conflicts in different modules
     -- define is only meant to be used in actual scenarios, not in library modules

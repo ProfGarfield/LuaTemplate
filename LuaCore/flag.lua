@@ -37,6 +37,9 @@ local function linkState(tableInStateTable)
     end
 end
 
+-- This allows for object.js to be built
+flag.eventsKeyList = {}
+
 flag.linkState = linkState
 
 -- Specifies a key for a flag, and that flag's initial value.
@@ -48,6 +51,10 @@ local function define(key,initialValue,moduleName)
     end
     if type(key) ~= "string" then
         error("The flag module only allows strings for flag names.  Consider using the function tostring to make the conversion if necessary.")
+    end
+    -- log key for object.js if no module is specified
+    if not moduleName then
+        flag.eventsKeyList[#flag.eventsKeyList+1] = key
     end
     -- the moduleName is prefixed to prevent conflicts in different modules
     -- define is only meant to be used in actual scenarios, not in library modules

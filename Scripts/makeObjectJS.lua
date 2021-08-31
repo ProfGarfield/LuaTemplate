@@ -1,0 +1,184 @@
+local object = require("object")
+local flag = require("flag")
+local counter = require("counter")
+
+local function findKeyOf(item,table,typeCheckFn)
+    for key,value in pairs(table) do
+        if typeCheckFn(value) and value == item then
+            return key
+        end
+    end
+    return false
+end
+
+local function makeLine(id,getTypeFn,typeCheckFn,table)
+    local item = getTypeFn(id)
+    if not item then
+        return ""
+    end
+    local key = findKeyOf(item,object,typeCheckFn)
+    if not key then
+        return ""
+    end
+    local line = "\t{name:\""..item.name.."\", id:"..tostring(id)..",code:\"object."..key.."\"},\n"
+    return line
+end
+
+local function buildCityLocationLine(city,table)
+    local locationKey = findKeyOf(city.location,object,civ.isTile)
+    if not locationKey then
+        return ""
+    end
+    local line = "\t{name:\""..city.name.."\", id:"..tostring(city.id)..", tribeId:"..tostring(city.owner.id)
+        ..", code:\"object."..locationKey.."\", xyz:["..tostring(city.location.x)..","..tostring(city.location.y)
+        ..","..tostring(city.location.z).."]},\n"
+    return line
+end
+    
+
+local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."object.js"
+
+local file = io.open(fileLocation,"a")
+io.output(file)
+
+local fileOutput = 
+[=[ 
+// This file is to support autoCanBuild.html, and possibly others.
+// It provides a means of accessing relevant scenario information in order
+// to build code.
+
+// Unit Types
+const unitList = [
+]=]
+for i = 0,civ.cosmic.numberOfUnitTypes-1 do
+    fileOutput = fileOutput..makeLine(i,civ.getUnitType,civ.isUnitType,object)
+end
+fileOutput = fileOutput..
+[=[]
+
+// Tribes/Players
+const tribeList = [
+]=]
+for i=0,7 do
+    fileOutput = fileOutput..makeLine(i,civ.getTribe,civ.isTribe,object)
+end
+
+fileOutput = fileOutput..
+[=[]
+
+// Improvements
+const improvementList = [
+]=]
+for i=0,39 do
+    fileOutput = fileOutput..makeLine(i,civ.getImprovement,civ.isImprovement,object)
+end
+fileOutput = fileOutput..
+[=[]
+
+// Wonders
+const wonderList = [
+]=]
+for i=0,27 do
+    fileOutput = fileOutput..makeLine(i,civ.getWonder,civ.isWonder,object)
+end
+
+fileOutput = fileOutput..
+[=[]
+
+// Advances
+const advancesList = [
+]=]
+for i=0,99 do
+    fileOutput = fileOutput..makeLine(i,civ.getTech,civ.isTech,object)
+end
+fileOutput = fileOutput..
+[=[]
+
+// Cities
+const cityLocationList = [
+]=]
+for city in civ.iterateCities() do
+    fileOutput = fileOutput..buildCityLocationLine(city,object)
+end
+fileOutput = fileOutput..
+[=[]
+]=]
+
+if not flag.eventsKeyList then
+    civ.ui.text("In order to have flags appear in your object.js file, you must update to a more recent version of flag.lua (in LuaCore), and run this script again.")
+    fileOutput = fileOutput..
+[=[
+// Flags
+// You must update LuaCore\flag.lua and run makeObjectJS.lua again to get flags.
+const flagsList = [
+
+]
+]=]
+else
+    fileOutput = fileOutput..
+[=[
+// Flags
+// (flags with the moduleName field specified won't appear here, but those don't work with
+// canBuildSettings.lua anyway)
+const flagsList = [
+]=]
+    for index,flag in pairs(flag.eventsKeyList) do
+        fileOutput = fileOutput.."\t{name:'Flag: \""..flag.."\"', id:"..tostring(index)..", code:\""..flag.."\"},\n"
+    end
+    fileOutput = fileOutput..
+[=[]
+]=]
+end
+
+if not counter.eventsKeyList then
+    civ.ui.text("In order to have counter keys appear in your object.js file, you must update to a more recent version of counter.lua (in LuaCore), and run this script again.")
+    fileOutput = fileOutput..
+[=[
+// Counter Keys
+// You must update LuaCore\counter.lua and run makeObjectJS.lua again to get counters.
+const countersList = [
+
+]
+]=]
+else
+    fileOutput = fileOutput..
+[=[
+// Counter Keys
+const countersList = [
+]=]
+for index,counter in pairs(counter.eventsKeyList) do
+    fileOutput = fileOutput.."\t{name:'Counter: \""..counter.."\"', id:"..tostring(index)..", code:\""..counter.."\"},\n"
+end
+    fileOutput = fileOutput..
+[=[]
+]=]
+end
+
+
+fileOutput = fileOutput..
+[=[
+
+
+const fullList = {}
+const fullArray = [...unitList,...tribeList,...improvementList,...wonderList,...cityLocationList,...advancesList,...flagsList,...countersList]
+
+fullArray.map( value => {
+            fullList[value.code] = value;
+    });
+
+
+const testObject = false;
+
+]=]
+io.write(fileOutput)
+io.close(file)
+print("object.js file written to "..fileLocation)
+
+
+
+
+
+
+
+
+    

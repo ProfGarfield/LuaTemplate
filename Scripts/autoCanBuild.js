@@ -1174,3 +1174,6 @@ updateHeadings();
 const sampleListValueArray = []
 //listGeneratorDiv.appendChild(makeListCreatorForm({optionsArrays:[unitList,improvementList,wonderList],optionsArraysTitles:["units","improvements","wonders"],listStorageArray:sampleListValueArray,code:"newList"}))
 makeListCatalogueBox();
+if (testObject) {
+    document.getElementById('h3-warning').hidden = false;
+}

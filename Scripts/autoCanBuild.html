@@ -1,7 +1,11 @@
 <!doctype html>
 <html lang="en">
     <head>
+        <title>Code Builder for canBuildSettings.lua</title>
         <style>
+        #h1-title {
+            text-align: center;
+        }
         #content, html, body {
             height: 98%;
         }
@@ -9,7 +13,7 @@
         #left-hand-side{
             width: 48%;
             float:left;
-            height: 100%;
+            height: 90%;
             overflow-y: auto;
         }
         #setting-generator {
@@ -18,7 +22,7 @@
         #right-hand-side {
             width: 48%;
             float:right;
-            height: 100%;
+            height: 90%;
             overflow-y: auto;
         }
         #list-generator {
@@ -28,6 +32,8 @@
     </head>
 
     <body>
+        <h1 id="h1-title"> Can Build Settings Code Generator</h1>
+        <h3 id="h3-warning" hidden=true> After you have finalized your object.lua file, run the script makeObjectJS.lua (in your Scripts folder, where you found this file) from the Civ II Lua Console, and replace Scripts\object.js with the generated file.</h3>
         <div id='left-hand-side'>
             <form action="autoCanBuild.html" id="setting-generator" novalidate>
                 <fieldset>
