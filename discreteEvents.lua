@@ -62,6 +62,11 @@ function discreteEvents.onCityFounded(city)
 
 end
 
+function discreteEvents.onCityProcessed(city) 
+    --civ.ui.text("City processed discrete event test for city "..city.name)
+
+end
+
 function discreteEvents.onCityProduction(city,item) 
     --civ.ui.text("City production discrete event test")
 

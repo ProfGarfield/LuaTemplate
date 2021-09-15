@@ -45,6 +45,11 @@ function events.onCityFounded(city)
 
 end
 
+-- On City Processed
+function events.onCityProcessed(city)
+
+end
+
 -- On city production (when a city produces a unit/improvement/wonder)
 function events.onCityProduction(city,prod)
 

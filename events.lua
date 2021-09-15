@@ -92,8 +92,8 @@ gen.setMusicDirectory(musicFolder)
 
 
 for i=0,7 do
-    flag.define("tribe"..tostring(i).."AfterProductionNotDone",true)
-    flag.define("tribe"..tostring(i).."BeforeProductionNotDone",true)
+    flag.define("tribe"..tostring(i).."AfterProductionNotDone",true,"eventMachinery")
+    flag.define("tribe"..tostring(i).."BeforeProductionNotDone",true,"eventMachinery")
 end
 
 local state = {}
@@ -137,7 +137,10 @@ local function linkStateTableToModules()
     munitions.linkState(state.munitionsState)
     state.globalState = state.globalState or {}
     _global.state = state.globalState
-
+    -- this table keeps track of cities that have already been processed this turn
+    -- it is regularly cleared
+    -- it helps govern the onCityProcessed execution point, so it only happens once per city
+    state.processedCities = state.processedCities or {}
 end
 
 
@@ -146,8 +149,8 @@ linkStateTableToModules()
 local onTurnFn = function(turn)
     -- this makes doAfterProduction work
     for i=0,7 do
-        flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone")
-        flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone")
+        flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone","eventMachinery")
+        flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone","eventMachinery")
     end
     delayedAction.doOnTurn(turn)
 
@@ -162,7 +165,11 @@ civ.scen.onTurn(onTurnFn)
 console.onTurn = function() onTurnFn(civ.getTurn()) end
 
 civ.scen.onCanBuild(function(defaultBuildFunction,city,item)
-    return canBuildFunctions.customCanBuild(defaultBuildFunction,city,item)
+    local ignoreInitialization = true
+    if item.id == 0 and civ.isUnitType(item) then
+        ignoreInitialization = false
+    end
+    return canBuildFunctions.customCanBuild(defaultBuildFunction,city,item, ignoreInitialization)
 end)
 
 
@@ -216,8 +223,8 @@ end
 console.afterProduction = function() doAfterProduction(civ.getTurn(),civ.getCurrentTribe()) end
 gen.linkActivationFunction(doOnUnitActivation)
 civ.scen.onActivateUnit(function(unit,source)
-    if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone") then
-        flag.setFalse("tribe"..tostring(unit.owner.id).."AfterProductionNotDone")
+    if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery") then
+        flag.setFalse("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery")
         doAfterProduction(civ.getTurn(),unit.owner)
         eventTools.guaranteeUnitActivationForNextActiveTribe(unit.owner)
     end
@@ -372,9 +379,13 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
     -- that player's turn
     local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
     -- for production changes during the beforeProductionEvent
-    if flag.value("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone") then
-        flag.setFalse("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone")
+    if flag.value("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone","eventMachinery") then
+        flag.setFalse("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone","eventMachinery")
         doBeforeProduction(civ.getTurn(),civ.getCurrentTribe())
+        -- prepare for onCityProcessed execution point by resetting the list of processed cities
+        for key,val in pairs(state.processedCities) do
+            state.processedCities[key] = nil
+        end
         -- if doBeforeProduction changed the tile production, we have to compensate for that
         -- for the current city
         local correctFood,correctShields,correctTrade = baseProduction(city)
@@ -385,6 +396,13 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
         extraTrade = correctTrade - trade
         trade = correctTrade
     end
+    
+    -- onCityProcessed execution point
+    if city.owner == civ.getCurrentTribe() and (not state.processedCities[city.id]) then
+        state.processedCities[city.id] = true
+        triggerEvents.onCityProcessed(city)
+    end
+
     -- if doBeforeProduction 
     local fCh,sChBW,sChAW,tChBC,tChAC = cityYield.onCalculateCityYield(city,food,shields,trade)
     return fCh+extraFood,sChBW+extraShields,sChAW,tChBC+extraTrade,tChAC

@@ -67,7 +67,7 @@ local triggerFileNames = {
 "onGameEnds",
 "onCityFounded",
 "onCentauriArrival",
-
+"onCityProcessed",
 }
 
 local context = {[0]={}}
@@ -219,5 +219,10 @@ function triggerEvents.onCityFounded(city)
 
 end
 
+function triggerEvents.onCityProcessed(city)
+    context[getContext()]["onCityProcessed"](city)
+    universal["onCityProcessed"](city)
+
+end
 
 return triggerEvents

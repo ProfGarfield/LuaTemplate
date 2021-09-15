@@ -42,6 +42,13 @@ function discreteEvents.performOnCityFounded(city)
     end
 end
 
+eventsTable.onCityProcessed = {}
+eventsTable.onCityProcessedIndex = 1
+function discreteEvents.performOnCityProcessed(city)
+    for i = 1,eventsTable.onCityProcessedIndex-1 do
+        eventsTable.onCityProcessed[i](city)
+    end
+end
 
 eventsTable.onCityProduction = {}
 eventsTable.onCityProductionIndex = 1
@@ -120,6 +127,7 @@ discreteEvents.onTurn
 discreteEvents.onUnitKilled 
 discreteEvents.afterProduction 
 discreteEvents.beforeProduction 
+discreteEvents.onCityProcessed
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -144,6 +152,7 @@ discreteEvents.performOnTurn
 discreteEvents.performOnUnitKilled 
 discreteEvents.performAfterProduction 
 discreteEvents.performBeforeProduction 
+discreteEvents.performOnCityProcessed 
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

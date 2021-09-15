@@ -45,7 +45,6 @@ function cityYield.onCalculateCityYield(city,food,shields,trade)
     local tradeChangeAfterCorruption = 0 
 
 
-
     return  foodChange+extraFood,
             shieldChangeBeforeWaste + extraShields,
             shieldChangeAfterWaste,

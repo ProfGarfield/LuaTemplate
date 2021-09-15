@@ -103,6 +103,12 @@ function events.onCityFounded(city)
 
 end
 
+-- On City Founded
+function events.onCityProcessed(city)
+    --civ.ui.text(city.name.." processed")
+
+end
+
 -- On city production (when a city produces a unit/improvement/wonder)
 function events.onCityProduction(city,prod)
     --civ.ui.text(city.name.." has procuded something.")

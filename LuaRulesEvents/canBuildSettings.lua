@@ -160,6 +160,117 @@ local canBuildFunctions = require("canBuild")
 --          if true, the item can only be built if the city has the 'can build hydro plant' flag
 --          that is, the city could build hydro plants in the default game
 --
+--      .maxNumberTribe = nil or integer or table with the keys and values specified below
+--                          or function(tribe,item) --> number
+--          if nil, there is no maximum number of the item that can be built
+--          if integer, the number is the maximum of the item that can be built by that tribe
+--          if function, the returned value is the number of the item the tribe can build
+--          if table, consider these keys and values, rounding down at the end of the calculation
+--          .base = integer or nil
+--              base number 
+--              nil means 0
+--          .max = integer or nil
+--              maximum number even if calculation would be larger
+--              nil means no limit
+--          .min = integer or nil
+--              minimum number even if calculation would be larger
+--              nil means no limit
+--          .tribeTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--              for each luaObject the tribe owns, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of units owned
+--              if improvement, increment by the number of cities that have that improvement
+--              if wonder, increment if the wonder is owned by the tribe
+--              if technology, increment if tribe has the technology
+--              if "cities", increment for each city owned by the tribe
+--              if "population", increment for each population point of the tribe
+--
+--          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--              for each luaObject in the world, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of units owned by all players
+--              if improvement, increment by the number of cities that have that improvement among all players
+--              if wonder, increment if the wonder is owned by any tribe
+--              if technology, increment for each tribe that has the technology
+--              if "cities", increment for each city in the game
+--              if "population", increment for each population point of all cities in the game
+--          
+--          .activeWondersTribe = nil or  {[wonderObject] = number or nil}
+--              if the tribe owns the wonder, and it is not expired, add the increment
+--          .activeWondersForeign = nil or  {[wonderObject] = number or nil}
+--              if another tribe owns the wonder, and it is not expired, add the increment
+--          .discoveredTechs = nil or {[techObject] = number or nil}
+--              if the tech is discovered by any tribe, add the increment
+--
+--      .tribeJointMaxWith  = nil or {[luaObject] = number or nil}
+--              each of the tribe's instance of luaObject in the table uses up a portion of the ownership
+--              limit for the item in question, with that portion given by the value
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberTribe = 6, 
+--                  tribeJointMaxWith = {[object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberTribe = 3,
+--                  tribeJointMaxWith = {[object.uSettlers] = 0.5}}
+--              Here, the limit is 6 settlers, or 3 engineers, with an engineer using up 2 settler
+--              allotments, and a settler using up 0.5 engineer allotments.
+--              By default, the item we're checking if we can produce is given a cost of 1,
+--              but we can specify a different number instead.  Here is another way to have
+--              6 settlers or 3 engineers:
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberTribe = 6, 
+--                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberTribe = 6,
+--                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              
+--
+--
+--      .maxNumberGlobal = nil or integer or table with the keys and values specified below
+--                          or function(tribe,item) --> number
+--          if nil, there is no maximum number of the item that can be built
+--          if integer, the number is the maximum of the item that can be built by all tribes together
+--          if function, the returned value is the number of the item that can be built in the world
+--          if table, consider these keys and values, rounding down at the end of the calculation
+--          for the maximum number for all tribes together
+--          .base = integer or nil
+--              base number 
+--              nil means 0
+--          .max = integer or nil
+--              maximum number even if calculation would be larger
+--              nil means no limit
+--          .min = integer or nil
+--              minimum number even if calculation would be larger
+--              nil means no limit
+--          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--              for each luaObject in the world, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of units owned by all players
+--              if improvement, increment by the number of cities that have that improvement among all players
+--              if wonder, increment if the wonder is owned by any tribe
+--              if technology, increment for each tribe that has the technology
+--              if "cities", increment for each city in the game
+--              if "population", increment for each population point of all cities in the game
+--          
+--          .activeWonders = nil or {[wonderObject] = number or nil}
+--              if the wonder is built and it is not expired, add the increment
+--          .discoveredTechs = nil or {[techObject] = number or nil}
+--              if the tech is discovered by any tribe, add the increment
+--
+--      .globalJointMaxWith  = nil or {[luaObject] = number or nil}
+--              each instance of luaObject in the table uses up a portion of the ownership
+--              limit for the item in question, with that portion given by the value
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberGlobal = 6, 
+--                  globalJointMaxWith = {[object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberGlobal = 3,
+--                  globalJointMaxWith = {[object.uSettlers] = 0.5}}
+--              Here, the limit is 6 settlers, or 3 engineers, with an engineer using up 2 settler
+--              allotments, and a settler using up 0.5 engineer allotments.
+--              By default, the item we're checking if we can produce is given a cost of 1,
+--              but we can specify a different number instead.  Here is another way to have
+--              6 settlers or 3 engineers:
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberGlobal = 6, 
+--                  globalJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberGlobal = 6,
+--                  globalJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              
+--
+
 --
 
 local unitTypeBuild = {}
@@ -173,3 +284,48 @@ local wonderBuild = {}
 canBuildFunctions.supplyUnitTypeParameters(unitTypeBuild)
 canBuildFunctions.supplyImprovementParameters(improvementBuild)
 canBuildFunctions.supplyWonderParameters(wonderBuild)
+
+
+-- constructionStatistics
+-- These tables are updated every time the unit type with id 0 (settler slot)
+-- is checked if it can be built.  The 'tribe' here is the tribe to which the
+-- city under consideration belongs.
+-- These tables are used for the supplied production limit functionality with tables,
+-- though you may find it convenient to leverage them in your own functions.
+-- For example, to check how many Aqueducts the tribe checking buildability has, 
+-- you would write
+--      canBuildFunctions.tribeImprovementsOwnedByID[object.uAqueduct.id]
+-- or, to find out how many aqueducts are owned by all tribes together, you would use 
+--      canBuildFunctions.globalImprovementsOwnedByID[object.uAqueduct.id]
+--
+--canBuildFunctions.tribeCities = 0
+--canBuildFunctions.globalCities = 0
+--canBuildFunctions.tribePopulation = 0
+--canBuildFunctions.globalPopulation = 0
+--canBuildFunctions.tribeUnitsOwnedByTypeID = {}
+--canBuildFunctions.globalUnitsOwnedByTypeID = {}
+--canBuildFunctions.tribeImprovementsOwnedByID = {}
+--canBuildFunctions.globalImprovementsOwnedByID = {}
+--canBuildFunctions.tribeUnitsUnderConstructionByTypeID = {}
+--canBuildFunctions.globalUnitsUnderConstructionByTypeID = {}
+--canBuildFunctions.tribeImprovementsUnderConstructionByID = {}
+--canBuildFunctions.globalImprovementsUnderConstructionByID = {}
+--canBuildFunctions.tribeWondersOwnedByID = {}
+--canBuildFunctions.globalWondersOwnedByID = {}
+--canBuildFunctions.tribeActiveWondersOwnedByID = {}
+--canBuildFunctions.globalActiveWondersOwnedByID = {}
+--canBuildFunctions.tribeWondersUnderConstructionByID = {}
+--canBuildFunctions.globalWondersUnderConstructionByID = {}
+--canBuildFunctions.globalTechOwnershipByID = {}
+--
+-- To disable this "initialization" (perhaps because it is causing noticeable lag), uncomment
+-- the next line:
+-- canBuildFunctions.disableAutomaticBuildConstructionStatistics()
+-- You can add additional initialization instructions (even if the above line is run) with the
+-- following function:
+local function initialization(city)
+
+end
+canBuildFunctions.supplyInitializationFunction(initialization)
+
+

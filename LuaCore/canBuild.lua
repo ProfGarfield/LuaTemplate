@@ -155,8 +155,121 @@ local gen = require("generalLibrary")
 --          if true, the item can only be built if the city has the 'can build hydro plant' flag
 --          that is, the city could build hydro plants in the default game
 --
+--      .maxNumberTribe = nil or integer or table with the keys and values specified below
+--                          or function(tribe,item) --> number
+--          if nil, there is no maximum number of the item that can be built
+--          if integer, the number is the maximum of the item that can be built by that tribe
+--          if function, the returned value is the number of the item the tribe can build
+--          if table, consider these keys and values, rounding down at the end of the calculation
+--          .base = integer or nil
+--              base number 
+--              nil means 0
+--          .max = integer or nil
+--              maximum number even if calculation would be larger
+--              nil means no limit
+--          .min = integer or nil
+--              minimum number even if calculation would be larger
+--              nil means no limit
+--          .tribeTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--              for each luaObject the tribe owns, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of units owned
+--              if improvement, increment by the number of cities that have that improvement
+--              if wonder, increment if the wonder is owned by the tribe
+--              if technology, increment if tribe has the technology
+--              if "cities", increment for each city owned by the tribe
+--              if "population", increment for each population point of the tribe
+--
+--          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--              for each luaObject in the world, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of units owned by all players
+--              if improvement, increment by the number of cities that have that improvement among all players
+--              if wonder, increment if the wonder is owned by any tribe
+--              if technology, increment for each tribe that has the technology
+--              if "cities", increment for each city in the game
+--              if "population", increment for each population point of all cities in the game
+--          
+--          .activeWondersTribe = nil or  {[wonderObject] = number or nil}
+--              if the tribe owns the wonder, and it is not expired, add the increment
+--          .activeWondersForeign = nil or  {[wonderObject] = number or nil}
+--              if another tribe owns the wonder, and it is not expired, add the increment
+--          .discoveredTechs = nil or {[techObject] = number or nil}
+--              if the tech is discovered by any tribe, add the increment
+--
+--      .tribeJointMaxWith  = nil or {[luaObject] = number or nil}
+--              each of the tribe's instance of luaObject in the table uses up a portion of the ownership
+--              limit for the item in question, with that portion given by the value
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberTribe = 6, 
+--                  tribeJointMaxWith = {[object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberTribe = 3,
+--                  tribeJointMaxWith = {[object.uSettlers] = 0.5}}
+--              Here, the limit is 6 settlers, or 3 engineers, with an engineer using up 2 settler
+--              allotments, and a settler using up 0.5 engineer allotments.
+--              By default, the item we're checking if we can produce is given a cost of 1,
+--              but we can specify a different number instead.  Here is another way to have
+--              6 settlers or 3 engineers:
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberTribe = 6, 
+--                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberTribe = 6,
+--                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              
 --
 --
+--      .maxNumberGlobal = nil or integer or table with the keys and values specified below
+--                          or function(tribe,item) --> number
+--          if nil, there is no maximum number of the item that can be built
+--          if integer, the number is the maximum of the item that can be built by all tribes together
+--          if function, the returned value is the number of the item that can be built in the world
+--          if table, consider these keys and values, rounding down at the end of the calculation
+--          for the maximum number for all tribes together
+--          .base = integer or nil
+--              base number 
+--              nil means 0
+--          .max = integer or nil
+--              maximum number even if calculation would be larger
+--              nil means no limit
+--          .min = integer or nil
+--              minimum number even if calculation would be larger
+--              nil means no limit
+--          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--              for each luaObject in the world, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of units owned by all players
+--              if improvement, increment by the number of cities that have that improvement among all players
+--              if wonder, increment if the wonder is owned by any tribe
+--              if technology, increment for each tribe that has the technology
+--              if "cities", increment for each city in the game
+--              if "population", increment for each population point of all cities in the game
+--          
+--          .activeWonders = nil or {[wonderObject] = number or nil}
+--              if the wonder is built and it is not expired, add the increment
+--          .discoveredTechs = nil or {[techObject] = number or nil}
+--              if the tech is discovered by any tribe, add the increment
+--
+--      .globalJointMaxWith  = nil or {[luaObject] = number or nil}
+--              each instance of luaObject in the table uses up a portion of the ownership
+--              limit for the item in question, with that portion given by the value
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberGlobal = 6, 
+--                  globalJointMaxWith = {[object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberGlobal = 3,
+--                  globalJointMaxWith = {[object.uSettlers] = 0.5}}
+--              Here, the limit is 6 settlers, or 3 engineers, with an engineer using up 2 settler
+--              allotments, and a settler using up 0.5 engineer allotments.
+--              By default, the item we're checking if we can produce is given a cost of 1,
+--              but we can specify a different number instead.  Here is another way to have
+--              6 settlers or 3 engineers:
+--              e.g. unitTypeBuild[object.uSettlers.id] = {maxNumberGlobal = 6, 
+--                  globalJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              and unitTypeBuild[object.uEngineers.id] = {maxNumberGlobal = 6,
+--                  globalJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--              
+--
+
+
+
+
+
 
 -- Changes table entries for easier programming below,
 -- in particular, puts single object entries inside tables,
@@ -168,11 +281,30 @@ local gen = require("generalLibrary")
 -- indexed by tileID numbers, with a true value meaning it is in a table
 -- city values are in a separate table indexed by city id numbers
 
+local function techResearched(tech)
+    for i=0,7 do
+        if civ.getTribe(i):hasTech(tech) then
+            return true
+        end
+    end
+    return false
+end
+
 local nameOfThingBeingProcessed = nil -- This stores the name of the unit/improvement/wonder being processed,
 -- to hopefully identify errors more easily
 local typeOfThingBeingProcessed = nil -- This stores the type of thing being processed as a string
 
 local showCurrentProcess = true
+
+local function getThingBeingProcessed(idNumber)
+    if typeOfThingBeingProcessed == "unitType" then
+        return civ.getUnitType(idNumber)
+    elseif typeOfThingBeingProcessed == "improvement" then
+        return civ.getImprovement(idNumber)
+    elseif typeOfThingBeingProcessed == "wonder" then
+        return civ.getWonder(idNumber)
+    end
+end
 
 local function changeNameOfThingBeingProcessed(idNumber)
     if typeOfThingBeingProcessed == "unitType" then
@@ -223,7 +355,7 @@ local function postProcessParameterTable(parameterTable)
     end
 
 
-    local function postProcessParameters(parameters)
+    local function postProcessParameters(parameters,item)
        if parameters.location then
            if type(parameters.location) ~= "table" or (type(parameters.location)=="table" and type(parameters.location[1])=="number") then
                -- if entry not a table, easy to tell it needs to be 'wrapped' with a table
@@ -294,13 +426,52 @@ local function postProcessParameterTable(parameterTable)
             end
             parameters.forbiddenMaps = replacementTable
         end
+        if parameters.maxNumberTribe then
+            parameters.tribeJointMaxWith = parameters.tribeJointMaxWith or {}
+            local itemNotIncluded = true
+            for luaObject,increment in pairs(parameters.tribeJointMaxWith) do
+                local status,value = pcall(function(a,b) return a == b end,luaObject,item)
+                if status and value then
+                    itemNotIncluded = false
+                end
+                if not civ.isUnitType(luaObject) and not civ.isImprovement(luaObject) and not civ.isWonder(luaObject) then
+                    error("canBuild processing: "..item.name.." has an invalid key in the tribeJointMaxWith table.  Keys must be unitType, Improvement, or Wonder objects.")
+                end
+                if type(increment) ~= "number" then
+                    error("canBuild processing: "..item.name.." has an invalid value in the tribeJointMaxWith table.  Values must be numbers, but "..tostring(increment).." supplied instead for the key "..tostring(luaObject))
+                end
+            end
+            if itemNotIncluded then
+                parameters.tribeJointMaxWith[item] = 1
+            end
+
+        end
+        if parameters.maxNumberGlobal then
+            parameters.globalJointMaxWith = parameters.globalJointMaxWith or {}
+            local itemNotIncluded = true
+            for luaObject,increment in pairs(parameters.globalJointMaxWith) do
+                local status,value = pcall(function(a,b) return a == b end,luaObject,item)
+                if status and value then
+                    itemNotIncluded = false
+                end
+                if not civ.isUnitType(luaObject) and not civ.isImprovement(luaObject) and not civ.isWonder(luaObject) then
+                    error("canBuild processing: "..item.name.." has an invalid key in the tribeJointMaxWith table.  Keys must be unitType, Improvement, or Wonder objects.")
+                end
+                if type(increment) ~= "number" then
+                    error("canBuild processing: "..item.name.." has an invalid value in the tribeJointMaxWith table.  Values must be numbers, but "..tostring(increment).." supplied instead for the key "..tostring(luaObject))
+                end
+            end
+            if itemNotIncluded then
+                parameters.globalJointMaxWith[item] = 1
+            end
+        end
     end
     for key,value in pairs(parameterTable) do
         changeNameOfThingBeingProcessed(key)
         if showCurrentProcess then
             print("Currently Processing "..nameOfThingBeingProcessed.." ("..tostring(key)..")")
         end
-        postProcessParameters(value)
+        postProcessParameters(value,getThingBeingProcessed(key))
     end
 end
 
@@ -341,6 +512,10 @@ allowedParameterKeys["humanOnly"] =true
 allowedParameterKeys["onlyBuildCoastal"] =true
 allowedParameterKeys["onlyBuildShips"] =true
 allowedParameterKeys["onlyBuildHydroPlant"] =true
+allowedParameterKeys["maxNumberTribe"] = true
+allowedParameterKeys["maxNumberGlobal"] = true
+allowedParameterKeys["tribeJointMaxWith"] = true
+allowedParameterKeys["globalJointMaxWith"] = true
 
 
 -- does rudimentary checks to make sure the parameter tables are formatted correctly
@@ -413,6 +588,118 @@ local function supplyWonderParameters(wonderParametersTable)
 end
 canBuildFunctions.supplyWonderParameters = supplyWonderParameters
 
+local function computeMaxNumberTribe(settings,activeTribe)
+    if type(settings) == "number" then
+        return settings
+    end
+    local total = settings.base or 0
+    if settings.tribeTotals then
+        for object,increment in pairs(settings.tribeTotals) do
+            if civ.isUnitType(object) then
+                total = total +increment*canBuildFunctions.tribeUnitsOwnedByTypeID[object.id]
+            elseif civ.isImprovement(object) then
+                total = total + increment*canBuildFunctions.tribeImprovementsOwnedByID[object.id]
+            elseif civ.isWonder(object) then
+                total = total + increment*canBuildFunctions.tribeWondersOwnedByID[object.id]
+            elseif civ.isTech(object) then
+                if activeTribe:hasTech(object) then
+                    total = total+increment
+                end
+            elseif object == "cities" then
+                total = total + increment*canBuildFunctions.tribeCities
+            elseif object == "population" then
+                total = total + increment*canBuildFunctions.tribePopulation
+            end
+        end
+    end
+    if settings.globalTotals then
+        for object,increment in pairs(settings.globalTotals) do
+            if civ.isUnitType(object) then
+                total = total +increment*canBuildFunctions.globalUnitsOwnedByTypeID[object.id]
+            elseif civ.isImprovement(object) then
+                total = total + increment*canBuildFunctions.globalImprovementsOwnedByID[object.id]
+            elseif civ.isWonder(object) then
+                total = total + increment*canBuildFunctions.globalWondersOwnedByID[object.id]
+            elseif civ.isTech(object) then
+                for i=0,7 do
+                    if civ.getTribe(i):hasTech(object) then
+                        total = total + increment
+                    end
+                end
+            elseif object == "cities" then
+                total = total + increment*canBuildFunctions.globalCities
+            elseif object == "population" then
+                total = total + increment*canBuildFunctions.globalPopulation
+            end
+        end
+    end
+    if settings.activeWondersTribe then
+        for wonderObject,increment in pairs(settings.activeWondersTribe) do
+            total = total + increment*canBuildFunctions.tribeActiveWondersOwnedByID[wonderObject.id]
+        end
+    end
+    if settings.activeWondersForeign then
+        for wonderObject,increment in pairs(settings.activeWondersForeign) do
+            -- globalWonder - tribeWonder = foreignWonder
+            total = total + increment*(canBuildFunctions.globalActiveWondersOwnedByID[wonderObject.id]
+                - canBuildFunctions.tribeActiveWondersOwnedByID[wonderObject.id])
+        end
+    end
+    if settings.discoveredTechs then
+        for techObject,increment in pairs(settings.discoveredTechs) do
+            if techResearched(techObject) then
+                total = total+increment
+            end
+        end
+    end
+    total = math.max(total, settings.min or total)
+    total = math.min(total, settings.max or total)
+    return math.floor(total)
+end
+
+local function computeMaxNumberGlobal(settings,activeTribe)
+    if type(settings) == "number" then
+        return settings
+    end
+    local total = settings.base or 0
+    if settings.globalTotals then
+        for object,increment in pairs(settings.globalTotals) do
+            if civ.isUnitType(object) then
+                total = total +increment*canBuildFunctions.globalUnitsOwnedByTypeID[object.id]
+            elseif civ.isImprovement(object) then
+                total = total + increment*canBuildFunctions.globalImprovementsOwnedByID[object.id]
+            elseif civ.isWonder(object) then
+                total = total + increment*canBuildFunctions.globalWondersOwnedByID[object.id]
+            elseif civ.isTech(object) then
+                for i=0,7 do
+                    if civ.getTribe(i):hasTech(object) then
+                        total = total + increment
+                    end
+                end
+            elseif object == "cities" then
+                total = total + increment*canBuildFunctions.globalCities
+            elseif object == "population" then
+                total = total + increment*canBuildFunctions.globalPopulation
+            end
+        end
+    end
+    if settings.activeWonders then
+        for wonderObject,increment in pairs(settings.activeWonders) do
+            total = total + increment*canBuildFunctions.globalActiveWondersOwnedByID[wonderObject.id]
+        end
+    end
+    if settings.discoveredTechs then
+        for techObject,increment in pairs(settings.discoveredTechs) do
+            if techResearched(techObject) then
+                total = total+increment
+            end
+        end
+    end
+    total = math.max(total, settings.min or total)
+    total = math.min(total, settings.max or total)
+    return math.floor(total)
+end
+
 -- this is defined below, but needs to be declared here
 local customCanBuild = nil
 
@@ -455,42 +742,6 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
     if itemParameters.humanOnly and (not city.owner.isHuman) then
         return false
     end
-    --[[
-    local function cityInLocationList(city,tableOfLocationInfo)
-        local cityLocation = city.location
-        local cityX = cityLocation.x
-        local cityY = cityLocation.y
-        local cityZ = cityLocation.z
-        for __,locationDatum in pairs(tableOfLocationInfo) do
-            if type(locationDatum) == "table" then
-                print(locationDatum[1],locationDatum[2],locationDatum[3])
-                if locationDatum[3] and locationDatum[3] == cityZ and cityX == locationDatum[1]
-                    and cityY == locationDatum[2] then
-                    return true
-                elseif cityX == locationDatum[1] and cityY == locationDatum[2] then
-                    return true
-                end
-            elseif civ.isTile(locationDatum) then
-                if cityLocation == locationDatum then
-                    return true
-                end
-            elseif civ.isCity(locationDatum) then
-                if city == locationDatum then
-                    return true
-                end
-            elseif type(locationDatum) == "number" then
-                if city.id == locationDatum then 
-                    return true
-                end
-            -- if we get here, locationDatum is a function(tileObject)-->bool
-            elseif locationDatum(cityLocation) then
-                -- if bool is true, then the city qualifies
-                return true
-            end
-        end
-        return false
-    end
-    --]]
     local function cityInLocList(city,locInfo)
         local cityLocation = city.location
         if locInfo["cities"][city.id] or locInfo["tiles"][gen.getTileId(cityLocation)] then
@@ -504,13 +755,11 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
         return false
     end
     if itemParameters.location then
-        --if not(cityInLocationList(city,itemParameters.location)) then
         if not(cityInLocList(city,itemParameters.location)) then
             return false
         end
     end
     if itemParameters.forbiddenLocation then
-        --if cityInLocationList(city,itemParameters.forbiddenLocation) then
         if cityInLocList(city,itemParameters.forbiddenLocation) then
             return false
         end
@@ -665,14 +914,291 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
     if itemParameters.conditionFunction and not(itemParameters.conditionFunction(defaultBuildFunction,city,item)) then
         return false
     end
+    if itemParameters.maxNumberTribe then
+        local maxNumber = nil
+        if type(itemParameters.maxNumberTribe) == "number" then
+            maxNumber = itemParameters.maxNumberTribe
+        elseif type(itemParameters.maxNumberTribe) == "table" then
+            maxNumber = computeMaxNumberTribe(itemParameters.maxNumberTribe,city.owner)
+        elseif type(itemParameters.maxNumberTribe) == "function" then
+            maxNumber = itemParameters.maxNumberTribe(city.owner,item)
+            if type(maxNumber) ~= "number" then
+                error("canBuild: "..tostring(item).." has invalid value for maxNumberTribe.  Value must be nil, integer, table, or function(tribe,item)-->number")
+            end
+        else
+            error("canBuild: "..tostring(item).." has invalid value for maxNumberTribe.  Value must be nil, integer, table, or function(tribe,item)-->number")
+        end
+        local spaceUsed = 0
+        local spaceForItem = 1
+        for luaObject,spacePer in pairs(itemParameters.tribeJointMaxWith) do
+            if civ.isUnitType(luaObject) then
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.tribeUnitsOwnedByTypeID[luaObject.id]
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.tribeUnitsUnderConstructionByTypeID[luaObject.id]
+                if civ.isUnitType(city.currentProduction) and city.currentProduction == luaObject then
+                    spaceUsed = spaceUsed - spacePer
+                end
+                if civ.isUnitType(item) and item == luaObject then
+                    spaceForItem = spacePer
+                end
+            elseif civ.isImprovement(luaObject) then
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.tribeImprovementsOwnedByID[luaObject.id]
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.tribeImprovementsUnderConstructionByID[luaObject.id]
+                if civ.isImprovement(city.currentProduction) and city.currentProduction == luaObject then
+                    spaceUsed = spaceUsed - spacePer
+                end
+                if civ.isImprovement(item) and item == luaObject then
+                    spaceForItem = spacePer
+                end
+            else
+                spaceUsed = spaceUsed + spacePer.canBuildFunctions.tribeWondersOwnedByID[luaObject.id]
+                spaceUsed = spaceUsed + spacePer.canBuildFunctions.tribeWondersUnderConstructionByID[luaObject.id]
+                if civ.isWonder(city.currentProduction) and city.currentProduction == luaObject then
+                    spaceUsed = spaceUsed - spacePer
+                end
+                if civ.isWonder(item) and item == luaObject then
+                    spaceForItem = spacePer
+                end
+            end
+        end
+        -- add a small term to account for floating point arithmetic
+        if spaceUsed + spaceForItem > maxNumber + 1e-6 then
+            return false
+        end
+    end
+    if itemParameters.maxNumberGlobal then
+        local maxNumber = nil
+        if type(itemParameters.maxNumberGlobal) == "number" then
+            maxNumber = itemParameters.maxNumberGlobal
+        elseif type(itemParameters.maxNumberGlobal) == "table" then
+            maxNumber = computeMaxNumberGlobal(itemParameters.maxNumberGlobal,city.owner)
+        elseif type(itemParameters.maxNumberGlobal) == "function" then
+            maxNumber = itemParameters.maxNumberGlobal(city.owner,item)
+            if type(maxNumber) ~= "number" then
+                error("canBuild: "..tostring(item).." has invalid value for maxNumberGlobal.  Value must be nil, integer, table, or function(tribe,item)-->number")
+            end
+        else
+            error("canBuild: "..tostring(item).." has invalid value for maxNumberGlobal.  Value must be nil, integer, table, or function(tribe,item)-->number")
+        end
+        local spaceUsed = 0
+        local spaceForItem = 1
+        for luaObject,spacePer in pairs(itemParameters.globalJointMaxWith) do
+            if civ.isUnitType(luaObject) then
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.globalUnitsOwnedByTypeID[luaObject.id]
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.globalUnitsUnderConstructionByTypeID[luaObject.id]
+                if civ.isUnitType(city.currentProduction) and city.currentProduction == luaObject then
+                    spaceUsed = spaceUsed - spacePer
+                end
+                if civ.isUnitType(item) and item == luaObject then
+                    spaceForItem = spacePer
+                end
+            elseif civ.isImprovement(luaObject) then
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.globalImprovementsOwnedByID[luaObject.id]
+                spaceUsed = spaceUsed+spacePer*canBuildFunctions.globalImprovementsUnderConstructionByID[luaObject.id]
+                if civ.isImprovement(city.currentProduction) and city.currentProduction == luaObject then
+                    spaceUsed = spaceUsed - spacePer
+                end
+                if civ.isImprovement(item) and item == luaObject then
+                    spaceForItem = spacePer
+                end
+            else
+                spaceUsed = spaceUsed + spacePer.canBuildFunctions.globalWondersOwnedByID[luaObject.id]
+                spaceUsed = spaceUsed + spacePer.canBuildFunctions.globalWondersUnderConstructionByID[luaObject.id]
+                if civ.isWonder(city.currentProduction) and city.currentProduction == luaObject then
+                    spaceUsed = spaceUsed - spacePer
+                end
+                if civ.isWonder(item) and item == luaObject then
+                    spaceForItem = spacePer
+                end
+            end
+        end
+        -- add a small term to account for floating point arithmetic
+        if spaceUsed + spaceForItem > maxNumber + 1e-6 then
+            return false
+        end
+    end
     return true
 end
 canBuildFunctions.parametersSatisfied = parametersSatisfied
 
     
+local initializationFunction = function(city)
+
+end
+
+--flag.define("initializationFunctionNotRun",true,"canBuild")
+
+function canBuildFunctions.supplyInitializationFunction(fn)
+    if type(fn) == "function" then
+        initializationFunction = fn
+    else
+        error("supplyInitializationFunction: must provide a function as the argument.")
+    end
+end
+
+-- constructionStatistics
+canBuildFunctions.tribeCities = 0
+canBuildFunctions.globalCities = 0
+canBuildFunctions.tribePopulation = 0
+canBuildFunctions.globalPopulation = 0
+canBuildFunctions.tribeUnitsOwnedByTypeID = {}
+canBuildFunctions.globalUnitsOwnedByTypeID = {}
+canBuildFunctions.tribeImprovementsOwnedByID = {}
+canBuildFunctions.globalImprovementsOwnedByID = {}
+canBuildFunctions.tribeUnitsUnderConstructionByTypeID = {}
+canBuildFunctions.globalUnitsUnderConstructionByTypeID = {}
+canBuildFunctions.tribeImprovementsUnderConstructionByID = {}
+canBuildFunctions.globalImprovementsUnderConstructionByID = {}
+canBuildFunctions.tribeWondersOwnedByID = {}
+canBuildFunctions.globalWondersOwnedByID = {}
+canBuildFunctions.tribeActiveWondersOwnedByID = {}
+canBuildFunctions.globalActiveWondersOwnedByID = {}
+canBuildFunctions.tribeWondersUnderConstructionByID = {}
+canBuildFunctions.globalWondersUnderConstructionByID = {}
+canBuildFunctions.globalTechOwnershipByID = {}
+
+local function incrementTable(tableKey,idKey)
+    canBuildFunctions[tableKey][idKey] = (canBuildFunctions[tableKey][idKey] or 0) + 1
+end
+
+local function incrementImprovementCounts(city,buildingTribe)
+    for improvementTypeId = 0,39 do
+        if city:hasImprovement(civ.getImprovement(improvementTypeId)) then
+            incrementTable("globalImprovementsOwnedByID",improvementTypeId)
+            if city.owner == buildingTribe then
+                incrementTable("tribeImprovementsOwnedByID",improvementTypeId)
+            end
+        end
+    end
+end
+
+local function incrementUnderConstruction(city,buildingTribe)
+    local prod = city.currentProduction
+    if civ.isUnitType(prod) then
+        if city.owner == buildingTribe then
+            incrementTable("tribeUnitsUnderConstructionByTypeID",prod.id)
+        end
+        incrementTable("globalUnitsUnderConstructionByTypeID",prod.id)
+    elseif civ.isImprovement(prod) then
+        if city.owner == buildingTribe then
+            incrementTable("tribeImprovementsUnderConstructionByID",prod.id)
+        end
+        incrementTable("globalImprovementsUnderConstructionByID",prod.id)
+    else
+        if city.owner == buildingTribe then
+            incrementTable("tribeWondersUnderConstructionByID",prod.id)
+        end
+        incrementTable("globalWondersUnderConstructionByID",prod.id)
+    end
+end
+
+local function buildConstructionStatistics(city)
+    local tribe = city.owner
+    for techId = 0,99 do
+        local total = 0
+        for i = 0,7 do
+            if civ.getTribe(i):hasTech(civ.getTech(techId)) then
+                total = total + 1
+            end
+        end
+        canBuildFunctions.globalTechOwnershipByID = total
+    end
+    for unitTypeId = 0,civ.cosmic.numberOfUnitTypes-1 do
+        canBuildFunctions.tribeUnitsOwnedByTypeID[unitTypeId] = 0
+        canBuildFunctions.globalUnitsOwnedByTypeID[unitTypeId] = 0
+        canBuildFunctions.tribeUnitsUnderConstructionByTypeID[unitTypeId] = 0
+        canBuildFunctions.globalUnitsUnderConstructionByTypeID[unitTypeId] = 0
+    end
+    for improvementTypeId = 0,39 do
+        canBuildFunctions.tribeImprovementsOwnedByID[improvementTypeId] = 0
+        canBuildFunctions.globalImprovementsOwnedByID[improvementTypeId] = 0
+        canBuildFunctions.tribeImprovementsUnderConstructionByID[improvementTypeId] = 0
+        canBuildFunctions.globalImprovementsUnderConstructionByID[improvementTypeId] = 0
+    end
+    for wonderId = 0,27 do
+        local wonder = civ.getWonder(wonderId)
+        if wonder.city then
+            if wonder.expires and techResearched(wonder.expires) then
+                if wonder.city.owner == tribe then
+                    canBuildFunctions.tribeWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.tribeActiveWondersOwnedByID[wonderId] = 0
+                    canBuildFunctions.globalWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.globalActiveWondersOwnedByID[wonderId] = 0
+                else
+                    canBuildFunctions.tribeWondersOwnedByID[wonderId] = 0
+                    canBuildFunctions.tribeActiveWondersOwnedByID[wonderId] = 0
+                    canBuildFunctions.globalWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.globalActiveWondersOwnedByID[wonderId] = 0
+                end
+            else
+                if wonder.city.owner == tribe then
+                    canBuildFunctions.tribeWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.tribeActiveWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.globalActiveWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.globalWondersOwnedByID[wonderId] = 1
+                else
+                    canBuildFunctions.tribeWondersOwnedByID[wonderId] = 0
+                    canBuildFunctions.tribeActiveWondersOwnedByID[wonderId] = 0
+                    canBuildFunctions.globalActiveWondersOwnedByID[wonderId] = 1
+                    canBuildFunctions.globalWondersOwnedByID[wonderId] = 1
+                end
+            end
+        else
+            canBuildFunctions.globalWondersOwnedByID[wonderId] = 0
+            canBuildFunctions.globalActiveWondersOwnedByID[wonderId] = 0
+            canBuildFunctions.tribeWondersOwnedByID[wonderId] = 0
+            canBuildFunctions.tribeActiveWondersOwnedByID[wonderId] = 0
+        end
+    end
+        canBuildFunctions.tribeCities = 0
+        canBuildFunctions.globalCities = 0
+        canBuildFunctions.tribePopulation = 0
+        canBuildFunctions.globalPopulation = 0
+    for unit in civ.iterateUnits() do
+        if unit.owner == tribe then
+            incrementTable("tribeUnitsOwnedByTypeID",unit.type.id)
+        end
+        incrementTable("globalUnitsOwnedByTypeID",unit.type.id)
+    end
+    for city in civ.iterateCities() do
+        if city.owner == tribe then
+            canBuildFunctions.tribeCities = canBuildFunctions.tribeCities + 1
+            canBuildFunctions.tribePopulation = canBuildFunctions.tribePopulation + city.size
+        end
+        canBuildFunctions.globalCities = canBuildFunctions.globalCities + 1
+        canBuildFunctions.globalPopulation = canBuildFunctions.globalPopulation + city.size
+        incrementImprovementCounts(city,tribe)
+        incrementUnderConstruction(city,tribe)
+    end
+end
+canBuildFunctions.buildConstructionStatistics = buildConstructionStatistics
 
 
-customCanBuild = function (defaultBuildFunction, city, item)
+local computeConstructionStatisticsOnEveryInitialization = true
+
+function canBuildFunctions.disableAutomaticBuildConstructionStatistics()
+    computeConstructionStatisticsOnEveryInitialization = false
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+customCanBuild = function (defaultBuildFunction, city, item,ignoreInitalization)
+    if not ignoreInitalization then
+        initializationFunction(city)
+        if computeConstructionStatisticsOnEveryInitialization then
+            buildConstructionStatistics(city)
+        end
+    end
     local itemParameters = nil
     if civ.isUnitType(item) then
         itemParameters = unitTypeParameters[item.id]
@@ -700,3 +1226,62 @@ end
 
 
 return canBuildFunctions
+
+
+--          .tribeProducing = nil or {[luaObject] = number or nil}
+--              for each luaObject the tribe has in production, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of that unit type in production
+--              if improvement, increment by the number of cities producing that improvement
+--              if wonder, increment for each instance of the wonder under production by the tribe
+--
+--          .globalProducing = nil or {[luaObject] = number or nil}
+--              for each luaObject the tribe has in production, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of that unit type in production by any tribe
+--              if improvement, increment by the number of cities producing that improvement from any tribe
+--              if wonder, increment for each instance of the wonder under production by the tribe from any tribe
+--
+--
+--          .globalProducing = nil or {[luaObject] = number or nil}
+--              for each luaObject the tribe has in production, increment the limit by the corresponding value
+--              nil means 0
+--              if unitType, increment by the number of that unit type in production by any tribe
+--              if improvement, increment by the number of cities producing that improvement from any tribe
+--              if wonder, increment for each instance of the wonder under production by the tribe from any tribe
+--
+--
+--    if settings.tribeProducing then
+--        for object,increment in pairs(settings.tribeProducing) do
+--            if civ.isUnitType(object) then
+--                total = total + increment*canBuildFunctions.tribeUnitsUnderConstructionByTypeID[object.id]
+--            elseif civ.isImprovement(object) then
+--                total = total + increment*canBuildFunctions.tribeImprovementsUnderConstructionByID[object.id]
+--            elseif civ.isWonder(object) then
+--                total = total + increment*canBuildFunctions.tribeWondersUnderConstructionByID[object.id]
+--            end
+--        end
+--    end
+--    if settings.globalProducing then
+--        for object,increment in pairs(settings.globalProducing) do
+--            if civ.isUnitType(object) then
+--                total = total + increment*canBuildFunctions.globalUnitsUnderConstructionByTypeID[object.id]
+--            elseif civ.isImprovement(object) then
+--                total = total + increment*canBuildFunctions.globalImprovementsUnderConstructionByID[object.id]
+--            elseif civ.isWonder(object) then
+--                total = total + increment*canBuildFunctions.globalWondersUnderConstructionByID[object.id]
+--            end
+--        end
+--    end
+--
+--    if settings.globalProducing then
+--        for object,increment in pairs(settings.globalProducing) do
+--            if civ.isUnitType(object) then
+--                total = total + increment*canBuildFunctions.globalUnitsUnderConstructionByTypeID[object.id]
+--            elseif civ.isImprovement(object) then
+--                total = total + increment*canBuildFunctions.globalImprovementsUnderConstructionByID[object.id]
+--            elseif civ.isWonder(object) then
+--                total = total + increment*canBuildFunctions.globalWondersUnderConstructionByID[object.id]
+--            end
+--        end
+--    end
