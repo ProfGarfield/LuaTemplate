@@ -1,4 +1,5 @@
 local flag = require("flag")
+local counter = require('counter')
 local gen = require("generalLibrary")
 
 -- This module provides some basic functionality for governing whether
@@ -196,6 +197,11 @@ local gen = require("generalLibrary")
 --              if another tribe owns the wonder, and it is not expired, add the increment
 --          .discoveredTechs = nil or {[techObject] = number or nil}
 --              if the tech is discovered by any tribe, add the increment
+--          .trueFlags = nil or {[flagKey] = number or nil}
+--              if the flag associated with flagKey is true, add the value to the production limit
+--          .counterValues = nil or {[counterKey] = number or nil}
+--              for each counter specified by counterKey, multiply the value of the counter by the
+--              number specified, and add that product to the production limit
 --
 --      .tribeJointMaxWith  = nil or {[luaObject] = number or nil}
 --              each of the tribe's instance of luaObject in the table uses up a portion of the ownership
@@ -243,9 +249,14 @@ local gen = require("generalLibrary")
 --              if "population", increment for each population point of all cities in the game
 --          
 --          .activeWonders = nil or {[wonderObject] = number or nil}
---              if the wonder is built and it is not expired, add the increment
+--              if the wonder is built and it is not expired, add the value to the production limit
 --          .discoveredTechs = nil or {[techObject] = number or nil}
---              if the tech is discovered by any tribe, add the increment
+--              if the tech is discovered by any tribe, add the value to the production limit
+--          .trueFlags = nil or {[flagKey] = number or nil}
+--              if the flag associated with flagKey is true, add the value to the production limit
+--          .counterValues = nil or {[counterKey] = number or nil}
+--              for each counter specified by counterKey, multiply the value of the counter by the
+--              number specified, and add that product to the production limit
 --
 --      .globalJointMaxWith  = nil or {[luaObject] = number or nil}
 --              each instance of luaObject in the table uses up a portion of the ownership
@@ -652,6 +663,18 @@ local function computeMaxNumberTribe(settings,activeTribe)
             end
         end
     end
+    if settings.trueFlags then
+        for flagKey,value in pairs(settings.trueFlags) do
+            if flag.value(flagKey) then
+                total = total+value
+            end
+        end
+    end
+    if settings.counterValues then
+        for counterKey,value in pairs(settings.counterValues) do
+            total = total+ counter.value(counterKey)*value
+        end
+    end
     total = math.max(total, settings.min or total)
     total = math.min(total, settings.max or total)
     return math.floor(total)
@@ -693,6 +716,18 @@ local function computeMaxNumberGlobal(settings,activeTribe)
             if techResearched(techObject) then
                 total = total+increment
             end
+        end
+    end
+    if settings.trueFlags then
+        for flagKey,value in pairs(settings.trueFlags) do
+            if flag.value(flagKey) then
+                total = total+value
+            end
+        end
+    end
+    if settings.counterValues then
+        for counterKey,value in pairs(settings.counterValues) do
+            total = total+ counter.value(counterKey)*value
         end
     end
     total = math.max(total, settings.min or total)

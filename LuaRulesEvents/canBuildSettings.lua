@@ -218,6 +218,11 @@ local canBuildFunctions = require("canBuild")
 --                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
 --              and unitTypeBuild[object.uEngineers.id] = {maxNumberTribe = 6,
 --                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
+--          .trueFlags = nil or {[flagKey] = number or nil}
+--              if the flag associated with flagKey is true, add the value to the production limit
+--          .counterValues = nil or {[counterKey] = number or nil}
+--              for each counter specified by counterKey, multiply the value of the counter by the
+--              number specified, and add that product to the production limit
 --              
 --
 --
@@ -251,6 +256,11 @@ local canBuildFunctions = require("canBuild")
 --              if the wonder is built and it is not expired, add the increment
 --          .discoveredTechs = nil or {[techObject] = number or nil}
 --              if the tech is discovered by any tribe, add the increment
+--          .trueFlags = nil or {[flagKey] = number or nil}
+--              if the flag associated with flagKey is true, add the value to the production limit
+--          .counterValues = nil or {[counterKey] = number or nil}
+--              for each counter specified by counterKey, multiply the value of the counter by the
+--              number specified, and add that product to the production limit
 --
 --      .globalJointMaxWith  = nil or {[luaObject] = number or nil}
 --              each instance of luaObject in the table uses up a portion of the ownership
