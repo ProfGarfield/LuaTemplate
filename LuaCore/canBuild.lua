@@ -171,15 +171,17 @@ local gen = require("generalLibrary")
 --          .min = integer or nil
 --              minimum number even if calculation would be larger
 --              nil means no limit
---          .tribeTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--          .tribeTotals = nil or {[luaObject or "cities" or "population" or "turn"] = number or nil}
 --              for each luaObject the tribe owns, increment the limit by the corresponding value
 --              nil means 0
 --              if unitType, increment by the number of units owned
 --              if improvement, increment by the number of cities that have that improvement
 --              if wonder, increment if the wonder is owned by the tribe
 --              if technology, increment if tribe has the technology
+--              if tribe, increment by value if the tribeObject is the tribe building the object
 --              if "cities", increment for each city owned by the tribe
 --              if "population", increment for each population point of the tribe
+--              if "turn", increment by the value each turn
 --
 --          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
 --              for each luaObject in the world, increment the limit by the corresponding value
@@ -188,8 +190,10 @@ local gen = require("generalLibrary")
 --              if improvement, increment by the number of cities that have that improvement among all players
 --              if wonder, increment if the wonder is owned by any tribe
 --              if technology, increment for each tribe that has the technology
+--              if tribe, increment by value if the tribeObject is active in the game
 --              if "cities", increment for each city in the game
 --              if "population", increment for each population point of all cities in the game
+--              if "turn", increment by the value each turn
 --          
 --          .activeWondersTribe = nil or  {[wonderObject] = number or nil}
 --              if the tribe owns the wonder, and it is not expired, add the increment
@@ -202,6 +206,8 @@ local gen = require("generalLibrary")
 --          .counterValues = nil or {[counterKey] = number or nil}
 --              for each counter specified by counterKey, multiply the value of the counter by the
 --              number specified, and add that product to the production limit
+--          .customFunction = nil or function(tribe,item) -> number
+--              if a function is provided, add the output of the function to the production limit
 --
 --      .tribeJointMaxWith  = nil or {[luaObject] = number or nil}
 --              each of the tribe's instance of luaObject in the table uses up a portion of the ownership
@@ -238,15 +244,17 @@ local gen = require("generalLibrary")
 --          .min = integer or nil
 --              minimum number even if calculation would be larger
 --              nil means no limit
---          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
+--          .globalTotals = nil or {[luaObject or "cities" or "population" or "turn"] = number or nil}
 --              for each luaObject in the world, increment the limit by the corresponding value
 --              nil means 0
 --              if unitType, increment by the number of units owned by all players
 --              if improvement, increment by the number of cities that have that improvement among all players
 --              if wonder, increment if the wonder is owned by any tribe
 --              if technology, increment for each tribe that has the technology
+--              if tribe, increment by value if the tribeObject is active in the game
 --              if "cities", increment for each city in the game
 --              if "population", increment for each population point of all cities in the game
+--              if "turn", increment by the value each turn
 --          
 --          .activeWonders = nil or {[wonderObject] = number or nil}
 --              if the wonder is built and it is not expired, add the value to the production limit
@@ -257,6 +265,8 @@ local gen = require("generalLibrary")
 --          .counterValues = nil or {[counterKey] = number or nil}
 --              for each counter specified by counterKey, multiply the value of the counter by the
 --              number specified, and add that product to the production limit
+--          .customFunction = nil or function(tribe,item) -> number
+--              if a function is provided, add the output of the function to the production limit
 --
 --      .globalJointMaxWith  = nil or {[luaObject] = number or nil}
 --              each instance of luaObject in the table uses up a portion of the ownership
@@ -599,7 +609,7 @@ local function supplyWonderParameters(wonderParametersTable)
 end
 canBuildFunctions.supplyWonderParameters = supplyWonderParameters
 
-local function computeMaxNumberTribe(settings,activeTribe)
+local function computeMaxNumberTribe(settings,activeTribe,item)
     if type(settings) == "number" then
         return settings
     end
@@ -616,10 +626,16 @@ local function computeMaxNumberTribe(settings,activeTribe)
                 if activeTribe:hasTech(object) then
                     total = total+increment
                 end
+            elseif civ.isTribe(object) then
+                if object.id == activeTribe.id then
+                    total = total + increment
+                end
             elseif object == "cities" then
                 total = total + increment*canBuildFunctions.tribeCities
             elseif object == "population" then
                 total = total + increment*canBuildFunctions.tribePopulation
+            elseif object == "turn" then
+                total = total + increment*civ.getTurn()
             end
         end
     end
@@ -637,10 +653,16 @@ local function computeMaxNumberTribe(settings,activeTribe)
                         total = total + increment
                     end
                 end
+            elseif civ.isTribe(object) then
+                if object.active then
+                    total = total + increment
+                end
             elseif object == "cities" then
                 total = total + increment*canBuildFunctions.globalCities
             elseif object == "population" then
                 total = total + increment*canBuildFunctions.globalPopulation
+            elseif object == "turn" then
+                total = total + increment*civ.getTurn()
             end
         end
     end
@@ -675,12 +697,15 @@ local function computeMaxNumberTribe(settings,activeTribe)
             total = total+ counter.value(counterKey)*value
         end
     end
+    if settings.customFunction then
+        total = total + customFunction(activeTribe,item)
+    end
     total = math.max(total, settings.min or total)
     total = math.min(total, settings.max or total)
     return math.floor(total)
 end
 
-local function computeMaxNumberGlobal(settings,activeTribe)
+local function computeMaxNumberGlobal(settings,activeTribe,item)
     if type(settings) == "number" then
         return settings
     end
@@ -699,10 +724,16 @@ local function computeMaxNumberGlobal(settings,activeTribe)
                         total = total + increment
                     end
                 end
+            elseif civ.isTribe(object) then
+                if object.active then
+                    total = total + increment
+                end
             elseif object == "cities" then
                 total = total + increment*canBuildFunctions.globalCities
             elseif object == "population" then
                 total = total + increment*canBuildFunctions.globalPopulation
+            elseif object == "turn" then
+                total = total + increment*civ.getTurn()
             end
         end
     end
@@ -729,6 +760,9 @@ local function computeMaxNumberGlobal(settings,activeTribe)
         for counterKey,value in pairs(settings.counterValues) do
             total = total+ counter.value(counterKey)*value
         end
+    end
+    if settings.customFunction then
+        total = total + customFunction(activeTribe,item)
     end
     total = math.max(total, settings.min or total)
     total = math.min(total, settings.max or total)
@@ -954,7 +988,7 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
         if type(itemParameters.maxNumberTribe) == "number" then
             maxNumber = itemParameters.maxNumberTribe
         elseif type(itemParameters.maxNumberTribe) == "table" then
-            maxNumber = computeMaxNumberTribe(itemParameters.maxNumberTribe,city.owner)
+            maxNumber = computeMaxNumberTribe(itemParameters.maxNumberTribe,city.owner,item)
         elseif type(itemParameters.maxNumberTribe) == "function" then
             maxNumber = itemParameters.maxNumberTribe(city.owner,item)
             if type(maxNumber) ~= "number" then
@@ -1005,7 +1039,7 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
         if type(itemParameters.maxNumberGlobal) == "number" then
             maxNumber = itemParameters.maxNumberGlobal
         elseif type(itemParameters.maxNumberGlobal) == "table" then
-            maxNumber = computeMaxNumberGlobal(itemParameters.maxNumberGlobal,city.owner)
+            maxNumber = computeMaxNumberGlobal(itemParameters.maxNumberGlobal,city.owner,item)
         elseif type(itemParameters.maxNumberGlobal) == "function" then
             maxNumber = itemParameters.maxNumberGlobal(city.owner,item)
             if type(maxNumber) ~= "number" then
@@ -1263,60 +1297,3 @@ end
 return canBuildFunctions
 
 
---          .tribeProducing = nil or {[luaObject] = number or nil}
---              for each luaObject the tribe has in production, increment the limit by the corresponding value
---              nil means 0
---              if unitType, increment by the number of that unit type in production
---              if improvement, increment by the number of cities producing that improvement
---              if wonder, increment for each instance of the wonder under production by the tribe
---
---          .globalProducing = nil or {[luaObject] = number or nil}
---              for each luaObject the tribe has in production, increment the limit by the corresponding value
---              nil means 0
---              if unitType, increment by the number of that unit type in production by any tribe
---              if improvement, increment by the number of cities producing that improvement from any tribe
---              if wonder, increment for each instance of the wonder under production by the tribe from any tribe
---
---
---          .globalProducing = nil or {[luaObject] = number or nil}
---              for each luaObject the tribe has in production, increment the limit by the corresponding value
---              nil means 0
---              if unitType, increment by the number of that unit type in production by any tribe
---              if improvement, increment by the number of cities producing that improvement from any tribe
---              if wonder, increment for each instance of the wonder under production by the tribe from any tribe
---
---
---    if settings.tribeProducing then
---        for object,increment in pairs(settings.tribeProducing) do
---            if civ.isUnitType(object) then
---                total = total + increment*canBuildFunctions.tribeUnitsUnderConstructionByTypeID[object.id]
---            elseif civ.isImprovement(object) then
---                total = total + increment*canBuildFunctions.tribeImprovementsUnderConstructionByID[object.id]
---            elseif civ.isWonder(object) then
---                total = total + increment*canBuildFunctions.tribeWondersUnderConstructionByID[object.id]
---            end
---        end
---    end
---    if settings.globalProducing then
---        for object,increment in pairs(settings.globalProducing) do
---            if civ.isUnitType(object) then
---                total = total + increment*canBuildFunctions.globalUnitsUnderConstructionByTypeID[object.id]
---            elseif civ.isImprovement(object) then
---                total = total + increment*canBuildFunctions.globalImprovementsUnderConstructionByID[object.id]
---            elseif civ.isWonder(object) then
---                total = total + increment*canBuildFunctions.globalWondersUnderConstructionByID[object.id]
---            end
---        end
---    end
---
---    if settings.globalProducing then
---        for object,increment in pairs(settings.globalProducing) do
---            if civ.isUnitType(object) then
---                total = total + increment*canBuildFunctions.globalUnitsUnderConstructionByTypeID[object.id]
---            elseif civ.isImprovement(object) then
---                total = total + increment*canBuildFunctions.globalImprovementsUnderConstructionByID[object.id]
---            elseif civ.isWonder(object) then
---                total = total + increment*canBuildFunctions.globalWondersUnderConstructionByID[object.id]
---            end
---        end
---    end

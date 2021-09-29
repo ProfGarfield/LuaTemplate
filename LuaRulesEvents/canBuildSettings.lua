@@ -182,8 +182,10 @@ local canBuildFunctions = require("canBuild")
 --              if improvement, increment by the number of cities that have that improvement
 --              if wonder, increment if the wonder is owned by the tribe
 --              if technology, increment if tribe has the technology
+--              if tribe, increment by value if the tribeObject is the tribe building the object
 --              if "cities", increment for each city owned by the tribe
 --              if "population", increment for each population point of the tribe
+--              if "turn", increment by the value each turn
 --
 --          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
 --              for each luaObject in the world, increment the limit by the corresponding value
@@ -192,8 +194,10 @@ local canBuildFunctions = require("canBuild")
 --              if improvement, increment by the number of cities that have that improvement among all players
 --              if wonder, increment if the wonder is owned by any tribe
 --              if technology, increment for each tribe that has the technology
+--              if tribe, increment by value if the tribeObject is active in the game
 --              if "cities", increment for each city in the game
 --              if "population", increment for each population point of all cities in the game
+--              if "turn", increment by the value each turn
 --          
 --          .activeWondersTribe = nil or  {[wonderObject] = number or nil}
 --              if the tribe owns the wonder, and it is not expired, add the increment
@@ -201,6 +205,11 @@ local canBuildFunctions = require("canBuild")
 --              if another tribe owns the wonder, and it is not expired, add the increment
 --          .discoveredTechs = nil or {[techObject] = number or nil}
 --              if the tech is discovered by any tribe, add the increment
+--          .trueFlags = nil or {[flagKey] = number or nil}
+--              if the flag associated with flagKey is true, add the value to the production limit
+--          .counterValues = nil or {[counterKey] = number or nil}
+--              for each counter specified by counterKey, multiply the value of the counter by the
+--              number specified, and add that product to the production limit
 --
 --      .tribeJointMaxWith  = nil or {[luaObject] = number or nil}
 --              each of the tribe's instance of luaObject in the table uses up a portion of the ownership
@@ -218,11 +227,6 @@ local canBuildFunctions = require("canBuild")
 --                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
 --              and unitTypeBuild[object.uEngineers.id] = {maxNumberTribe = 6,
 --                  tribeJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
---          .trueFlags = nil or {[flagKey] = number or nil}
---              if the flag associated with flagKey is true, add the value to the production limit
---          .counterValues = nil or {[counterKey] = number or nil}
---              for each counter specified by counterKey, multiply the value of the counter by the
---              number specified, and add that product to the production limit
 --              
 --
 --
@@ -249,8 +253,10 @@ local canBuildFunctions = require("canBuild")
 --              if improvement, increment by the number of cities that have that improvement among all players
 --              if wonder, increment if the wonder is owned by any tribe
 --              if technology, increment for each tribe that has the technology
+--              if tribe, increment by value if the tribeObject is active in the game
 --              if "cities", increment for each city in the game
 --              if "population", increment for each population point of all cities in the game
+--              if "turn", increment by the value each turn
 --          
 --          .activeWonders = nil or {[wonderObject] = number or nil}
 --              if the wonder is built and it is not expired, add the increment
