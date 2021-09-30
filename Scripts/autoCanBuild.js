@@ -1,4 +1,8 @@
 
+    //  discovered techs
+    //  true flags
+    //  counter values
+// Search For Tribe Totals
 const settingGeneratorForm = document.getElementById('setting-generator');
 const listGeneratorDiv = document.getElementById('list-generator');
 const settingOutputCode = document.getElementById('setting-output-code');
@@ -362,7 +366,25 @@ function updateHeadings() {
     const numberOfAlternateProduction = parseInt(document.getElementById('number-of-alternate-production').value)
     document.getElementById('require-some-as-alternate-production-legend').textContent =
         `${itemName} can only be built in cities which can also build at least ${numberOfAlternateProduction} of these items.`
+    const maxNumberTribeRadioLimited = document.getElementById('max-number-tribe-radio-limited')
+    const maxNumberTribeLegend = document.getElementById('max-number-tribe-legend')
+    if (maxNumberTribeRadioLimited.checked) {
+        maxNumberTribeLegend.textContent = `Each tribe can only own a limited number of ${itemName}.`
+        document.getElementById("max-number-tribe-settings").style.display = '';
+    } else {
+        maxNumberTribeLegend.textContent = `Tribes have no limit on their ownership of ${itemName}.`
+        document.getElementById("max-number-tribe-settings").style.display = 'none';
+    }
 
+    const maxNumberGlobalRadioLimited = document.getElementById('max-number-global-radio-limited')
+    const maxNumberGlobalLegend = document.getElementById('max-number-global-legend')
+    if (maxNumberGlobalRadioLimited.checked) {
+        maxNumberGlobalLegend.textContent = `The global ownership of ${itemName} is limited.`
+        document.getElementById("max-number-global-settings").style.display = '';
+    } else {
+        maxNumberGlobalLegend.textContent = `There is no global ownership limit for ${itemName}.`
+        document.getElementById("max-number-global-settings").style.display = 'none';
+    }
 
     const nameSpanList = document.querySelectorAll('.item-name');
     for (let i = 0; i < nameSpanList.length; i++) {
@@ -402,6 +424,7 @@ function generateOutput() {
     outString += computeLastTurnCode();
     outString += computeForbiddenAlternateProductionCode();
     outString += computeRequireSomeAsAlternateProductionCode();
+    outString += computeTribeLimitedOwnershipCode();
     outString += computeBinarySettings();
     outString += '}'
     settingOutputCode.textContent = outString;
@@ -534,6 +557,7 @@ function displayEntryList(entryList,listStorageArray,selectElementList) {
             displayAllEntryLists();
             //selectElementList.forEach(selectArray => unhideSelection(selectArray,codeName));
             li.remove();
+            updateAllListSelectors();
         });
         if (entryList.children[0]) {
             entryList.insertBefore(li,entryList.children[0]);
@@ -800,7 +824,7 @@ function computeAllFlagsMatchCode() {
 
 
 const someFlagsMatchSelect = document.getElementById('some-flags-match-select');
-const someFlagsMatchList = document.getElementById('some-flags-match-list')
+const someFlagsMatchList = document.getElementById('some-flags-match-list');
 updateListSelectorFnArray.push( () => {
     updateListSelector(someFlagsMatchSelect,flagsOnly.flat());
     updateFlagRadio(someFlagsMatchSelect,someFlagsMatchList);
@@ -843,6 +867,288 @@ requireSomeAsAlternateProductionSelect.addEventListener('change', e => {
 });
 const computeRequireSomeAsAlternateProductionCode = makeListCodeGenerator(requireSomeAsAlternateProductionSelect,"requireSomeAsAlternateProduction",document.getElementById('number-of-alternate-production'),"numberOfAlternateProduction");
 
+// Search For Tribe Totals
+
+const maxNumberTribeTribeTotalsSelect = document.getElementById("max-number-tribe-tribe-totals-select");
+const totalsOptions = [unitList,improvementList,wonderList,advancesList,tribeList];
+const totalsTitles = ["Units","Improvements","Wonders","Technologies","Tribes"];
+const maxNumberTribeTribeTotalsList = document.getElementById("max-number-tribe-tribe-totals-list");
+function tribeTotalsDescription(itemCode,itemName) {
+    if (itemCode.substring(0,8) === "object.u") {
+        return `For each ${itemName} owned by the tribe, increase the ownership limit by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.p") {
+        return `Increase the ownership limit of the ${itemName} by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.i") {
+        return `For each ${itemName} owned by the tribe, increase the ownership limit by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.w") {
+        return `If the tribe owns the ${itemName}, increase the ownership limit by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.a") {
+        return `If the tribe has ${itemName}, increase the ownership limit by this amount.`;
+    }
+    return "No description"
+}
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeTribeTotalsSelect,totalsOptions.flat());
+    updateFloatInput(maxNumberTribeTribeTotalsSelect,maxNumberTribeTribeTotalsList,tribeTotalsDescription);
+});
+maxNumberTribeTribeTotalsSelect.addEventListener('change', e => {
+    if (maxNumberTribeTribeTotalsSelect.value === 'new-list') {
+        newListEvent(maxNumberTribeTribeTotalsSelect,totalsOptions,totalsTitles,'tribePosessionsIncrements');
+    }
+    updateAllListSelectors();
+});
+const maxNumberTribeGlobalTotalsSelect = document.getElementById("max-number-tribe-global-totals-select");
+const maxNumberTribeGlobalTotalsList = document.getElementById("max-number-tribe-global-totals-list");
+function globalTotalsDescription(itemCode,itemName) {
+    if (itemCode.substring(0,8) === "object.u") {
+        return `For each ${itemName} owned by the anyone, increase the ownership limit by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.p") {
+        return `If the ${itemName} are still active, increase the ownership limit by this amount`;
+    } else if (itemCode.substring(0,8) === "object.i") {
+        return `For each ${itemName} owned by the anyone, increase the ownership limit by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.w") {
+        return `If any tribe owns the ${itemName}, increase the ownership limit by this amount.`;
+    } else if (itemCode.substring(0,8) === "object.a") {
+        return `For each tribe that has ${itemName}, increase the ownership limit by this amount.`;
+    }
+    return "No description"
+}
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeGlobalTotalsSelect,totalsOptions.flat());
+    updateFloatInput(maxNumberTribeGlobalTotalsSelect,maxNumberTribeGlobalTotalsList,globalTotalsDescription);
+});
+maxNumberTribeGlobalTotalsSelect.addEventListener('change', e => {
+    if (maxNumberTribeGlobalTotalsSelect.value === 'new-list') {
+        newListEvent(maxNumberTribeGlobalTotalsSelect,totalsOptions,totalsTitles,'globalPosessionsIncrements');
+    }
+    updateAllListSelectors();
+});
+const maxNumberTribeActiveWondersTribeSelect = document.getElementById("max-number-tribe-active-wonders-tribe-select");
+const maxNumberTribeActiveWondersTribeList = document.getElementById("max-number-tribe-active-wonders-tribe-list")
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeActiveWondersTribeSelect,wonderList);
+    updateFloatInput(maxNumberTribeActiveWondersTribeSelect,maxNumberTribeActiveWondersTribeList);
+});
+maxNumberTribeActiveWondersTribeSelect.addEventListener('change', e => {
+    if (maxNumberTribeActiveWondersTribeSelect.value === 'new-list') {
+        newListEvent(maxNumberTribeActiveWondersTribeSelect,[wonderList],["Wonders"],"tribeActiveWonderIncrements")
+    }
+    updateAllListSelectors();
+});
+const maxNumberTribeActiveWondersForeignSelect = document.getElementById("max-number-tribe-active-wonders-foreign-select");
+const maxNumberTribeActiveWondersForeignList = document.getElementById("max-number-tribe-active-wonders-foreign-list")
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeActiveWondersForeignSelect,wonderList);
+    updateFloatInput(maxNumberTribeActiveWondersForeignSelect,maxNumberTribeActiveWondersForeignList);
+});
+maxNumberTribeActiveWondersForeignSelect.addEventListener('change', e => {
+    if (maxNumberTribeActiveWondersForeignSelect.value === 'new-list') {
+        newListEvent(maxNumberTribeActiveWondersForeignSelect,[wonderList],["Wonders"],"tribeForeignWonderIncrements")
+    }
+    updateAllListSelectors();
+});
+
+const maxNumberTribeDiscoveredTechsSelect = document.getElementById("max-number-tribe-discovered-techs-select");
+const maxNumberTribeDiscoveredTechsList = document.getElementById("max-number-tribe-discovered-techs-list");
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeDiscoveredTechsSelect,advancesList);
+    updateFloatInput(maxNumberTribeDiscoveredTechsSelect,maxNumberTribeDiscoveredTechsList);
+});
+maxNumberTribeDiscoveredTechsSelect.addEventListener('change', e => {
+    if (maxNumberTribeDiscoveredTechsSelect.value === 'new-list') {
+
+        newListEvent(maxNumberTribeDiscoveredTechsSelect,[advancesList],["Technologies"], "tribeIncrementsDiscoveredTechs");
+    }
+    updateAllListSelectors();
+});
+const maxNumberTribeTrueFlagsSelect = document.getElementById("max-number-tribe-true-flags-select");
+const maxNumberTribeTrueFlagsList = document.getElementById("max-number-tribe-true-flags-list");
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeTrueFlagsSelect,flagsList);
+    updateFloatInput(maxNumberTribeTrueFlagsSelect,maxNumberTribeTrueFlagsList);
+});
+maxNumberTribeTrueFlagsSelect.addEventListener('change', e => {
+    if (maxNumberTribeTrueFlagsSelect.value === 'new-list') {
+
+        newListEvent(maxNumberTribeTrueFlagsSelect,[flagsList],["Flags"], "tribeIncrementsTrueFlags");
+    }
+    updateAllListSelectors();
+});
+
+const maxNumberTribeCounterValuesSelect = document.getElementById("max-number-tribe-counter-values-select");
+const maxNumberTribeCounterValuesList = document.getElementById("max-number-tribe-counter-values-list");
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeCounterValuesSelect,countersList);
+    updateFloatInput(maxNumberTribeCounterValuesSelect,maxNumberTribeCounterValuesList);
+});
+maxNumberTribeCounterValuesSelect.addEventListener('change', e => {
+    if (maxNumberTribeCounterValuesSelect.value === 'new-list') {
+
+        newListEvent(maxNumberTribeCounterValuesSelect,[countersList],["Counters"], "tribeIncrementsCounterValues");
+    }
+    updateAllListSelectors();
+});
+
+
+const maxNumberTribeSharedLimitSelect = document.getElementById("max-number-tribe-shared-limit-select");
+const productionOptions = [unitList,improvementList,wonderList];
+const productionTitles = ["Units","Improvements","Wonders"];
+const maxNumberTribeSharedLimitList = document.getElementById("max-number-tribe-shared-limit-list");
+function tribeSharedLimitsDescription(itemCode,itemName) {
+    const chooseItemName = fullList[chooseItemSelect.value].name;
+    if (itemCode === chooseItemSelect.value) {
+        if (itemCode.substring(0,8) === "object.u") {
+            return `Each ${itemName} consumes this much of the calculated ownership limit, instead of 1 unit.`;
+        } else if (itemCode.substring(0,8) === "object.i") {
+            return `Each ${itemName} consumes this much of the calculated ownership limit, instead of 1 unit.`;
+        } else if (itemCode.substring(0,8) === "object.w") {
+            return `The ${itemName} consumes this much of the calculated ownership limit, instead of 1 unit.`;
+        }
+        return "No description"
+    } else {
+        if (itemCode.substring(0,8) === "object.u") {
+            return `Each ${itemName} onwed by the tribe uses this quantity of the ${chooseItemName} ownership limit.`;
+        } else if (itemCode.substring(0,8) === "object.i") {
+            return `Each ${itemName} owned by the tribe uses this quantity of the ${chooseItemName} ownership limit.`;
+        } else if (itemCode.substring(0,8) === "object.w") {
+            return `If ${itemName} is onwed by the tribe, this quantity of the ${chooseItemName} ownership limit is used.`;
+        }
+        return "No description"
+    }
+}
+updateListSelectorFnArray.push( () => {
+    updateListSelector(maxNumberTribeSharedLimitSelect,productionOptions.flat());
+    updateFloatInput(maxNumberTribeSharedLimitSelect,maxNumberTribeSharedLimitList,tribeSharedLimitsDescription
+    );
+});
+maxNumberTribeSharedLimitSelect.addEventListener('change', e => {
+    if (maxNumberTribeSharedLimitSelect.value === 'new-list') {
+        newListEvent(maxNumberTribeSharedLimitSelect,productionOptions,productionTitles,'tribeSharedLimitsList');
+    }
+    updateAllListSelectors();
+});
+
+
+function computeFloatInputTableInteriorCode(floatInputTableElement) {
+    let output = ""
+    for (let i = 0; i < floatInputTableElement.children.length; i++) {
+        const tableElement = floatInputTableElement.children[i];
+        const nameElement = tableElement.children[0];
+        const floatInput = tableElement.children[1];
+        output = output + `[${nameElement.value}] = ${floatInput.value}, `;
+    }
+    return output;
+}
+
+function computeTribeLimitedOwnershipCode() {
+    if (maxNumberTribeRadioUnlimited.checked) {
+        return "";
+    }
+    
+    let output = "maxNumberTribe = {";
+    let value = document.getElementById("max-number-tribe-base").value;
+    if (value !== "0") {
+        output = output + "base = "+ value + ", ";
+    }
+    value = document.getElementById("max-number-tribe-min").value
+    if (value !== "0") {
+        output = output + "min = "+ value + ", ";
+    }
+    value = document.getElementById("max-number-tribe-max").value;
+    if (value !== "0") {
+        output = output + "max = "+ value + ", ";
+    }
+    value = document.getElementById("max-number-tribe-turn-increment" ).value;
+    if (value !== "0") {
+        output = output + "turn = "+ value + ", ";
+    }
+    output = output + "tribeTotals = {";
+    value = document.getElementById("max-number-tribe-tribe-cities-increment").value;
+    if (value !== "0") {
+        output = output + "[\"cities\"] = "+ value + ", ";
+    }
+    value = document.getElementById("max-number-tribe-tribe-population-increment").value;
+    if (value !== "0") {
+        output = output + "[\"population\"] = "+ value + ", ";
+    }
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeTribeTotalsList);
+    output = output + "},";
+    let emptyTable = "tribeTotals = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+    output = output + "globalTotals = {";
+    value = document.getElementById("max-number-tribe-global-cities-increment").value;
+    if (value !== "0") {
+        output = output + "[\"cities\"] = "+ value + ", ";
+    }
+    value = document.getElementById("max-number-tribe-global-population-increment").value;
+    if (value !== "0") {
+        output = output + "[\"population\"] = "+ value + ", ";
+    }
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeGlobalTotalsList);
+    output = output + "},";
+    emptyTable = "globalTotals = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+    output = output + "activeWondersTribe = {";
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeActiveWondersTribeList);
+    output = output + "},";
+    emptyTable = "activeWondersTribe = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+    output = output + "activeWondersForeign = {";
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeActiveWondersForeignList);
+    output = output + "},";
+    emptyTable = "activeWondersForeign = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+
+    output = output + "discoveredTechs = {";
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeDiscoveredTechsList);
+    output = output + "},";
+    emptyTable = "discoveredTechs = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+    output = output + "trueFlags = {";
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeTrueFlagsList);
+    output = output + "},";
+    emptyTable = "trueFlags = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+    
+    output = output + "counterValues = {";
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeCounterValuesList);
+    output = output + "},";
+    emptyTable = "counterValues = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+
+    //  discovered techs
+    //  true flags
+    //  counter values
+
+    // end of maxNumberTribe key
+    output = output + "}, ";
+
+    output = output + "tribeJointMaxWith = {";
+    output = output + computeFloatInputTableInteriorCode(maxNumberTribeSharedLimitList);
+    output = output + "},";
+    emptyTable = "tribeJointMaxWith = {"+"},";
+    if (output.substring(output.length-emptyTable.length,output.length) === emptyTable) {
+        output = output.substring(0,output.length-emptyTable.length);
+    }
+    
+    return output;
+}
+
+
 
 function addRadioButtonsAfter(selectElement) {
     const radioName = document.createElement('input');
@@ -863,10 +1169,16 @@ function addRadioButtonsAfter(selectElement) {
     radioConstructorLabel.textContent = "Use list constructor."
     radioConstructor.checked=true;
     const selectParent = selectElement.parentNode;
-    selectParent.appendChild(radioConstructor);
-    selectParent.appendChild(radioConstructorLabel);
-    selectParent.appendChild(radioName);
-    selectParent.appendChild(radioNameLabel);
+    //selectParent.appendChild(radioConstructor);
+    //selectParent.appendChild(radioConstructorLabel);
+    //selectParent.appendChild(radioName);
+    //selectParent.appendChild(radioNameLabel);
+    selectParent.insertBefore(radioNameLabel,selectElement);
+    selectParent.insertBefore(radioName,radioNameLabel);
+    selectParent.insertBefore(radioConstructorLabel,radioName);
+    selectParent.insertBefore(radioConstructor,radioConstructorLabel);
+    selectParent.insertBefore(selectElement,radioConstructor);
+
 }
 
 
@@ -1005,38 +1317,6 @@ function recordFlagRadioValue(flagLiElement,recordObject) {
         return ;
     }
 }
-function recordFlagRadioValue(flagLiElement,recordObject) {
-    const nameSpan = document.getElementById(flagLiElement.id+"-name");
-    const radioTrue = document.getElementById(flagLiElement.id+"-radio-true");
-    const radioFalse = document.getElementById(flagLiElement.id+"-radio-false");
-    const radioIgnore = document.getElementById(flagLiElement.id+"-radio-ignore");
-    if (radioTrue.checked) {
-        recordObject[nameSpan.value]="true";
-        return ;
-    } else if (radioFalse.checked) {
-        recordObject[nameSpan.value]="false";
-        return ;
-    } else {
-        recordObject[nameSpan.value]="ignore";
-        return ;
-    }
-}
-function recordFlagRadioValue(flagLiElement,recordObject) {
-    const nameSpan = document.getElementById(flagLiElement.id+"-name");
-    const radioTrue = document.getElementById(flagLiElement.id+"-radio-true");
-    const radioFalse = document.getElementById(flagLiElement.id+"-radio-false");
-    const radioIgnore = document.getElementById(flagLiElement.id+"-radio-ignore");
-    if (radioTrue.checked) {
-        recordObject[nameSpan.value]="true";
-        return ;
-    } else if (radioFalse.checked) {
-        recordObject[nameSpan.value]="false";
-        return ;
-    } else {
-        recordObject[nameSpan.value]="ignore";
-        return ;
-    }
-}
 
 function generateFlagRadioCode(flagListElement) {
     const record = {}
@@ -1109,6 +1389,70 @@ function updateFlagRadio(selectElement,flagListElement) {
         }
     }
 }
+
+function recordFloatInputValue(liElement,recordObject) {
+    const nameSpan = document.getElementById(liElement.id+"-name");
+    const floatInput = document.getElementById(liElement.id+"-float-input");
+    recordObject[nameSpan.value]=floatInput.value
+    return ;
+}
+
+
+// descriptionFunction(itemCode,itemName)
+function updateFloatInput(selectElement,listElement,descriptionFunction) {
+
+    descriptionFunction = descriptionFunction || function(itemCode,itemName) { return ""};
+    const previousSettings = {} // {code: string}
+    for (let i=0; i < listElement.children.length; i++) {
+        recordFloatInputValue(listElement.children[i],previousSettings);
+    }
+    deleteAllChildren(listElement);
+    if (!selectElement.value) {
+        return ;
+    }
+    const listObject = getListObjectFromFixedId(selectElement.value)
+    const itemName = fullList[chooseItemSelect.value].name;
+    for (let i = 0; i < listObject.listStorageArray.length; i++) {
+        const li = document.createElement('tr');
+        li.id=`${listElement.id}-li-${i}`;
+        listElement.appendChild(li);
+        const elementName = document.createElement('td');
+        elementName.textContent = fullList[listObject.listStorageArray[i]].name;
+        elementName.value = listObject.listStorageArray[i];
+        elementName.id = li.id+'-name';
+        li.appendChild(elementName);
+        const incrementFloatInput = document.createElement('input');
+        incrementFloatInput.type = "text";
+        incrementFloatInput.id = li.id+"-float-input";
+        incrementFloatInput.className = "float-input";
+        //incrementFloatInputLabel = document.createElement('label');
+        //incrementFloatInputLabel.htmlFor = incrementFloatInput.id;
+        //incrementFloatInputLabel.textContent = `For each ${elementName.textContent} owned by the tribe, increase the tribe's ownership limit of ${itemName} by:`;
+        //li.appendChild(incrementFloatInputLabel);
+        li.appendChild(incrementFloatInput);
+        if (previousSettings[listObject.listStorageArray[i]]) {
+            incrementFloatInput.value = previousSettings[listObject.listStorageArray[i]];
+        } else if (elementName.value === chooseItemSelect.value) {
+            incrementFloatInput.value = "1";
+        } else {
+            incrementFloatInput.value = "0";
+        }
+        const description = document.createElement('span');
+        description.textContent = descriptionFunction(elementName.value,elementName.textContent);
+        li.appendChild(description);
+
+
+    }
+
+}
+
+
+
+
+
+
+
+
 const minimumPopulationInput = document.getElementById('minimum-population');
 function computeMinimumPopulationCode() {
     if (minimumPopulationInput.value && parseInt(minimumPopulationInput.value) > 0 ) {
@@ -1170,6 +1514,16 @@ function computeBinarySettings() {
 // initialize Page
 makeForbiddenTribesBoxes();
 makeForbiddenMapsBoxes();
+const maxNumberTribeRadioUnlimited = document.getElementById("max-number-tribe-radio-unlimited")
+maxNumberTribeRadioUnlimited.checked = true;
+maxNumberTribeRadioUnlimited.addEventListener('change', (e) => updateHeadings());
+const maxNumberTribeRadioLimited = document.getElementById("max-number-tribe-radio-limited")
+maxNumberTribeRadioLimited.addEventListener('change', (e) => updateHeadings());
+const maxNumberGlobalRadioUnlimited = document.getElementById("max-number-global-radio-unlimited")
+maxNumberGlobalRadioUnlimited.checked = true;
+maxNumberGlobalRadioUnlimited.addEventListener('change', (e) => updateHeadings());
+const maxNumberGlobalRadioLimited = document.getElementById("max-number-global-radio-limited")
+maxNumberGlobalRadioLimited.addEventListener('change', (e) => updateHeadings());
 updateHeadings();
 const sampleListValueArray = []
 //listGeneratorDiv.appendChild(makeListCreatorForm({optionsArrays:[unitList,improvementList,wonderList],optionsArraysTitles:["units","improvements","wonders"],listStorageArray:sampleListValueArray,code:"newList"}))

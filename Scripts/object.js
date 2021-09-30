@@ -40,11 +40,11 @@ const cityLocationList = [
 ]
 
 const advancesList = [
-    {name:"SampleTech0",id:0,code:"object.aSampleTech0"},
-    {name:"SampleTech1",id:1,code:"object.aSampleTech1"},
-    {name:"SampleTech2",id:2,code:"object.aSampleTech2"},
-    {name:"SampleTech3",id:3,code:"object.aSampleTech3"},
-    {name:"SampleTech4",id:4,code:"object.aSampleTech4"},
+    {name:"Sample Tech 0",id:0,code:"object.aSampleTech0"},
+    {name:"Sample Tech 1",id:1,code:"object.aSampleTech1"},
+    {name:"Sample Tech 2",id:2,code:"object.aSampleTech2"},
+    {name:"Sample Tech 3",id:3,code:"object.aSampleTech3"},
+    {name:"Sample Tech 4",id:4,code:"object.aSampleTech4"},
 ]
 
 // id exists only for consistency with other objects

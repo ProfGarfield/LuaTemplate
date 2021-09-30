@@ -162,15 +162,18 @@ local gen = require("generalLibrary")
 --          if integer, the number is the maximum of the item that can be built by that tribe
 --          if function, the returned value is the number of the item the tribe can build
 --          if table, consider these keys and values, rounding down at the end of the calculation
---          .base = integer or nil
+--          .base = number or nil
 --              base number 
 --              nil means 0
---          .max = integer or nil
+--          .max = number or nil
 --              maximum number even if calculation would be larger
 --              nil means no limit
---          .min = integer or nil
+--          .min = number or nil
 --              minimum number even if calculation would be larger
 --              nil means no limit
+--          .turn = number or nil
+--              increment limit by the value each turn
+--              nil means no change per turn
 --          .tribeTotals = nil or {[luaObject or "cities" or "population" or "turn"] = number or nil}
 --              for each luaObject the tribe owns, increment the limit by the corresponding value
 --              nil means 0
@@ -181,7 +184,6 @@ local gen = require("generalLibrary")
 --              if tribe, increment by value if the tribeObject is the tribe building the object
 --              if "cities", increment for each city owned by the tribe
 --              if "population", increment for each population point of the tribe
---              if "turn", increment by the value each turn
 --
 --          .globalTotals = nil or {[luaObject or "cities" or "population"] = number or nil}
 --              for each luaObject in the world, increment the limit by the corresponding value
@@ -193,7 +195,6 @@ local gen = require("generalLibrary")
 --              if tribe, increment by value if the tribeObject is active in the game
 --              if "cities", increment for each city in the game
 --              if "population", increment for each population point of all cities in the game
---              if "turn", increment by the value each turn
 --          
 --          .activeWondersTribe = nil or  {[wonderObject] = number or nil}
 --              if the tribe owns the wonder, and it is not expired, add the increment
@@ -235,15 +236,18 @@ local gen = require("generalLibrary")
 --          if function, the returned value is the number of the item that can be built in the world
 --          if table, consider these keys and values, rounding down at the end of the calculation
 --          for the maximum number for all tribes together
---          .base = integer or nil
+--          .base = number or nil
 --              base number 
 --              nil means 0
---          .max = integer or nil
+--          .max = number or nil
 --              maximum number even if calculation would be larger
 --              nil means no limit
---          .min = integer or nil
+--          .min = number or nil
 --              minimum number even if calculation would be larger
 --              nil means no limit
+--          .turn = number or nil
+--              increment limit by the value each turn
+--              nil means no change per turn
 --          .globalTotals = nil or {[luaObject or "cities" or "population" or "turn"] = number or nil}
 --              for each luaObject in the world, increment the limit by the corresponding value
 --              nil means 0
@@ -254,7 +258,6 @@ local gen = require("generalLibrary")
 --              if tribe, increment by value if the tribeObject is active in the game
 --              if "cities", increment for each city in the game
 --              if "population", increment for each population point of all cities in the game
---              if "turn", increment by the value each turn
 --          
 --          .activeWonders = nil or {[wonderObject] = number or nil}
 --              if the wonder is built and it is not expired, add the value to the production limit
@@ -614,6 +617,9 @@ local function computeMaxNumberTribe(settings,activeTribe,item)
         return settings
     end
     local total = settings.base or 0
+    if settings.turn then
+        total = total + settings.turn*civ.getTurn()
+    end
     if settings.tribeTotals then
         for object,increment in pairs(settings.tribeTotals) do
             if civ.isUnitType(object) then
@@ -634,8 +640,6 @@ local function computeMaxNumberTribe(settings,activeTribe,item)
                 total = total + increment*canBuildFunctions.tribeCities
             elseif object == "population" then
                 total = total + increment*canBuildFunctions.tribePopulation
-            elseif object == "turn" then
-                total = total + increment*civ.getTurn()
             end
         end
     end
@@ -661,8 +665,6 @@ local function computeMaxNumberTribe(settings,activeTribe,item)
                 total = total + increment*canBuildFunctions.globalCities
             elseif object == "population" then
                 total = total + increment*canBuildFunctions.globalPopulation
-            elseif object == "turn" then
-                total = total + increment*civ.getTurn()
             end
         end
     end
@@ -710,6 +712,9 @@ local function computeMaxNumberGlobal(settings,activeTribe,item)
         return settings
     end
     local total = settings.base or 0
+    if settings.turn then
+        total = total + settings.turn*civ.getTurn()
+    end
     if settings.globalTotals then
         for object,increment in pairs(settings.globalTotals) do
             if civ.isUnitType(object) then
@@ -732,8 +737,6 @@ local function computeMaxNumberGlobal(settings,activeTribe,item)
                 total = total + increment*canBuildFunctions.globalCities
             elseif object == "population" then
                 total = total + increment*canBuildFunctions.globalPopulation
-            elseif object == "turn" then
-                total = total + increment*civ.getTurn()
             end
         end
     end

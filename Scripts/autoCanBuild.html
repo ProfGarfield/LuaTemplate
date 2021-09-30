@@ -10,6 +10,7 @@
             height: 98%;
         }
         .number-input { width: 20px; }
+        .float-input { width: 40px; }
         #left-hand-side{
             width: 48%;
             float:left;
@@ -128,6 +129,108 @@
                     <label for="number-of-alternate-production">Minimum number of alternate production:</label>
                     <input type="text" id="number-of-alternate-production" value="0" class="number-input">
                     <select id="require-some-as-alternate-production-select"></select>
+                </fieldset>
+                <fieldset id="max-number-tribe">
+                    <legend id="max-number-tribe-legend"></legend>
+                    <input type="radio" id="max-number-tribe-radio-unlimited" name="max-number-tribe-radio">
+                    <label for="max-number-tribe-radio-unlimited">Allow unlimited production for each tribe.</legend>
+                    <input type="radio" id="max-number-tribe-radio-limited" name="max-number-tribe-radio">
+                    <label for="max-number-tribe-radio-limited">Limit the ownership for each tribe.</legend>
+                    <br>
+                    <div id="max-number-tribe-settings">
+                        <label for="max-number-tribe-base">Base limit:</label>
+                        <input type="text" id="max-number-tribe-base" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-tribe-min">Notwithstanding other calculations, this is the minimum limit:</label>
+                        <input type="text" id="max-number-tribe-min" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-tribe-max">Notwithstanding other calculations, this is the maximum limit:</label>
+                        <input type="text" id="max-number-tribe-max" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-tribe-turn-increment">For each turn elapsed, increase the tribe ownership limit by this amount:</label>
+                        <input type="text" id="max-number-tribe-turn-increment" value="0" class="float-input">
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-tribe-totals-select">Increase the tribe's ownership limit by the specified amount, for each of the following items owned by the tribe:</label>
+                        <br>
+                        <label for="max-number-tribe-tribe-cities-increment">For each city the tribe owns, increase the tribe ownership limit by this amount:</label>
+                        <input type="text" id="max-number-tribe-tribe-cities-increment" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-tribe-tribe-population-increment">For each population point of the tribe's cities, increase the tribe ownership limit by this amount:</label>
+                        <input type="text" id="max-number-tribe-tribe-population-increment" value="0" class="float-input">
+                        <br>
+                        <select id="max-number-tribe-tribe-totals-select"></select>
+                        <table id="max-number-tribe-tribe-totals-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-global-totals-select">Increase the tribe's ownership limit by the specified amount, for each of the following items owned by anyone.</label>
+                        <br>
+                        <label for="max-number-tribe-global-cities-increment">For each city in the world, increase the tribe ownership limit by this amount:</label>
+                        <input type="text" id="max-number-tribe-global-cities-increment" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-tribe-global-population-increment">For each population point in the world, increase the tribe ownership limit by this amount:</label>
+                        <input type="text" id="max-number-tribe-global-population-increment" value="0" class="float-input">
+                        <br>
+                        <select id="max-number-tribe-global-totals-select"></select>
+                        <table id="max-number-tribe-global-totals-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-active-wonders-tribe-select">Increase the tribe's ownership limit by the specified amount for each wonder owned by the tribe that is not expired:</label>
+                        <br>
+                        <select id="max-number-tribe-active-wonders-tribe-select"></select>
+                        <table id="max-number-tribe-active-wonders-tribe-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-active-wonders-foreign-select">Increase the tribe's ownership limit by the specified amount for each wonder owned by a foreign tribe that is not expired:</label>
+                        <br>
+                        <select id="max-number-tribe-active-wonders-foreign-select"></select>
+                        <table id="max-number-tribe-active-wonders-foreign-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-discovered-techs-select">Increase the tribe's ownership limit by the specified amount (once) if the technology has been discovered by any tribe:</label>
+                        <br>
+                        <select id="max-number-tribe-discovered-techs-select"></select>
+                        <table id="max-number-tribe-discovered-techs-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-true-flags-select">Increase the tribe's ownership limit by the specified amount for each flag that has a true value:</label>
+                        <br>
+                        <select id="max-number-tribe-true-flags-select"></select>
+                        <table id="max-number-tribe-true-flags-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-counter-values-select">For each counter, multiply the counter's value by the specified amount, and add the product to the tribe's ownership limit.</label>
+                        <br>
+                        <select id="max-number-tribe-counter-values-select"></select>
+                        <table id="max-number-tribe-counter-values-list"></table>
+                        <br>
+                        <br>
+                        <label for="max-number-tribe-shared-limit-select">These items count towards the ownership limit.</label>
+                        <br>
+                        <select id="max-number-tribe-shared-limit-select"></select>
+                        <table id="max-number-tribe-shared-limit-list"></table>
+                    </div>
+                </fieldset>
+                <fieldset id="max-number-global">
+                    <legend id="max-number-global-legend"></legend>
+                    <input type="radio" id="max-number-global-radio-unlimited" name="max-number-global-radio">
+                    <label for="max-number-tribe-radio-unlimited">Allow unlimited production for all tribes together.</legend>
+                    <input type="radio" id="max-number-global-radio-limited" name="max-number-global-radio" disabled>
+                    <label for="max-number-tribe-global-limited">Limit the ownership for all tribes together.</legend>
+                    <br>
+                    <div id="max-number-global-settings">
+                        <label for="max-number-global-base">Base limit:</label>
+                        <input type="text" id="max-number-global-base" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-global-min">Notwithstanding other calculations, this is the minimum limit:</label>
+                        <input type="text" id="max-number-global-min" value="0" class="float-input">
+                        <br>
+                        <label for="max-number-global-max">Notwithstanding other calculations, this is the maximum limit:</label>
+                        <input type="text" id="max-number-global-max" value="0" class="float-input">
+                        <br>
+                        <select id="max-number-global-select"></select>
+                        <ol id="max-number-global-list"></ol>
+                    </div>
                 </fieldset>
                 <fieldset id="binary-settings">
                     <ul>
