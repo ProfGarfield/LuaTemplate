@@ -47,6 +47,7 @@ local gen = require("generalLibrary")
 -- noGlobal prevents new global variables from being created
 -- or accessed; this should make typos easier to discover
 gen.noGlobal()
+gen.setScenarioDirectory(scenarioFolder)
 local civlua = require("civluaModified")
 local func = require("functions")
 local flag = require("flag")

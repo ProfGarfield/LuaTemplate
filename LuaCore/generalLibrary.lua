@@ -396,6 +396,8 @@
 -- gen.allowNewKeys(dataTable) --> void
 -- gen.forbidNilValueAccess(dataTable) --> void
 -- gen.allowNilValueAccess(dataTable) --> void
+-- gen.setScenarioDirectory(directoryPath) --> void
+-- gen.getScenarioDirectory() --> string
 --  
 --
 --
@@ -4689,6 +4691,26 @@ function gen.allowNilValueAccess(dataTable)
         error("gen.allowNilValueAccess: argument is not a data table.  Use gen.makeDataTable first.")
     end
     mt.forbidNilValueAccess = false
+end
+
+local scenarioDirectory = nil
+
+-- gen.setScenarioDirectory(directoryPath) --> void
+function gen.setScenarioDirectory(directory)
+    if type(directory) == "string" then
+        scenarioDirectory = directory
+    else
+        error("gen.setScenarioDirectory expects a string as the argument.")
+    end
+end
+
+-- gen.getScenarioDirectory() --> string
+function gen.getScenarioDirectory()
+    if scenarioDirectory then
+        return scenarioDirectory
+    else
+        error("gen.getScenarioDirectory: scenario directory path has not been set.  Use gen.setScenarioDirectory in your events.lua file.  If you are using the Lua Scenario Template, there should be a local variable named scenarioFolder.  Try the line:\n gen.setScenarioDirectory(scenarioFolder)")
+    end
 end
 
 
