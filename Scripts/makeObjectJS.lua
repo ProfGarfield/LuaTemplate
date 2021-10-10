@@ -1,6 +1,7 @@
 local object = require("object")
 local flag = require("flag")
 local counter = require("counter")
+local gen = require("generalLibrary")
 
 local function findKeyOf(item,table,typeCheckFn)
     for key,value in pairs(table) do
@@ -36,7 +37,8 @@ local function buildCityLocationLine(city,table)
 end
     
 
-local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."object.js"
+--local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."object.js"
+local fileLocation = gen.getScenarioDirectory().."\\Scripts".."\\"..tostring(os.time()).."object.js"
 
 local file = io.open(fileLocation,"a")
 io.output(file)

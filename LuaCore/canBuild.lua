@@ -776,9 +776,6 @@ end
 local customCanBuild = nil
 
 local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters)
-    if itemParameters.returnFalse then
-        return false
-    end
     if itemParameters.overrideFunction and itemParameters.overrideFunction(defaultBuildFunction,city,item) then
         return true
     end
@@ -788,6 +785,9 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
                 return true
             end
         end
+    end
+    if itemParameters.returnFalse then
+        return false
     end
     if itemParameters.overrideDefaultBuildFunction then
         if civ.isImprovement(item) and city:hasImprovement(item) then

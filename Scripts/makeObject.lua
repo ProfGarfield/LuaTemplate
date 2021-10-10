@@ -26,7 +26,10 @@ local function scrubKey(key,prefix)
     usedKeys[key]=true
     return key
 end
-local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."object.lua"
+
+--local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."object.lua"
+local gen = require("generalLibrary")
+local fileLocation = gen.getScenarioDirectory().."\\LuaParameterFiles".."\\"..tostring(os.time()).."object.lua"
 
 local file = io.open(fileLocation,"a")
 io.output(file)
