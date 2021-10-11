@@ -297,9 +297,39 @@ local canBuildFunctions = require("canBuild")
 --
 
 local unitTypeBuild = {}
-
 local improvementBuild = {}
 local wonderBuild = {}
+local addBuildConditions = canBuildFunctions.makeAddBuildConditions(unitTypeBuild,improvementBuild,wonderBuild)
+-- addBuildConditions(item,buildabilityParameters)
+--      adds the buildabilityParameters to the appropriate table and index for item.  If the item
+--      already has buildabilityParameters registered, the new set of parameters are automatically
+--      added to the alternateParameters table
+-- addBuildConditions(tableOfItems,buildabilityParameters)
+--      for each item in the table, register the buildability parameters as above
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 -- canBuildFunctions.hideProcessingList() -- uncomment if you don't want the list of stuff being processed printed in the console

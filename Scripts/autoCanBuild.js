@@ -393,14 +393,15 @@ function updateHeadings() {
 
 function generateOutput() {
     const itemValue = chooseItemSelect.value;
-    let outString = ""
-    if (itemValue.charAt(7) === 'u') {
-        outString = `unitTypeBuild[${itemValue}.id] = {`
-    } else if (itemValue.charAt(7) === 'i') {
-        outString = `improvementBuild[${itemValue}.id] = {`
-    } else if (itemValue.charAt(7) === 'w') {
-        outString = `wonderBuild[${itemValue}.id] = {`
-    }
+    //let outString = ""
+    //if (itemValue.charAt(7) === 'u') {
+    //    outString = `unitTypeBuild[${itemValue}.id] = {`
+    //} else if (itemValue.charAt(7) === 'i') {
+    //    outString = `improvementBuild[${itemValue}.id] = {`
+    //} else if (itemValue.charAt(7) === 'w') {
+    //    outString = `wonderBuild[${itemValue}.id] = {`
+    //}
+    let outString = `addBuildConditions(${itemValue}, {`
     outString += computeForbiddenTribesCode();
     outString += computeForbiddenMapsCode();
     outString += computeLocationCode();
@@ -424,7 +425,7 @@ function generateOutput() {
     outString += computeTribeLimitedOwnershipCode();
     outString += computeGlobalLimitedOwnershipCode();
     outString += computeBinarySettings();
-    outString += '}'
+    outString += '})\n'
     settingOutputCode.textContent = outString;
 }
 

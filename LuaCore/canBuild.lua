@@ -1294,6 +1294,34 @@ function canBuildFunctions.hideProcessingList()
     showCurrentProcess = false
 end
 
+function canBuildFunctions.makeAddBuildConditions(unitTypeBuild,improvementBuild,wonderBuild)
+    local function addBuildConditions(itemTable,paramTable)
+        if type(itemTable) ~= "table" then
+            itemTable = {itemTable}
+        end
+        for _,item in pairs(itemTable) do
+            local parameterTable = gen.copyTable(paramTable)
+            local settingsTable = nil
+            if civ.isUnitType(item) then
+                settingsTable = unitTypeBuild
+            elseif civ.isImprovement(item) then
+                settingsTable = improvementBuild
+            elseif civ.isWonder(item) then
+                settingsTable = wonderBuild
+            else
+                error("canBuildFunctions.addBuildCondition: the item to add must be either a unitType object, improvementObject, or wonderObject.  Received instead: "..tostring(item))
+            end
+            local ID = item.id
+            if settingsTable[ID] then
+                settingsTable[ID].alternateParameters = settingsTable[ID].alternateParameters or {}
+                settingsTable[ID].alternateParameters[1+#settingsTable[ID].alternateParameters] = parameterTable
+            else
+                settingsTable[ID] = parameterTable
+            end
+        end
+    end
+    return addBuildConditions
+end
 
 
 
