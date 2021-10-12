@@ -417,7 +417,7 @@ local function postProcessParameterTable(parameterTable)
         end
         if parameters.alternateParameters then
             for key,value in pairs(parameters.alternateParameters) do
-                postProcessParameters(value)
+                postProcessParameters(value,item)
             end
         end
         if parameters.forbiddenTribes then
