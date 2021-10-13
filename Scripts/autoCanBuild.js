@@ -557,6 +557,7 @@ function displayEntryList(entryList,listStorageArray,selectElementList) {
             //selectElementList.forEach(selectArray => unhideSelection(selectArray,codeName));
             li.remove();
             updateAllListSelectors();
+            updateValidSelection(listStorageArray,selectElementList);
         });
         if (entryList.children[0]) {
             entryList.insertBefore(li,entryList.children[0]);
