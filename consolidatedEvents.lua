@@ -159,7 +159,6 @@ end
 
 
 -- After Production
--- Not yet linked
 function events.afterProduction(turn,tribe)
     --civ.ui.text("After production for turn "..tostring(turn).." and tribe "..tribe.name)
     
@@ -167,7 +166,6 @@ function events.afterProduction(turn,tribe)
 end
 
 -- Before Production
--- Not yet linked
 function events.beforeProduction(turn,tribe)
     --civ.ui.text("Before production for turn "..tostring(turn).." and tribe "..tribe.name)
 
