@@ -3575,7 +3575,7 @@ end
 --      tribe is the tribe that can be occupying 
 --      if nil is entered, all terrain is allowed
 function gen.getRandomNearbyOpenTileForTribe(centerTile,distance,allowedTiles,tribe)
-    tileList = gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
+    local tileList = gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
     local numberOfTiles = #tileList
     if numberOfTiles > 0 then
         return tileList[math.random(1,numberOfTiles)]
