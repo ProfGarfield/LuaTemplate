@@ -28,6 +28,20 @@ local function linkState(tableInStateTable)
 end
 promotion.linkState = linkState
 
+local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+if fileFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "promotion"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        linkState(state[keyName])
+    end
+end
 
 local cancelledPromotionMessageFn = function(winner,loser)
     return "In this scenario, there is a reduced chance for gaining promotion.  Unfortunately, your "..winner.type.name.." unit has not been promoted to "..text.getVeteranTitle().." status."

@@ -48,13 +48,17 @@ local civlua = require("civluaModified")
 -- ===============================================================================
 
 
-function discreteEvents.onActivateUnit(unit,source)
+function discreteEvents.onActivateUnit(unit,source,repeated)
     --civ.ui.text("Unit activation Discrete Event")
 end
 
 function discreteEvents.onCityDestroyed(city) 
     --civ.ui.text("City destroyed discrete event test")
 
+end
+
+function discreteEvents.onBribeUnit(unit,previousOwner)
+    --civ.ui.text("Bribe unit discrete event test")
 end
 
 function discreteEvents.onCityFounded(city) 
@@ -88,6 +92,7 @@ end
 
 function discreteEvents.onTurn(turn) 
     --civ.ui.text("discrete on turn event 2")
+
 end
 
 function discreteEvents.onTurn(turn) 
@@ -99,20 +104,64 @@ function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,loserLocation
     --civ.ui.text(loser.type.name.." was killed by "..winner.type.name.." discrete event 1")
 end
 
+function discreteEvents.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
+    --civ.ui.text(loser.type.name.." was defeated (possibly by event) by "..winner.type.name.." discrete event")
+end
+
 function discreteEvents.onTurn(turn) 
     --civ.ui.text("discrete on turn event 4")
 end
 
-function discreteEvents.afterProduction(turn,tribe) 
+function discreteEvents.onAfterProduction(turn,tribe) 
     --civ.ui.text("after production for "..tribe.name.." on turn "..tostring(turn))
 end
 
-function discreteEvents.beforeProduction(turn,tribe) 
+function discreteEvents.onBeforeProduction(turn,tribe) 
     --civ.ui.text("before production for "..tribe.name.." on turn "..tostring(turn))
 end
 
 function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
     --civ.ui.text(loser.type.name.." was killed by "..winner.type.name.." discrete event 2")
+end
+
+function discreteEvents.onCentauriArrival(tribe)
+    --civ.ui.text(tribe.name.." arrived at centauri discrete event")
+end
+
+-- On Game Ends
+-- Return true if the game ends as normal,
+-- and false otherwise.
+-- This is combined with the consolidated events and the
+-- legacy events, as well as a separate onGameEnds.lua file
+-- If any of these return false, then game end is prevented
+-- Not documented or experimented with much
+-- based on legacy event engine code, reason is an integer
+function discreteEvents.onGameEnds(reason)
+    -- return false to stop the game from ending
+    return true
+end
+
+-- On Schism 
+-- Return true (default) if the tribe can schism,
+-- and false otherwise.
+-- This is combined with the consolidated events and the
+-- legacy events, as well as a separate onSchism.lua file
+-- If any of these return false, then schism is prevented
+function discreteEvents.onSchism(tribe)
+
+    return true
+end
+
+
+-- On Negotiation 
+-- Return true if the talker can contact the listener,
+-- and false otherwise.
+-- This is combined with the consolidated events and the
+-- legacy events, as well as a separate onNegotiation.lua file
+-- If any of these return false, then negotiation is prevented
+function discreteEvents.onNegotiation(talker,listener)
+
+    return true
 end
 
 -- ===============================================================================

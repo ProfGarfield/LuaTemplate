@@ -26,7 +26,8 @@
 --gen.setBit1(integer,bitNumber)-->integer
 --gen.setBit0(integer,bitNumber)-->integer
 --gen.makeThresholdTable(table or nil)-->thresholdTable
---#applyWonderBonus(wonderObject or integer,tribeObject or integer)-->boolean
+--applyWonderBonus(wonderObject or integer,tribeObject or integer)-->boolean
+--gen.isWonderActiveForTribe(wonderObject or integer,tribeObject or integer)-->boolean
 --#gen.toTile(tile or table)-->tile
 --#gen.isMapFlat()-->boolean
 --#gen.isMapRound()-->boolean
@@ -570,10 +571,11 @@ function gen.makeThresholdTable(inputTable)
 end
 
 -- applyWonderBonus(wonderObject or integer,tribeObject or integer)-->boolean
--- gen.applyWonderBonus(wonderObject or integer,tribeObject or integer)-->boolean
+-- gen.isWonderActiveForTribe(wonderObject or integer,tribeObject or integer)-->boolean
 -- returns true if the wonder has been built and is not
 -- expired or destroyed 
 -- integer means corresponding wonder/tribe id
+-- revisions by Knighttime, 2021-11-12
 local function applyWonderBonus(wonder,tribe)
     if type(wonder) == "number" then
         wonder = civ.getWonder(wonder)
@@ -582,8 +584,12 @@ local function applyWonderBonus(wonder,tribe)
         tribe = civ.getTribe(tribe)
     end
     --check if expired
-    for i=0,7 do
-        if civ.getTribe(i) and wonder.expires and tribe:hasTech(wonder.expires) then
+	-- Kn: If barbarians (tribe 0) are the first to acquire a wonder expiration tech,
+	--   the in-game popup appears announcing that this cancels the effect of the wonder.
+	--   But it doesn't actually do so! The wonder continues to function until a
+	--   non-barbarian tribe acquires the tech, so the loop below starts with 1.
+    for i=1,7 do
+        if civ.getTribe(i) and wonder.expires and civ.hasTech(civ.getTribe(i), wonder.expires) then
             return false
         end
     end
@@ -593,7 +599,7 @@ local function applyWonderBonus(wonder,tribe)
         return false
     end
 end
-
+gen.isWonderActiveForTribe = applyWonderBonus
 
 -- toTile(tile or table)-->tile
 -- gen.toTile(tile or table)-->tile
@@ -2973,31 +2979,6 @@ if rawget(_G,"console") then
     _G.console.restoreGlobal = gen.restoreGlobal
 end
 
-local state = "stateNotLinked"
-
--- gen.linkState(stateTable)
--- links the state table to the General Library
--- provides access to the state table so that
--- gen.getState() can provide it
-
-
-function gen.linkState(stateTable)
-    if type(stateTable) == "table" then
-        state = stateTable
-    else
-        error("gen.linkState: linkState takes a table as an argument.")
-    end
-end
-
--- gen.getState()
--- returns the state table submitted to gen.linkState
--- If you're writing a module intended for use by others,
--- it is recommended that
--- you use a linkState system with a sub table, so that
--- table keys don't accidentally conflict
-function gen.getState()
-    return state
-end
 
 -- gen.cityRadiusTiles(cityOrTileOrCoordTable) --> table
 --  returns a table of tiles around a center tile, the 
@@ -3284,6 +3265,33 @@ function gen.getEphemeralTable()
     return ephemeralTable
 end
 
+local state = "stateNotLinked"
+
+-- gen.linkState(stateTable)
+-- links the state table to the General Library
+-- provides access to the state table so that
+-- gen.getState() can provide it
+
+
+function gen.linkState(stateTable)
+    if type(stateTable) == "table" then
+        state = stateTable
+    else
+        error("gen.linkState: linkState takes a table as an argument.")
+    end
+end
+
+-- gen.getState()
+-- returns the state table submitted to gen.linkState
+-- If you're writing a module intended for use by others,
+-- it is recommended that
+-- you use a linkState system with a sub table, so that
+-- table keys don't accidentally conflict
+function gen.getState()
+    return state
+end
+
+
 local genStateTable = "stateTableNotLinked"
 -- gen.linkGeneralLibraryState(stateTable) --> void
 -- links a sub table of the state table for the purposes of
@@ -3298,7 +3306,35 @@ function gen.linkGeneralLibraryState(stateTable)
     end
     genStateTable.limitedExecutions = genStateTable.limitedExecutions or {}
     genStateTable.persistentRandom = genStateTable.persistentRandom or {}
+    genStateTable.tileMarkerTable = genStateTable.tileMarkerTable or {}
 end
+
+local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+if fileFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "designerState"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        gen.linkState(state[keyName])
+    end
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "generalLibraryState"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        gen.linkGeneralLibraryState(state[keyName])
+    end
+end
+
 
 -- gen.limitedExecutions(key,maxTimes,limitedFunction)--> void
 -- if the value at key is less than maxTimes, limitedFunction will execute,
@@ -4713,6 +4749,38 @@ function gen.getScenarioDirectory()
     end
 end
 
+local markerOptions = {}
+markerOptions["irrigation"]=true
+markerOptions["mine"]=true
+markerOptions["farmland"]=true
+markerOptions["road"]=true
+markerOptions["railroad"]=true
+markerOptions["fortress"]=true
+markerOptions["airbase"]=true
+markerOptions["pollution"]=true
+markerOptions["transporter"]=true
+
+-- tileMarkerInfo = {[tribe.id] = {"originalChart"=bitmask, "markerOption"=trueNil}}
+-- if tileMarkerInfo[tribe.id]["markerOption"] is true, then a marker has been placed on that
+-- tile, and not been removed by a function.
+-- If the marker is not visible, the tribe must have recently observed the tile,
+-- so originalChart will be updated to true chart if this is noticed
+
+-- genStateTable.tileMarkerTable is initialized in gen.linkGeneralLibraryState
+local function updateTileMarkerTable(tileMarkerInfo,tile)
+    for tribeID, tribeMarkerInfo in pairs(tileMarkerInfo) do
+
+    end
+end
+
+--function gen.placeMarker(tile,tribe,markerOption)
+--    markerOption = string.lower(markerOption)
+--    local tileID = gen.getTileId(tile)
+--    genStateTable.tileMarkerTable[tileID] = genStateTable.tileMarkerTable[tileID] or {}
+--    tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
+--    tileMarkerInfo[tribe.id] = tileMarkerInfo[tribe.id] or {"originalChart"=tile.visibleImprovements[tribe]}
+--
+--end
 
 
 

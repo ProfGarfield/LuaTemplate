@@ -13,7 +13,46 @@ local func = require("functions")
 
 -- this is the last date that I've modified this file (or, at least remembered to change this line
 -- yyyy-mm-dd
-local currentModifyDate = "2021-08-22"
+--
+local currentModifyDate = "2021-11-06"
+--
+-- Usage: If the discreteEvents Module (discreteEventsRegistrar.lua) is available, 
+-- the event triggers will function automatically.
+-- If the discreteEvents Module is not available, you will have to link the engine to  
+-- this module.
+-- Three events provide information to the game, and so must have their
+-- values returned.
+-- civ.scen.onNegotiation 
+-- civ.scen.onGameEnds
+-- civ.scen.onSchism
+-- using 
+--      legacy = require("legacyEventEngine")
+--      civ.scen.onGameEnds(function(reason)
+--          return legacy.onGameEnds(reason)
+--      end)
+--      civ.scen.onNegotiation(function(talker,listener)
+--          legacy.doNegotiationEvents(talker,listener)
+--          return legacy.canNegotiate(talker,listener)
+--      end)
+--      civ.scen.onSchism(function(tribe)
+--          return legacy.doNoSchismEvents(tribe)
+--      end)
+-- a similar procedure must be followed for the following functions,
+-- however, they need only be run; their output does not need to be returned:
+--
+    --legacy.onTurnEventsAndMaintenance(turn)
+    --legacy.doCityProductionEvents(city,prod)
+--    legacy.doCityTakenEvents(city,defender)
+    --legacy.doAlphaCentauriArrivalEvents(tribe)
+    --legacy.doCityDestroyedEvents(city)
+    --legacy.doBribeUnitEvents(unit,previousOwner)
+   -- legacy.doScenarioLoadedEvents()
+   --
+   --
+
+
+local discreteEventsFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+
 
 
 local eventTable = {} --require(legacyEventTableName)
@@ -53,6 +92,20 @@ local function linkState(table)
     end
 end
 
+-- 
+if discreteEventsFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "legacyState"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        linkState(state[keyName])
+    end
+end
 
 
 
@@ -1765,6 +1818,45 @@ local function luaTrigger(triggerName,triggerAttackerString,triggerDefenderStrin
     doTriggerEventsFunction(luaTriggerConditionMet,triggerName,nil,triggerAttackerString,triggerDefenderString,triggerReceiverString)
 end
 
+if discreteEventsFound then
+    function discreteEvents.onTurn(turn)
+        onTurnEventsAndMaintenance(turn)
+    end
+    function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,
+        loserLocation,winnerVetStatus,loserVetStatus) 
+        doUnitKilledEvents(loser,winner)
+    end
+    function discreteEvents.onCityProduction(city,item)
+        doCityProductionEvents(city,item)
+    end
+    function discreteEvents.onCityTaken(city,defender)
+        doCityTakenEvents(city,defender)
+    end
+    function discreteEvents.onCentauriArrival(tribe)
+        doAlphaCentauriArrivalEvents(tribe)
+    end
+    function discreteEvents.onCityDestroyed(city)
+        doCityDestroyedEvents(city)
+    end
+    function discreteEvents.onBribeUnit(unit,previousOwner)
+        doBribeUnitEvents(unit,previousOwner)
+    end
+    function discreteEvents.onScenarioLoaded()
+        doScenarioLoadedEvents()
+    end
+    function discreteEvents.onNegotiation(talker,listener)
+        doNegotiationEvents(talker,listener)
+        return canNegotiate(talker,listener)
+    end
+    function discreteEvents.onGameEnds(reason)
+        return endTheGame(reason)
+    end
+    function discreteEvents.onSchism(tribe)
+        return doNoSchismEvents(tribe)
+    end
+end
+
+
 local legacy = {setFlagOn=setFlagOn,
 clearFlagOff = clearFlagOff,
 setMaskOn = setMaskOn,
@@ -1782,6 +1874,7 @@ doNoSchismEvents = doNoSchismEvents,
 canNegotiate = canNegotiate,
 doNegotiationEvents = doNegotiationEvents,
 endTheGame = endTheGame,
+onGameEnds = endTheGame,
 linkState = linkState,
 supplyLegacyEventsTable=supplyLegacyEventsTable,
 luaTrigger=luaTrigger,

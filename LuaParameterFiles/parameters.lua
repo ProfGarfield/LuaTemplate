@@ -8,9 +8,7 @@
 local gen = require("generalLibrary")
 local text = require("text")
 local eventTools = require("eventTools")
--- declare if map is flat or round
-gen.declareMapFlat()
---gen.declareMapRound()
+local discreteEvents = require("discreteEventsRegistrar")
 
 text.setMoney("%STRING1 gold")
 -- text.setMoney("$%STRING1,000")
@@ -60,6 +58,11 @@ local function activationLocationFunction(tribe)
     return activationLocations[tribe.id]
 end
 eventTools.setGuaranteeActivationUnitLocationFunction(activationLocationFunction)
+
+
+function discreteEvents.onScenarioLoaded()
+    civ.scen.compatibility.activateUnitEveryMove = true
+end
 
 
 local param = {}

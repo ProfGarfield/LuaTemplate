@@ -45,6 +45,22 @@ local function linkState(tableInStateTable)
     end
 end
 
+
+local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+if fileFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "munitionsState"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        linkState(state[keyName])
+    end
+end
+
 local function unitDeathMaintenance(dyingUnit)
     local dyingUnitID = dyingUnit.id
     munitionState.munitionIDGeneratorID[dyingUnit.id] = nil

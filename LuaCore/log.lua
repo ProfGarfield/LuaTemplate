@@ -108,6 +108,24 @@ end
 
 log.linkState = linkState
 
+local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+if fileFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "logState"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        linkState(state[keyName])
+    end
+end
+
+
+
+
 local markerTypeString = nil
 local markerSafeTile = nil
 local markerSpotterUnit = nil

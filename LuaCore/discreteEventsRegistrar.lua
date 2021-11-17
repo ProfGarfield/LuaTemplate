@@ -1,3 +1,4 @@
+local moduleVersion = 1 -- Module version will be provided as normal, but this module has different construction
 local discreteEvents = {}
 local eventsTable = {}
 
@@ -7,9 +8,9 @@ local eventsTable = {}
 eventsTable.onActivateUnit = {}
 eventsTable.onActivateUnitIndex = 1
 
-function discreteEvents.performOnActivateUnit(unit,source)
+function discreteEvents.performOnActivateUnit(unit,source,rep)
     for i = 1,eventsTable.onActivateUnitIndex-1 do
-        eventsTable.onActivateUnit[i](unit,source)
+        eventsTable.onActivateUnit[i](unit,source,rep)
     end
 end
 
@@ -96,21 +97,129 @@ function discreteEvents.performOnUnitKilled(loser,winner,aggressor,victim,loserL
     end
 end
 
-eventsTable.afterProduction = {}
-eventsTable.afterProductionIndex = 1
+eventsTable.onUnitDefeated = {}
+eventsTable.onUnitDefeatedIndex = 1
 
-function discreteEvents.performAfterProduction(turn,tribe)
-    for i = 1,eventsTable.afterProductionIndex-1 do
-        eventsTable.afterProduction[i](turn,tribe)
+function discreteEvents.performOnUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    for i = 1,eventsTable.onUnitDefeatedIndex-1 do
+        eventsTable.onUnitDefeated[i](loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     end
 end
 
-eventsTable.beforeProduction = {}
-eventsTable.beforeProductionIndex = 1
+eventsTable.onAfterProduction = {}
+eventsTable.onAfterProductionIndex = 1
 
-function discreteEvents.performBeforeProduction(turn,tribe)
-    for i = 1,eventsTable.beforeProductionIndex-1 do
-        eventsTable.beforeProduction[i](turn,tribe)
+function discreteEvents.performOnAfterProduction(turn,tribe)
+    for i = 1,eventsTable.onAfterProductionIndex-1 do
+        eventsTable.onAfterProduction[i](turn,tribe)
+    end
+end
+
+eventsTable.onBeforeProduction = {}
+eventsTable.onBeforeProductionIndex = 1
+
+function discreteEvents.performOnBeforeProduction(turn,tribe)
+    for i = 1,eventsTable.onBeforeProductionIndex-1 do
+        eventsTable.onBeforeProduction[i](turn,tribe)
+    end
+end
+
+
+eventsTable.linkStateToModules = {}
+eventsTable.linkStateToModulesIndex = 1
+-- state is the state table (after the buffer has been extracted)
+-- stateTableKeys are keys for the state table that have
+-- already been used, (this enables errors upon collision of keys) 
+--
+function discreteEvents.performLinkStateToModules(state,stateTableKeys)
+    for i = 1,eventsTable.linkStateToModulesIndex-1 do
+        eventsTable.linkStateToModules[i](state,stateTableKeys)
+    end
+end
+
+
+eventsTable.onCentauriArrival = {}
+eventsTable.onCentauriArrivalIndex = 1
+
+function discreteEvents.performOnCentauriArrival(tribe)
+    for i = 1,eventsTable.onCentauriArrivalIndex-1 do
+        eventsTable.onCentauriArrival[i](tribe)
+    end
+end
+
+
+eventsTable.onNegotiation = {}
+eventsTable.onNegotiationIndex = 1
+
+function discreteEvents.performOnNegotiation(talker,listener)
+    -- the default value is true, so return false if
+    -- any of the discrete events return false
+    -- in this case, false prevents negotiation
+    local resultSoFar = true
+    for i =1, eventsTable.onNegotiationIndex-1 do
+        local currentResult = eventsTable.onNegotiation[i](talker,listener)
+        if currentResult == nil then
+            error('discreteEvents.performOnNegotiation: all discrete events registered by discreteEvents.onNegotiation must return a boolean value, that is either true or false.')
+        end
+        resultSoFar = resultSoFar and currentResult
+    end
+    return resultSoFar
+end
+
+
+eventsTable.onGameEnds = {}
+eventsTable.onGameEndsIndex = 1
+
+function discreteEvents.performOnGameEnds(reason)
+    -- the default value is true, so return false if
+    -- any of the discrete events return false
+    local resultSoFar = true
+    for i =1, eventsTable.onGameEndsIndex-1 do
+        local currentResult = eventsTable.onGameEnds[i](reason)
+        if currentResult == nil then
+            error('discreteEvents.performOnGameEnds: all discrete events registered by discreteEvents.onGameEnds must return a boolean value, that is either true or false.')
+        end
+        resultSoFar = resultSoFar and currentResult
+    end
+    return resultSoFar
+end
+
+
+eventsTable.onSchism = {}
+eventsTable.onSchismIndex = 1
+
+function discreteEvents.performOnSchism(tribe)
+    -- the default value is true, so return false if
+    -- any of the discrete events return false
+    -- in this case, false prevent schism
+    local resultSoFar = true
+    for i =1, eventsTable.onSchismIndex-1 do
+        local currentResult = eventsTable.onSchism[i](tribe)
+        if currentResult == nil then
+            error('discreteEvents.performOnSchism: all discrete events registered by discreteEvents.onSchism must return a boolean value, that is either true or false.')
+        end
+        resultSoFar = resultSoFar and currentResult
+    end
+    return resultSoFar
+end
+
+
+eventsTable.onChooseSeason = {}
+eventsTable.onChooseSeasonIndex = 1
+
+function discreteEvents.performOnChooseSeason()
+    for i=1, eventsTable.onChooseSeasonIndex-1 do
+        eventsTable.onChooseSeason()
+    end
+end
+
+
+eventsTable.onKeyPress = {}
+eventsTable.onKeyPressIndex = 1
+
+function discreteEvents.performOnKeyPress(keyId)
+    for i=1, eventsTable.onKeyPressIndex-1 do
+        eventsTable.onKeyPress[i](keyId)
     end
 end
 
@@ -125,9 +234,16 @@ discreteEvents.onCityTaken
 discreteEvents.onScenarioLoaded 
 discreteEvents.onTurn 
 discreteEvents.onUnitKilled 
-discreteEvents.afterProduction 
-discreteEvents.beforeProduction 
+discreteEvents.onUnitDefeated 
+discreteEvents.onAfterProduction 
+discreteEvents.onBeforeProduction 
 discreteEvents.onCityProcessed
+discreteEvents.linkStateToModules
+discreteEvents.onCentauriArrival
+discreteEvents.onNegotiation
+discreteEvents.onGameEnds
+discreteEvents.onChooseSeason
+discreteEvents.onKeyPress
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -150,9 +266,16 @@ discreteEvents.performOnCityTaken
 discreteEvents.performOnScenarioLoaded 
 discreteEvents.performOnTurn 
 discreteEvents.performOnUnitKilled 
-discreteEvents.performAfterProduction 
-discreteEvents.performBeforeProduction 
+discreteEvents.performOnUnitDefeated 
+discreteEvents.performOnAfterProduction 
+discreteEvents.performOnBeforeProduction 
 discreteEvents.performOnCityProcessed 
+discreteEvents.performLinkStateToModules
+discreteEvents.performOnCentauriArrival
+discreteEvents.performOnNegotiation
+discreteEvents.performOnGameEnds
+discreteEvents.performOnChooseSeason
+discreteEvents.performOnKeyPress
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then
@@ -165,7 +288,7 @@ end
 
 local superMetatable = {__index = indexFn,__newindex=newIndexFn}
 
-local superTable = {}
+local superTable = {version=moduleVersion, eventsTable=eventsTable}
 setmetatable(superTable,superMetatable)
 
 return superTable

@@ -11,6 +11,9 @@
 -- if your counter is used in a module to be redistributed.  moduleName is an optional parameter
 -- to be used in stand alone modules.
 
+
+-- If this is used in the Lua Scenario Template, this module will automatically be linked to the state table
+-- otherwise,
 -- The following code must be in two places:
 -- The body of code where everything is defined
 -- The function run when a scenario is loaded (civ.scen.onLoad)
@@ -61,6 +64,24 @@ local function linkState(tableInStateTable)
         error("linkState: linkState takes a table as an argument.")
     end
 end
+
+local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+if fileFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "counterTable"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        linkState(state[keyName])
+        counter.initializeCounters()
+    end
+end
+
+
 
 -- this allows for object.js to be built
 counter.eventsKeyList = {}

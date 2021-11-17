@@ -1,0 +1,113 @@
+; If you are not using legacy events, you can remove this file,
+; as long as you also remove getLegacyEvents.lua as well.
+
+; The (commented out) events in this file were used for testing
+; there is no harm in replacing this file.  In fact, it is expected.
+
+@BEGINEVENTS
+
+;@IF
+;bribeunit
+;who=Romans
+;whom=Babylonians
+;unittype=0
+;@THEN
+;TEXT
+;"Bribe Unit Legacy Text"
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;citydestroyed
+;city=Babylon
+;owner=Babylonians
+;@THEN
+;TEXT
+;"city destroyed Legacy Text"
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;CityProduction
+;builder=romans
+;unit=settlers
+;@THEN
+;TEXT
+;City Production legacy Text
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;citytaken
+;city=Babylon
+;attacker=Romans
+;defender=Babylonians
+;@THEN
+;TEXT
+;"city taken Legacy Text"
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;turninterval
+;interval=1
+;@THEN
+;TEXT
+;Every turn legacy text
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;ScenarioLoaded
+;@THEN
+;TEXT
+;Scenario Loaded Legacy Text
+;ENDTEXT
+;@ENDIF
+
+
+;@IF
+;unitkilled
+;unit=settlers
+;attacker=romans
+;defender=babylonians
+;@THEN
+;TEXT
+;Unit killed legacy event
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;alphacentauriarrival
+;race=Romans
+;size=AnySize
+;@THEN
+;TEXT
+;Romans arrive at AC Legacy
+;ENDTEXT
+;EndGameOverride
+;@ENDIF
+
+;@IF
+;noschism
+;defender=romans
+;@THEN
+;TEXT
+;Romans don't schism
+;ENDTEXT
+;@ENDIF
+
+;@IF
+;negotiation
+;talker=romans
+;talkertype=humanorcomputer
+;listener=babylonians
+;listenertype=humanorcomputer
+;@THEN
+;@ENDIF
+
+
+
+
+
+@ENDEVENTS

@@ -75,7 +75,7 @@ end
 
 -- On Unit Bribery
 function events.onBribeUnit(unit,previousOwner)
-    --civ.ui.text("Bribe unit test")
+    --civ.ui.text("Bribe unit consolidated test")
 
 end
 
@@ -87,13 +87,13 @@ end
 -- This is available with games started as an extended original game,
 -- but not with games started as a standard game (I think, this hasn't been looked at too closely)
 function events.onCentauriArrival(tribe)
-    civ.ui.text(tribe.name.." has reached Alpha Centauri.")
+    --civ.ui.text(tribe.name.." has reached Alpha Centauri.")
 
 end
 
 -- City destruction
 function events.onCityDestroyed(city)
-    --civ.ui.text("City destroyed")
+    --civ.ui.text("City destroyed consolidated test")
 
 end
 
@@ -103,7 +103,7 @@ function events.onCityFounded(city)
 
 end
 
--- On City Founded
+-- On City Processed
 function events.onCityProcessed(city)
     --civ.ui.text(city.name.." processed")
 
@@ -118,7 +118,7 @@ end
 -- On City Taken
 -- (get conqueror by using city.owner)
 function events.onCityTaken(city,defender)
-    --civ.ui.text(city.name.." captured from the "..defender.name.." by the "..city.owner.name..".")
+    --civ.ui.text(city.name.." captured from the "..defender.name.." by the "..city.owner.name..". Consolidated Events.")
 
 end
 
@@ -135,14 +135,32 @@ end
 
 -- On Scenario Loaded
 function events.onScenarioLoaded()
-    --civ.ui.text("Scenario Loaded")
+    --civ.ui.text("Scenario Loaded consolidated event")
 
 end
 
--- On Negotiation not included here
+-- On Negotiation 
+-- Return true if the talker can contact the listener,
+-- and false otherwise.
+-- This is combined with the discrete events and the
+-- legacy events, as well as a separate onNegotiation.lua file
+-- If any of these return false, then negotiation is prevented
+function events.onNegotiation(talker,listener)
+
+    return true
+end
 
 
--- On Schism not included here
+-- On Schism 
+-- Return true (default) if the tribe can schism,
+-- and false otherwise.
+-- This is combined with the discrete events and the
+-- legacy events, as well as a separate onSchism.lua file
+-- If any of these return false, then schism is prevented
+function events.onSchism(tribe)
+
+    return true
+end
 
 -- Between Turns
 function events.onTurn(turn)
@@ -151,9 +169,13 @@ function events.onTurn(turn)
 end
 
 -- On unit killed in combat
--- use the events in onUnitKilled.lua if you need other unit death events
 function events.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     --civ.ui.text("A "..loser.type.name.." has been defeated by a "..winner.type.name..".")
+
+end
+-- On unit defeated in combat or by some other event
+function events.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    --civ.ui.text("unit defeated consolidated test")
 
 end
 
@@ -171,6 +193,18 @@ function events.beforeProduction(turn,tribe)
 
 end
 
+-- On Game Ends
+-- Return true if the game ends as normal,
+-- and false otherwise.
+-- This is combined with the discrete events and the
+-- legacy events, as well as a separate onGameEnds.lua file
+-- If any of these return false, then game end is prevented
+-- Not documented or experimented with much
+-- based on legacy event engine code, reason is an integer
+function events.onGameEnds(reason)
+
+    return true
+end
 
 
 

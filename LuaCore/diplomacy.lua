@@ -25,7 +25,7 @@ local gen = require("generalLibrary")
 local text = require("text")
 local civlua = require("civluaModified")
 
-local diplomacy = {}
+local diplomacy = {version=1}
 
 local diplomacyState = "notLinked"
 
@@ -54,6 +54,24 @@ local function linkState(tableInState)
     diplomacyState.allowedTreatyChanges = diplomacyState.allowedTreatyChanges or {[0]={},{},{},{},{},{},{},{}}
 end
 diplomacy.linkState = linkState
+
+local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+if fileFound then
+    function discreteEvents.linkStateToModules(state,stateTableKeys)
+        local keyName = "diplomacyState"
+        if stateTableKeys[keyName] then
+            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+        else
+            stateTableKeys[keyName] = true
+        end
+        -- link the state table to the module
+        state[keyName] = state[keyName] or {}
+        linkState(state[keyName])
+    end
+end
+
+
+
 
 local alwaysAllowedTreatyChanges = {[0]={},{},{},{},{},{},{},{}}
 
