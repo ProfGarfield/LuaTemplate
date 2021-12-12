@@ -276,20 +276,21 @@ civ.scen.onCityProduction(function(city,prod)
 end)
 registeredInThisFile["onCityProduction"] = true
 
-local function doOnUnitActivation(unit,source)
+local function doOnUnitActivation(unit,source,repeatMove)
     if (unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionHuman)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
     end
     attemptRequireWithKey('attackBonusSettings',"attackBonus")(unit)
-    discreteEvents.performOnActivateUnit(unit,source)
-    consolidated.onActivateUnit(unit,source)
-    attemptRequireWithKey(individualFileDirectory.."onActivateUnit","onActivateUnit")(unit,source)
-    if simpleSettings.enableCustomUnitSelection then
+    discreteEvents.performOnActivateUnit(unit,source,repeatMove)
+    consolidated.onActivateUnit(unit,source,repeatMove)
+    attemptRequireWithKey(individualFileDirectory.."onActivateUnit","onActivateUnit")(unit,source,repeatMove)
+    -- don't need to run this for repeat moves
+    if simpleSettings.enableCustomUnitSelection and not repeatMove then
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)
     end
-
 end
+
 registeredInThisFile["onActivateUnit"]=true
 
 local function doAfterProduction(turn,tribe)
@@ -306,7 +307,7 @@ end
 console.afterProduction = function() doAfterProduction(civ.getTurn(),civ.getCurrentTribe()) end
 gen.linkActivationFunction(doOnUnitActivation)
 registeredInThisFile["onAfterProduction"] = true
-civ.scen.onActivateUnit(function(unit,source)
+civ.scen.onActivateUnit(function(unit,source,repeatMove)
     if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery") then
         flag.setFalse("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery")
         doAfterProduction(civ.getTurn(),unit.owner)
@@ -314,7 +315,7 @@ civ.scen.onActivateUnit(function(unit,source)
     end
     promotionSettings.performPendingUpgrades()
     diplomacy.checkTreaties()
-    doOnUnitActivation(unit,source)
+    doOnUnitActivation(unit,source,repeatMove)
     eventTools.unitActivation(unit,source)
 end)
 
@@ -568,7 +569,7 @@ end)
 registeredInThisFile["onCalculateCityYield"] = true
 
 
-civ.scen.onInitiateCombat( function(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower)
+civ.scen.onInitiateCombat( function(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower,isSneakAttack)
     diplomacy.checkTreaties()
 
     aggressorLocation = attacker.location
@@ -579,7 +580,7 @@ civ.scen.onInitiateCombat( function(attacker,defender,attackerDie,attackerPower,
     if diplomacy.contactExists(attacker.owner,defender.owner) and not diplomacy.warExists(attacker.owner,defender.owner) then
         return coroutine.create(function() end)
     end
-    return combatSettings.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower)
+    return combatSettings.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower,isSneakAttack)
 end)
 
 registeredInThisFile["onInitiateCombat"] = true
