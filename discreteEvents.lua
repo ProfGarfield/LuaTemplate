@@ -41,6 +41,8 @@ local flag = require("flag")
 local counter = require("counter")
 local civlua = require("civluaModified")
 
+local contextExample = require("contextExample")
+
 -- ===============================================================================
 --
 --          Discrete Events

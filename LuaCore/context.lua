@@ -63,7 +63,7 @@ local function emptyFunction()
 end
 
 local emptyContextTable = {}
-local emptyContextMetatable = {__index = emptyFunction}
+local emptyContextMetatable = {__index = function(table,key) return emptyFunction end}
 setmetatable(emptyContextTable,emptyContextMetatable)
 
 --local function newIndexFn(myTable,key,value)
