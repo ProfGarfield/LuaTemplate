@@ -50,6 +50,30 @@ local function attemptToRun(fileName,warningMessage)
     end
 end
 
+-- This function allows for executing files that haven't been
+-- created yet.  By naming them 'recentFeatureX.lua', they will
+-- automatically be run (but only if there is also a recentFeature(X-1).lua
+-- as well).  If a file is named recentFeature.lua, a text box will advise
+-- the player what they should rename it.  This way, I can provide files
+-- as recentFeature.lua, without worrying how many recentFeature files
+-- someone already has.
+local function executeRecentFeatures(fileNumber)
+    fileNumber = fileNumber or 1
+    local fileFound, prefix = pcall(require,"recentFeature"..tostring(fileNumber))
+    if fileFound then
+        return executeRecentFeatures(fileNumber+1)
+    else
+        local found, pre = pcall(require,"recentFeature")
+        if found then
+            civ.ui.text("A file named recentFeature.lua has been found.  If you want this file to be part of the Lua events for this scenario, please rename it to recentFeature"..tostring(fileNumber)..".lua .  If you don't want this file to be part of the Lua events for this scenario, change its name so something else.  (New additions to the Lua Scenario Template are often distributed with the file name recentFeature.lua, since I don't know how many recentFeatureX.lua files you already have.)")
+        error("A file named recentFeature.lua has been found.  If you want this file to be part of the Lua events for this scenario, please rename it to recentFeature"..tostring(fileNumber)..".lua .  If you don't want this file to be part of the Lua events for this scenario, change its name so something else.  (New additions to the Lua Scenario Template are often distributed with the file name recentFeature.lua, since I don't know how many recentFeatureX.lua files you already have.)")
+        end
+        return
+    end
+end
+        
+
+
 local gen = require("generalLibrary")
 -- noGlobal prevents new global variables from being created
 -- or accessed; this should make typos easier to discover
@@ -99,6 +123,11 @@ local log = require("log")
 -- this module compresses (and decompresses) the state
 -- table so it is smaller in saved files
 local lualzw = require("lualzw")
+
+executeRecentFeatures()
+-- If I wish to distribute an example, I can call the file
+-- to run exampleFeature.lua, and it will work automatically
+pcall(require,"exampleFeature")
 
 
 local musicFolder= string.gsub(eventsPath,civ.getToTDir(),"..")
