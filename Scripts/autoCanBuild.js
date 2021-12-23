@@ -1684,6 +1684,9 @@ function computeBinarySettings() {
     if (document.getElementById('override-default-checkbox').checked) {
         output+="overrideDefaultBuildFunction = true, ";
     }
+    if (document.getElementById('override-supplementary-checkbox').checked) {
+        output+="ignoreSupplementalConditions = true, ";
+    }
     return output;
 }
 

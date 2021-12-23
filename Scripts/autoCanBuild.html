@@ -285,7 +285,8 @@
                         <li><input type="checkbox" class="binary-settings-checkbox" id="coastal-only-checkbox"><span>Only cities with the "coastal" attribute can build <span class="item-name"></span>.</span></li>
                         <li><input type="checkbox" class="binary-settings-checkbox" id="shipbuild-only-checkbox"><span>Only cities with the "can build ships" attribute can build <span class="item-name"></span>.</span></li>
                         <li><input type="checkbox" class="binary-settings-checkbox" id="hydro-only-checkbox"><span>Only cities with the "can build hydro plant" attribute can build <span class="item-name"></span>.</span></li>
-                        <li><input type="checkbox" class="binary-settings-checkbox" id="override-default-checkbox"><span>Ignore Civ II's standard requirements for building <span class="item-name"></span> and consider only the requirements set forth here.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="override-default-checkbox"><span>Ignore Civ II's standard requirements for building <span class="item-name"></span> and consider only the requirements specified by Lua.</span></li>
+                        <li><input type="checkbox" class="binary-settings-checkbox" id="override-supplementary-checkbox"><span>Ignore any supplementary requirements for building <span class="item-name"></span> that have been specified elsewhere using the <code>canBuildSettings.registerSupplementalCondition</code> function.</span></li>
                     </ul>
                 </fieldset>
 

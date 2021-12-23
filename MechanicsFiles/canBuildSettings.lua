@@ -293,6 +293,19 @@ local canBuildFunctions = require("canBuild")
 --                  globalJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
 --              
 --
+--      .ignoreSupplementalConditions = bool or nil
+--          if true, ignore any supplemental conditions for this item that have been registered by
+--          canBuildFunctions.registerSupplementalCondition(itemType,
+--              function(defaultBuildFunction,city,item) --> bool)
+--          (Other modules may use the above function to register special building restrictions
+--              due to unique features (e.g. strategic bombing module might prevent building a
+--              factory if there is no tile for the target))
+--              note: due to the implementation, the supplemental functions will still be computed
+--
+--              to disable the supplemental conditions (including computation of them) 
+--              for all items (perhaps because they cause lag),
+--              you can uncomment the line canBuildFunctions.disableSupplementalConditions()
+--              found at the bottom of this file
 
 --
 
@@ -308,6 +321,10 @@ local addBuildConditions = canBuildFunctions.makeAddBuildConditions(unitTypeBuil
 --      for each item in the table, register the buildability parameters as above
 
 
+
+
+
+ 
 
 
 
@@ -380,6 +397,10 @@ canBuildFunctions.supplyWonderParameters(wonderBuild)
 local function initialization(city)
 
 end
+
+-- disable the registered supplemental build conditions for all items by
+-- uncommenting the line below
+--canBuildFunctions.disableSupplementalConditions()
 canBuildFunctions.supplyInitializationFunction(initialization)
 
 

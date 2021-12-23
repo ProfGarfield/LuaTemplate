@@ -1,6 +1,15 @@
 local flag = require("flag")
 local counter = require('counter')
 local gen = require("generalLibrary")
+local canBuildVersion = 2
+
+
+-- canBuildFunctions.registerSupplementalCondition(itemType,function(defaultBuildFunction,city,item) --> bool)
+--      registers a function for itemType with the same effect as the conditionFunction
+--      .conditionFunction = function(defaultBuildFunction,city,item) --> bool
+--      that is, if it returns false, the item can't be built.  If it returns true, the item
+--      can be built as long as all other conditions are also met
+--      these supplemental conditions are ignored if 
 
 -- This module provides some basic functionality for governing whether
 -- a city can build an item
@@ -288,8 +297,55 @@ local gen = require("generalLibrary")
 --              and unitTypeBuild[object.uEngineers.id] = {maxNumberGlobal = 6,
 --                  globalJointMaxWith = {[object.uSettlers] = 1, [object.uEngineers]=2}}
 --              
+--      .ignoreSupplementalConditions = bool or nil
+--          if true, ignore any supplemental conditions for this item that have been registered by
+--          canBuildFunctions.registerSupplementalCondition(itemType,
+--              function(defaultBuildFunction,city,item) --> bool)
+--          (Other modules may use the above function to register special building restrictions
+--              due to unique features (e.g. strategic bombing module might prevent building a
+--              factory if there is no tile for the target))
+--              note: due to the implementation, the supplemental functions will still be computed
+--
+--              to disable the supplemental conditions (including computation of them) 
+--              for all items (perhaps because they cause lag),
+--              you can use the line canBuildFunctions.disableSupplementalConditions()
+--
 --
 
+
+local canBuildFunctions = {}
+local supplementalUnitTypeConditions = {}
+local supplementalImprovementConditions = {}
+local supplementalWonderConditions = {}
+
+-- supplementalItemConditions[item.id]= table of functions
+
+
+
+-- canBuildFunctions.registerSupplementalCondition(itemType,function(defaultBuildFunction,city,item) --> bool)
+--      registers a function for itemType with the same effect as the conditionFunction
+--      .conditionFunction = function(defaultBuildFunction,city,item) --> bool
+--      that is, if it returns false, the item can't be built.  If it returns true, the item
+--      can be built as long as all other conditions are also met
+--      these supplemental conditions are ignored if 
+function canBuildFunctions.registerSupplementalCondition(itemType,conditionFn)
+    --print("registering condition for "..itemType.name)
+    local registrationTable = {}
+    if civ.isUnitType(itemType) then
+        registrationTable = supplementalUnitTypeConditions
+    elseif civ.isImprovement(itemType) then
+        registrationTable = supplementalImprovementConditions
+    elseif civ.isWonder(itemType) then
+        registrationTable = supplementalWonderConditions
+    else
+        error("canBuildFunctions.registerSupplementalCondition: first argument must be either a unitType, improvement, or wonder object.  Instead, received "..tostring(itemType))
+    end
+    registrationTable[itemType.id] = registrationTable[itemType.id] or {}
+    if type(conditionFn) ~= "function" then
+        error("canBuildFunctions.registerSupplementalCondition: second argument must be a function of the form function(defaultBuildFunction,city,item) --> bool.  Instead, received "..tostring(conditionFn))
+    end
+    registrationTable[itemType.id][1+#registrationTable[itemType.id]] = conditionFn
+end
 
 
 
@@ -540,6 +596,7 @@ allowedParameterKeys["maxNumberTribe"] = true
 allowedParameterKeys["maxNumberGlobal"] = true
 allowedParameterKeys["tribeJointMaxWith"] = true
 allowedParameterKeys["globalJointMaxWith"] = true
+allowedParameterKeys["ignoreSupplementalConditions"] = true
 
 
 -- does rudimentary checks to make sure the parameter tables are formatted correctly
@@ -572,7 +629,6 @@ end
 
 
 
-local canBuildFunctions = {}
 local unitTypeParameters = {}
 local improvementParameters = {}
 local wonderParameters = {}
@@ -775,7 +831,10 @@ end
 -- this is defined below, but needs to be declared here
 local customCanBuild = nil
 
-local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters)
+-- supplementalConditionsSatisfied is a boolean, that is true if all the registered supplemental Conditions
+-- are satisfied, and false if they are not
+-- This way, they can be ignored if ignoreSupplementalConditions is set to true
+local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters,supplementalConditionsSatisfied)
     if itemParameters.overrideFunction and itemParameters.overrideFunction(defaultBuildFunction,city,item) then
         return true
     end
@@ -984,6 +1043,10 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
         end
     end
     if itemParameters.conditionFunction and not(itemParameters.conditionFunction(defaultBuildFunction,city,item)) then
+        return false
+    end
+    -- check the supplemental conditions
+    if not (itemParameters.ignoreSupplementalConditions or supplementalConditionsSatisfied) then
         return false
     end
     if itemParameters.maxNumberTribe then
@@ -1262,6 +1325,24 @@ end
 
 
 
+local ignoreAllSupplementalConditions = false
+function canBuildFunctions.disableSupplementalConditions()
+    civ.ui.text("disableSupplementalConditions")
+    ignoreAllSupplementalConditions = true
+end
+
+local function supplementalConditionsSatisfied(conditionList,defaultBuildFunction,city,item)
+    print(ignoreAllSupplementalConditions)
+    if ignoreAllSupplementalConditions then
+        return true
+    end
+    for __,supFn in pairs(conditionList) do
+        if not supFn(defaultBuildFunction,city,item) then
+            return false
+        end
+    end
+    return true
+end
 
 
 customCanBuild = function (defaultBuildFunction, city, item,ignoreInitalization)
@@ -1272,20 +1353,27 @@ customCanBuild = function (defaultBuildFunction, city, item,ignoreInitalization)
         end
     end
     local itemParameters = nil
+    local supplementalFunctions = nil
     if civ.isUnitType(item) then
         itemParameters = unitTypeParameters[item.id]
+        supplementalFunctions = supplementalUnitTypeConditions[item.id] or {}
     elseif civ.isImprovement(item) then
         itemParameters = improvementParameters[item.id]
+        supplementalFunctions = supplementalImprovementConditions[item.id] or {}
     elseif civ.isWonder(item) then
         itemParameters = wonderParameters[item.id]
+        supplementalFunctions = supplementalWonderConditions[item.id] or {}
     end
     if not itemParameters then
         -- no data for this item, so return default
-        return defaultBuildFunction(city,item)
+        -- as long as no supplemental conditions 
+        return (defaultBuildFunction(city,item) and supplementalConditionsSatisfied(supplementalFunctions,defaultBuildFunction,city,item))
     elseif type(itemParameters) ~= "table" then
         error("customCanBuild: the parameters for "..item.name.." are not in table form.")
     end
-    return parametersSatisfied(defaultBuildFunction,city,item,itemParameters)
+
+    -- if there are supplemental conditions, they'll be checked within parametersSatisfied
+    return parametersSatisfied(defaultBuildFunction,city,item,itemParameters,supplementalConditionsSatisfied(supplementalFunctions,defaultBuildFunction,city,item))
 end
 canBuildFunctions.customCanBuild = customCanBuild
 
@@ -1325,6 +1413,7 @@ end
 
 
 
+canBuildFunctions.version = canBuildVersion
 return canBuildFunctions
 
 
