@@ -14,6 +14,9 @@ local object = gen.makeDataTable({},"object")
 -- This should prevent errors
 gen.forbidReplacement(object)
 
+object["%SAMPLEFILE%"]=true -- This allows code to check if the object.lua file is the sample provided by the template.
+--Don't add this line if you are manually writing an object file.
+
 -- Civilization Advances
 -- recommended key prefix 'a'
 --

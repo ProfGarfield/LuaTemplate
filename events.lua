@@ -41,6 +41,11 @@ if string.find(package.path, scenarioFolderPath, 1, true) == nil then
     ..";"..scenarioFolder.."LuaParameterFiles\\?.lua"
     -- comment out next line to rely only on files within the scenario folder, uncomment to access the lua folder
     --..";"..civ.getToTDir().."\\lua\\?.lua"
+    -- This line allows you to give the full path (civ.getToTDir()..\\rest\\of\\path) of a module,
+    -- this allows checking for the custom music patch in <TOT Dir>\lua (and perhaps other stuff)
+    -- without looking in that folder for other modules
+    ..";?.lua"
+    
 end
 
 local function attemptToRun(fileName,warningMessage)
@@ -116,6 +121,8 @@ local setTraits = require("setTraits")
 local discreteEvents = require("discreteEventsRegistrar")
 require("discreteEvents")
 local consolidated = require("consolidatedEvents")
+pcall(require,"customMusicIntegration")
+
 
 
 --local triggerEvents = require("triggerEvents")

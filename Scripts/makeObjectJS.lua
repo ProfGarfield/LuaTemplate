@@ -3,6 +3,25 @@ local flag = require("flag")
 local counter = require("counter")
 local gen = require("generalLibrary")
 
+-- Check if we're working with the default object.lua file
+-- this function allows for the use of pcall to check
+-- if "%SAMPLEFILE%" is a key in object, 
+-- since that normally creates an error if it is missing
+local function checkObject(key)
+    return object[key]
+end
+if pcall(checkObject,"%SAMPLEFILE%") then
+    local dialog = civ.ui.createDialog()
+    dialog.title = "makeObjectJS.lua"
+    dialog:addText("The object table currently registered appears to be the default object.lua file that ships with the Lua Scenario Template.  This is probably not what you want.  If you have already generated an XXXXXXXXXXobject.lua file using the makeObject.lua script, double check that that file has been renamed as object.lua, and re-load the game before running this script again.")
+    dialog:addOption("Thanks for catching that, I'll make the change and reload the game.",1)
+    dialog:addOption("I'm doing this on purpose, generate object.js now.",2)
+    local choice = dialog:show()
+    if choice == 1 then
+        return
+    end
+end
+
 local function findKeyOf(item,table,typeCheckFn)
     for key,value in pairs(table) do
         if typeCheckFn(value) and value == item then
