@@ -10,3 +10,8 @@
 -- strategicBombing.beforeProduction()
 --      maintenance to double check everything is in order
 --
+
+-- dataTable[index]={
+--      improvement
+--              =improvementObject
+--                  

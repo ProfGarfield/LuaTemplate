@@ -1,5 +1,10 @@
+
+
+
+
+local gen = require("generalLibrary")
 local function optionalRequire(fileName)
-    local fileFound,prefix = pcall(require,fileName)
+    local fileFound,prefix = gen.requireIfAvailable(fileName)
     if fileFound then
         return prefix
     else
@@ -10,23 +15,18 @@ local function optionalRequire(fileName)
         return emptyTable
     end
 end
-
-
-
-
-local gen = require("generalLibrary")
 local object = require("object")
 local keyboard = require("keyboard")
-local helpKeySettingsFound, helpKeySettings = pcall(require,"helpKeySettings")
+local helpKeySettingsFound, helpKeySettings = gen.requireIfAvailable("helpKeySettings")
 --local helpKeySettings = optionalRequire("helpKeySettings")
-local munitionsSettingsFound, munitionsSettings = pcall(require,"munitionsSettings")
+local munitionsSettingsFound, munitionsSettings = gen.requireIfAvailable("munitionsSettings")
 --local munitionsSettings = optionalRequire("munitionsSettings")
-local logSettingsFound,logSettings = pcall(require,"logSettings")
+local logSettingsFound,logSettings = gen.requireIfAvailable("logSettings")
 --local logSettings = require("logSettings")
-local simpleSettingsFound, simpleSettings = pcall(require,"simpleSettings")
-local diplomacySettingsFound, diplomacySettings = pcall(require,"diplomacySettings")
+local simpleSettingsFound, simpleSettings = gen.requireIfAvailable("simpleSettings")
+local diplomacySettingsFound, diplomacySettings = gen.requireIfAvailable("diplomacySettings")
 --local diplomacySettings = optionalRequire("diplomacySettings")
-local textFound, text = pcall(require,"text")
+local textFound, text = gen.requireIfAvailable("text")
 --local text = optionalRequire("text")
 local discreteEvents = require("discreteEventsRegistrar")
 

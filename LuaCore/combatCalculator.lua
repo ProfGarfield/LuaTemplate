@@ -12,7 +12,7 @@ local scenarioDirectoryFound, scenarioDirectoryOrError = pcall(gen.getScenarioDi
 -- to the console, and use default values instead
 local cosmic2FromFile = {}
 if scenarioDirectoryFound then
-    local readRulesFound, readRules = pcall(require,"readRules")
+    local readRulesFound, readRules = gen.requireIfAvailable("readRules")
     -- if the readRules module is not found, print a warning to the console,
     -- and use default values for cosmic 2
     if readRulesFound then

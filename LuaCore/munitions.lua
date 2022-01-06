@@ -46,7 +46,7 @@ local function linkState(tableInStateTable)
 end
 
 
-local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
     function discreteEvents.linkStateToModules(state,stateTableKeys)
         local keyName = "munitionsState"

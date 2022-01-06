@@ -125,7 +125,23 @@ local function linkState(tableInState)
 end
 text.linkState = linkState
 
-local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+
+-- requireIfAvailable(fileName) --> fileFound (bool), prefix (whatever is returned by a successful require, or nil)
+local function requireIfAvailable(fileName)
+    if package.loaded[fileName] then
+        return true, require(fileName)
+    else
+        for _,searcher in ipairs(package.searchers) do
+            local loader = searcher(fileName)
+            if type(loader) == 'function' then
+                return true, require(fileName)
+            end
+        end
+        return false, nil
+    end
+end
+
+local fileFound, discreteEvents = requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
     function discreteEvents.linkStateToModules(state,stateTableKeys)
         local keyName = "textTable"

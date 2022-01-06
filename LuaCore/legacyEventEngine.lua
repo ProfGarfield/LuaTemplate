@@ -51,7 +51,20 @@ local currentModifyDate = "2021-11-06"
    --
 
 
-local discreteEventsFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+local function requireIfAvailable(fileName)
+    if package.loaded[fileName] then
+        return true, require(fileName)
+    else
+        for _,searcher in ipairs(package.searchers) do
+            local loader = searcher(fileName)
+            if type(loader) == 'function' then
+                return true, require(fileName)
+            end
+        end
+        return false, nil
+    end
+end
+local discreteEventsFound, discreteEvents = requireIfAvailable("discreteEventsRegistrar")
 
 
 

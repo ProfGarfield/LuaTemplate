@@ -1,4 +1,6 @@
-
+-- some code to root out pcalls, that I wanted to replace with something requireIfAvailable
+--temppcall = pcall
+--pcall = function() error("remove pcall") end
 -- events.lua for the
 -- Lua Event Template
 --
@@ -48,8 +50,26 @@ if string.find(package.path, scenarioFolderPath, 1, true) == nil then
     
 end
 
+-- requireIfAvailable(fileName) --> fileFound (bool), prefix (whatever is returned by a successful require, or nil)
+local function requireIfAvailable(fileName)
+    if package.loaded[fileName] then
+        return true, require(fileName)
+    else
+        for _,searcher in ipairs(package.searchers) do
+            local loader = searcher(fileName)
+            if type(loader) == 'function' then
+                return true, require(fileName)
+            end
+        end
+        return false, nil
+    end
+end
+
+
+
 local function attemptToRun(fileName,warningMessage)
-    local fileFound,prefix = pcall(require,fileName)
+    --local fileFound,prefix = pcall(require,fileName)
+    local fileFound,prefix = requireIfAvailable(fileName)
     if not fileFound then
         print(warningMessage)
     end
@@ -64,11 +84,11 @@ end
 -- someone already has.
 local function executeRecentFeatures(fileNumber)
     fileNumber = fileNumber or 1
-    local fileFound, prefix = pcall(require,"recentFeature"..tostring(fileNumber))
+    local fileFound, prefix = requireIfAvailable("recentFeature"..tostring(fileNumber))
     if fileFound then
         return executeRecentFeatures(fileNumber+1)
     else
-        local found, pre = pcall(require,"recentFeature")
+        local found, pre = requireIfAvailable("recentFeature")
         if found then
             civ.ui.text("A file named recentFeature.lua has been found.  If you want this file to be part of the Lua events for this scenario, please rename it to recentFeature"..tostring(fileNumber)..".lua .  If you don't want this file to be part of the Lua events for this scenario, change its name so something else.  (New additions to the Lua Scenario Template are often distributed with the file name recentFeature.lua, since I don't know how many recentFeatureX.lua files you already have.)")
         error("A file named recentFeature.lua has been found.  If you want this file to be part of the Lua events for this scenario, please rename it to recentFeature"..tostring(fileNumber)..".lua .  If you don't want this file to be part of the Lua events for this scenario, change its name so something else.  (New additions to the Lua Scenario Template are often distributed with the file name recentFeature.lua, since I don't know how many recentFeatureX.lua files you already have.)")
@@ -80,6 +100,7 @@ end
 
 
 local gen = require("generalLibrary")
+
 -- noGlobal prevents new global variables from being created
 -- or accessed; this should make typos easier to discover
 gen.noGlobal()
@@ -121,7 +142,7 @@ local setTraits = require("setTraits")
 local discreteEvents = require("discreteEventsRegistrar")
 require("discreteEvents")
 local consolidated = require("consolidatedEvents")
-pcall(require,"customMusicIntegration")
+requireIfAvailable("customMusicIntegration")
 
 
 
@@ -134,7 +155,7 @@ local lualzw = require("lualzw")
 executeRecentFeatures()
 -- If I wish to distribute an example, I can call the file
 -- to run exampleFeature.lua, and it will work automatically
-pcall(require,"exampleFeature")
+requireIfAvailable("exampleFeature")
 
 
 local musicFolder= string.gsub(eventsPath,civ.getToTDir(),"..")
@@ -214,7 +235,7 @@ local function attemptRequireWithKey(moduleName,key,defaultReturnValue)
     if attemptRequireResults[moduleName.."."..key] then
         return attemptRequireResults[moduleName.."."..key]
     end
-    local fileFound, prefix = pcall(require,moduleName)
+    local fileFound, prefix = requireIfAvailable(moduleName)
     if fileFound then
         if type(prefix[key]) == "function" then
             attemptRequireResults[moduleName.."."..key] = prefix[key]
@@ -628,7 +649,7 @@ registeredInThisFile["onChooseDefender"] = true
 
 
 
-local rushBuySettingsFound, rushBuySettings = pcall(require,"rushBuySettings")
+local rushBuySettingsFound, rushBuySettings = requireIfAvailable("rushBuySettings")
 if not rushBuySettingsFound then
     print("WARNING: rushBuySettings.lua not found")
     rushBuySettings = {}
@@ -657,7 +678,7 @@ discreteEvents.performLinkStateToModules(state,{})
 -- find files to register the events
 for registerName,registerFunction in pairs(civ.scen) do
     if not registeredInThisFile[registerName] then
-        local fileFound, prefix = pcall(require,'EventsGroupedByExecutionPoint\\'..registerName)
+        local fileFound, prefix = requireIfAvailable('EventsFiles\\'..registerName)
         if fileFound then
             civ.scen[registerName](prefix[registerName])
         end

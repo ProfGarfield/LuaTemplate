@@ -214,7 +214,7 @@ local function onProdPayloadRestrictionCheck(carryingUnit)
     munitions.onProdPayloadRestrictionCheck(carryingUnit,secondaryAttackTable)
 end
 munitionSettings.onProdPayloadRestrictionCheck = onProdPayloadRestrictionCheck
-local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar") 
+local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar") 
 if fileFound then
     function discreteEvents.onActivateUnit(unit,source,rep)
         activationReArm(unit)

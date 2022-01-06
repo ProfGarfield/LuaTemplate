@@ -1,7 +1,7 @@
 -- this file can be deleted if you are not shipping custom music
 
-local customMusicFound,customMusic = pcall(require,civ.getToTDir().."\\lua\\customMusic")
 local gen = require("generalLibrary")
+local customMusicFound,customMusic = gen.requireIfAvailable(civ.getToTDir().."\\lua\\customMusic")
 
 -- The custom music module is not directly included in the Lua Scenario Template
 -- because it involves overwriting files in <ToT Directory>\Music,

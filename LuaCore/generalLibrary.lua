@@ -17,6 +17,28 @@
 -- * means planned but not implemented
 -- # means needs testing
 --
+-- gen.requireIfAvailable(fileName) --> boolean, modulePrefix
+--      Attempts to require the module called fileName
+--      returns true, modulePrefix if the module is found
+--      returns false, nil if no module is found
+--      makes an error if there is a problem loading the module
+--      Note: if you change the function name here, the function
+--      can be copied and pasted if you don't want to require
+--      the general library
+local gen = {}
+function gen.requireIfAvailable(fileName)
+    if package.loaded[fileName] then
+        return true, require(fileName)
+    else
+        for _,searcher in ipairs(package.searchers) do
+            local loader = searcher(fileName)
+            if type(loader) == 'function' then
+                return true, require(fileName)
+            end
+        end
+        return false, nil
+    end
+end
 --
 --gen.checkBits(integer,string)-->boolean
 --gen.setBits(integer,string)-->integer
@@ -407,7 +429,6 @@
 -- FUNCTION IMPLEMENTATIONS
 --
 
-local gen = {}
 
 -- gen.checkBits(integer,string)-->boolean
 -- Compares the binary representation of an integer with
@@ -3309,7 +3330,7 @@ function gen.linkGeneralLibraryState(stateTable)
     genStateTable.tileMarkerTable = genStateTable.tileMarkerTable or {}
 end
 
-local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
     function discreteEvents.linkStateToModules(state,stateTableKeys)
         local keyName = "designerState"

@@ -30,6 +30,7 @@
 
 
 local text = require("text")
+local gen = require("generalLibrary")
 
 local log = {}
 
@@ -108,7 +109,9 @@ end
 
 log.linkState = linkState
 
-local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+
+
+local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
     function discreteEvents.linkStateToModules(state,stateTableKeys)
         local keyName = "logState"

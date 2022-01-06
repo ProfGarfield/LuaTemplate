@@ -57,7 +57,7 @@ local function linkState(tableInStateTable)
 end
 delayedAction.linkState = linkState
 
-local fileFound, discreteEvents = pcall(require,"discreteEventsRegistrar")
+local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
     function discreteEvents.linkStateToModules(state,stateTableKeys)
         local keyName = "delayedAction"
