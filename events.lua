@@ -6,6 +6,7 @@
 --
 
 
+
 -- note: console and global are the only globals.  If you need a variable to
 -- be accessible from the console, put it in the console table, 
 -- and access it via console.myVariable
@@ -462,6 +463,7 @@ civ.scen.onUnitKilled(function (loser,winner)
 
 end)
 
+registeredInThisFile["onUnitKilled"] = true
 
 -- deprecated and replaced by civ.scen.onInitiateCombat
 
@@ -524,7 +526,7 @@ civ.scen.onNegotiation(function(talker,listener)
     local individualEventsResult = attemptRequireWithKey(individualFileDirectory.."onNegotiation","onNegotiation",true)(talker,listener)
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
-registeredInThisFile["onScenarioLoaded"] = true
+registeredInThisFile["onNegotiation"] = true
 
 
 civ.scen.onSchism(function(tribe)
@@ -681,6 +683,7 @@ for registerName,registerFunction in pairs(civ.scen) do
         local fileFound, prefix = requireIfAvailable('EventsFiles\\'..registerName)
         if fileFound then
             civ.scen[registerName](prefix[registerName])
+            print("NOTICE: civ.scen."..registerName.." registered automatically.  If you didn't add the file 'EventsFiles\\"..registerName.."' deliberately, this might indicate a mistake in the Lua Scenario Template.  Contact Prof. Garfield if that is the case.")
         end
     end
 end
