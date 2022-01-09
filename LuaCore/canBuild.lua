@@ -1332,7 +1332,6 @@ function canBuildFunctions.disableSupplementalConditions()
 end
 
 local function supplementalConditionsSatisfied(conditionList,defaultBuildFunction,city,item)
-    print(ignoreAllSupplementalConditions)
     if ignoreAllSupplementalConditions then
         return true
     end

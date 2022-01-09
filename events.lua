@@ -4,6 +4,14 @@
 -- events.lua for the
 -- Lua Event Template
 --
+--  This code can let you find the location of rogue print statements.
+--newprint = print
+--print = function(...) 
+--    newprint("print function in file "..debug.getinfo(2).short_src)
+--    newprint("print function on line "..debug.getinfo(2).currentline)
+--    newprint(...)
+--end
+
 
 
 

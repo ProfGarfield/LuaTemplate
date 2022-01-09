@@ -39,7 +39,6 @@ local civlua = require("civluaModified")
 local events = {}
 
 
-
 -- ===============================================================================
 --
 --          Helper Functions
