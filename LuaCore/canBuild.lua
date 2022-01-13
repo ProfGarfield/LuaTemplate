@@ -1228,14 +1228,17 @@ end
 
 local function buildConstructionStatistics(city)
     local tribe = city.owner
-    for techId = 0,99 do
-        local total = 0
-        for i = 0,7 do
-            if civ.getTribe(i):hasTech(civ.getTech(techId)) then
-                total = total + 1
+    for techId = 0,255 do
+        -- 253 is max number of techs, so 0-252 is probably enough
+        if civ.getTech(techId) then
+            local total = 0
+            for i = 0,7 do
+                if civ.getTribe(i):hasTech(civ.getTech(techId)) then
+                    total = total + 1
+                end
             end
+            canBuildFunctions.globalTechOwnershipByID = total
         end
-        canBuildFunctions.globalTechOwnershipByID = total
     end
     for unitTypeId = 0,civ.cosmic.numberOfUnitTypes-1 do
         canBuildFunctions.tribeUnitsOwnedByTypeID[unitTypeId] = 0

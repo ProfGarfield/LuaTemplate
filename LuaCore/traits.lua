@@ -35,8 +35,11 @@ for i=0,27 do
 end
 
 local techTraits = {}
-for i=0,99 do
-    techTraits[i] = {}
+for i=0,255 do
+       -- 253 techs max, so 0-252 is probably enough
+    if civ.getTech(i) then
+        techTraits[i] = {}
+    end
 end
 
 -- baseTerrain

@@ -60,15 +60,19 @@ advancesNotes[5] = "Automobile"
 advancesNotes[7] = "Bridge Building"
 
 local currentOutput = ""
-for i=0,99 do
+for i=0,255 do
+    -- max techs is 253, so 255 is a bit more than necessary
+    -- but no harm
+    if civ.getTech(i) then
     local adv = civ.getTech(i)
-    row = "object."..scrubKey(adv.name,"a")
-    row = paddRow(row)
-    row = row.."= civ.getTech("..tostring(i)..")"
-    if type(advancesNotes[i])=="string" then
-        row = row.."   --"..advancesNotes[i]
+        row = "object."..scrubKey(adv.name,"a")
+        row = paddRow(row)
+        row = row.."= civ.getTech("..tostring(i)..")"
+        if type(advancesNotes[i])=="string" then
+            row = row.."   --"..advancesNotes[i]
+        end
+        currentOutput = currentOutput..row.."\n"
     end
-    currentOutput = currentOutput..row.."\n"
 end
 
 

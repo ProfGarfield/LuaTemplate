@@ -180,16 +180,26 @@ function events.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winne
 end
 
 
+
 -- After Production
-function events.afterProduction(turn,tribe)
-    --civ.ui.text("After production for turn "..tostring(turn).." and tribe "..tribe.name)
-    
+function events.onCityProcessingComplete(turn,tribe)
+    if _global.eventTesting then
+        civ.ui.text("consolidated.onCityProcessingComplete for turn "..tostring(turn).." and tribe "..tribe.name)
+    end
+
+end
+-- Before Production
+function events.onTribeTurnBegin(turn,tribe)
+    if _global.eventTesting then
+        civ.ui.text("consolidated.onTribeTurnBegin for turn "..tostring(turn).." and tribe "..tribe.name)
+    end
 
 end
 
--- Before Production
-function events.beforeProduction(turn,tribe)
-    --civ.ui.text("Before production for turn "..tostring(turn).." and tribe "..tribe.name)
+function events.onTribeTurnEnd(turn,tribe)
+    if _global.eventTesting then
+        civ.ui.text("consolidated.onTribeTurnEnd for turn "..tostring(turn).." and tribe "..tribe.name)
+    end
 
 end
 
@@ -199,8 +209,18 @@ end
 -- This is combined with the discrete events and the
 -- legacy events, as well as a separate onGameEnds.lua file
 -- If any of these return false, then game end is prevented
--- Not documented or experimented with much
--- based on legacy event engine code, reason is an integer
+-- Lua Function Reference Info:
+--onGameEnds
+--civ.scen.onGameEnds(function (reason) -> boolean) -> void
+--
+--Registers a function that is called when the game ends. `reason` is an integer between 1 and 6:
+--1 and 2 - Space race victory. This does not trigger if `onCentauriArrival` has a callback registered.
+--3 - Conquest victory
+--4 - Defeat
+--5 - Retirement
+--6 - Macro ENDGAME action
+--Return `true` to end the game, `false` to keep playing.
+--
 function events.onGameEnds(reason)
 
     return true

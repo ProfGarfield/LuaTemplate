@@ -89,12 +89,16 @@ fileOutput =
 
 ]]
 
-for i=0,99 do
-    local key = findObjectKey("Tech",i)
-    if key then
-        fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
-    else
-        print("Warning: could not find entry in object table for tech "..tostring(i))
+for i=0,255 do
+    -- 253 is max number of techs, so 255 is just a bit more
+    -- 252 is probably technical max
+    if civ.getTech(i) then
+        local key = findObjectKey("Tech",i)
+        if key then
+            fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
+        else
+            print("Warning: could not find entry in object table for tech "..tostring(i))
+        end
     end
 end
 

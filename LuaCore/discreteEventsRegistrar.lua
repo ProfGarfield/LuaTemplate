@@ -115,12 +115,38 @@ function discreteEvents.performOnAfterProduction(turn,tribe)
     end
 end
 
+eventsTable.onCityProcessingComplete = {}
+eventsTable.onCityProcessingCompleteIndex = 1
+
+function discreteEvents.performOnCityProcessingComplete(turn,tribe)
+    for i = 1,eventsTable.onCityProcessingCompleteIndex-1 do
+        eventsTable.onCityProcessingComplete[i](turn,tribe)
+    end
+end
 eventsTable.onBeforeProduction = {}
 eventsTable.onBeforeProductionIndex = 1
 
 function discreteEvents.performOnBeforeProduction(turn,tribe)
     for i = 1,eventsTable.onBeforeProductionIndex-1 do
         eventsTable.onBeforeProduction[i](turn,tribe)
+    end
+end
+
+eventsTable.onTribeTurnBegin = {}
+eventsTable.onTribeTurnBeginIndex = 1
+
+function discreteEvents.performOnTribeTurnBegin(turn,tribe)
+    for i = 1,eventsTable.onTribeTurnBeginIndex-1 do
+        eventsTable.onTribeTurnBegin[i](turn,tribe)
+    end
+end
+
+eventsTable.onTribeTurnEnd = {}
+eventsTable.onTribeTurnEndIndex = 1
+
+function discreteEvents.performOnTribeTurnEnd(turn,tribe)
+    for i = 1,eventsTable.onTribeTurnEndIndex-1 do
+        eventsTable.onTribeTurnEnd[i](turn,tribe)
     end
 end
 
@@ -244,6 +270,9 @@ discreteEvents.onNegotiation
 discreteEvents.onGameEnds
 discreteEvents.onChooseSeason
 discreteEvents.onKeyPress
+discreteEvents.onCityProcessingComplete
+discreteEvents.onTribeTurnBegin
+discreteEvents.onTribeTurnEnd
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -276,6 +305,9 @@ discreteEvents.performOnNegotiation
 discreteEvents.performOnGameEnds
 discreteEvents.performOnChooseSeason
 discreteEvents.performOnKeyPress
+discreteEvents.performOnCityProcessingComplete
+discreteEvents.performOnTribeTurnBegin
+discreteEvents.performOnTribeTurnEnd
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

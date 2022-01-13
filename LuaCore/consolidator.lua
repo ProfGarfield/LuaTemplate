@@ -126,15 +126,29 @@ function events.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winne
 end
 
 -- After Production
+function events.onCityProcessingComplete(turn,tribe)
+
+end
+-- After Production -- Deprecated, use onCityProcessingComplete
 function events.afterProduction(turn,tribe)
 
 end
 
--- Before Production
+
+-- Before Production 
+function events.onTribeTurnBegin(turn,tribe)
+
+end
+
+-- Before Production -- Deprecated, use onTribeTurnBegin
 function events.beforeProduction(turn,tribe)
 
 end
 
+-- Tribe turn end 
+function events.onTribeTurnEnd(turn,tribe)
+
+end
 
 
 

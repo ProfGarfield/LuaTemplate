@@ -626,13 +626,16 @@ local function giftTechnology(tribe, options) --
    local listTechs = {}
    local techTechs = {}
    local techTable = options.giftTechNotTrade or {}
-   for techId = 0,99 do
-      local tech = civ.getTech(techId)
-      if not tribe:hasTech(tech) and player:hasTech(tech) and not techInTable(tech, techTable)
-      then
-	 listTechs[#listTechs+1] = tech.name
-	 techTechs[#techTechs+1] = tech
-      end
+   for techId = 0,255 do
+       -- 253 techs max, so 0-252 is probably enough
+       if civ.getTech(techId) then
+        local tech = civ.getTech(techId)
+        if not tribe:hasTech(tech) and player:hasTech(tech) and not techInTable(tech, techTable)
+        then
+	      listTechs[#listTechs+1] = tech.name
+	      techTechs[#techTechs+1] = tech
+        end
+    end
    end
    if #listTechs == 0 then
       local message = options.giftTechNoTechs or  "There are no tech we can give to %RECEIVER"

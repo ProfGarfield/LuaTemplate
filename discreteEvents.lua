@@ -113,12 +113,23 @@ function discreteEvents.onTurn(turn)
     --civ.ui.text("discrete on turn event 4")
 end
 
-function discreteEvents.onAfterProduction(turn,tribe) 
-    --civ.ui.text("after production for "..tribe.name.." on turn "..tostring(turn))
+function discreteEvents.onCityProcessingComplete(turn,tribe) 
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onCityProcessingComplete for "..tribe.name.." on turn "..tostring(turn))
+    end
 end
 
-function discreteEvents.onBeforeProduction(turn,tribe) 
-    --civ.ui.text("before production for "..tribe.name.." on turn "..tostring(turn))
+
+function discreteEvents.onTribeTurnBegin(turn,tribe) 
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onTribeTurnBegin for "..tribe.name.." on turn "..tostring(turn))
+    end
+end
+
+function discreteEvents.onTribeTurnEnd(turn,tribe) 
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onTribeTurnEnd for "..tribe.name.." on turn "..tostring(turn))
+    end
 end
 
 function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 

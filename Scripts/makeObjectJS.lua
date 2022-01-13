@@ -109,8 +109,11 @@ fileOutput = fileOutput..
 // Advances
 const advancesList = [
 ]=]
-for i=0,99 do
-    fileOutput = fileOutput..makeLine(i,civ.getTech,civ.isTech,object)
+for i=0,255 do
+    -- max techs is 253, so this is a bit more than necessary
+    if civ.getTech(i) then
+        fileOutput = fileOutput..makeLine(i,civ.getTech,civ.isTech,object)
+    end
 end
 fileOutput = fileOutput..
 [=[]

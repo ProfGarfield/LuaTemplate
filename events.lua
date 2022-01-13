@@ -23,12 +23,29 @@
 -- either purpose
 -- Put this before requirements, in case any required items
 -- are checking if there is a console table
+
+local TOTPPMajor = 0
+local TOTPPMinor = 18
+if not totpp.version then
+    local message = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.." or later.  Get the latest version of the TOTPP here (this message will also appear in the console, where you can copy the link): https://forums.civfanatics.com/threads/the-test-of-time-patch-project.517282/" 
+    civ.ui.text(message)
+    error(message)
+end
+if (totpp.version.major < TOTPPMajor) or 
+    (totpp.version.major == TOTPPMajor and totpp.version.minor < TOTPPMinor) then
+    local message = "You are using Test of Time Patch Project version "..totpp.version.major.."."..totpp.version.minor..".  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.." or later.  Get the latest version of the TOTPP here (this message will also appear in the console, where you can copy the link): https://forums.civfanatics.com/threads/the-test-of-time-patch-project.517282/" 
+    civ.ui.text(message)
+    error(message)
+end
+
+
 console = {}
 console.commands = function() print('These are keys currently stored in the console table.\n')
     for k,__ in pairs(console) do
         print('console.'..k)
     end end
 _global = {}
+_global.eventTesting = false -- set to true to run event civ.ui.text statements in default code
 local eventsPath = string.gsub(debug.getinfo(1).source, "@", "")
 local scenarioFolder = string.gsub(eventsPath,"events.lua","")
 --print(scenarioFolder)
@@ -173,10 +190,10 @@ gen.setMusicDirectory(musicFolder)
 
 
 
-for i=0,7 do
-    flag.define("tribe"..tostring(i).."AfterProductionNotDone",true,"eventMachinery")
-    flag.define("tribe"..tostring(i).."BeforeProductionNotDone",true,"eventMachinery")
-end
+--for i=0,7 do
+--    flag.define("tribe"..tostring(i).."AfterProductionNotDone",true,"eventMachinery")
+--    flag.define("tribe"..tostring(i).."BeforeProductionNotDone",true,"eventMachinery")
+--end
 
 local state = {}
 
@@ -275,10 +292,11 @@ local function doOnChooseSeason()
 end
 local onTurnFn = function(turn)
     -- this makes doAfterProduction work
-    for i=0,7 do
-        flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone","eventMachinery")
-        flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone","eventMachinery")
-    end
+    -- not necessary with civ.scen.onCityProcessingComplete
+    --for i=0,7 do
+    --    flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone","eventMachinery")
+    --    flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone","eventMachinery")
+    --end
     doOnChooseSeason()
     discreteEvents.performOnTurn(turn)
     consolidated.onTurn(turn)
@@ -359,32 +377,38 @@ end
 
 registeredInThisFile["onActivateUnit"]=true
 
-local function doAfterProduction(turn,tribe)
-    text.displayAccumulatedMessages()
-    if not simpleSettings.doNotDeleteAITextArchives then
-        text.deleteAIArchives()
-    end
-    discreteEvents.performOnAfterProduction(turn,tribe)
-    consolidated.afterProduction(turn,tribe)
-    attemptRequireWithKey(individualFileDirectory.."onAfterProduction","onAfterProduction")(turn,tribe)
-    delayedAction.doAfterProduction(turn,tribe)
-    eventTools.maintainUnitActivationTable()
-end
-console.afterProduction = function() doAfterProduction(civ.getTurn(),civ.getCurrentTribe()) end
 gen.linkActivationFunction(doOnUnitActivation)
-registeredInThisFile["onAfterProduction"] = true
 civ.scen.onActivateUnit(function(unit,source,repeatMove)
-    if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery") then
-        flag.setFalse("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery")
-        doAfterProduction(civ.getTurn(),unit.owner)
-        eventTools.guaranteeUnitActivationForNextActiveTribe(unit.owner)
-    end
+    --if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery") then
+    --    flag.setFalse("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery")
+    --    doAfterProduction(civ.getTurn(),unit.owner)
+    --    eventTools.guaranteeUnitActivationForNextActiveTribe(unit.owner)
+    --end
     promotionSettings.performPendingUpgrades()
     diplomacy.checkTreaties()
     doOnUnitActivation(unit,source,repeatMove)
     eventTools.unitActivation(unit,source)
 end)
 
+local function doAfterProduction(turn,tribe)
+    text.displayAccumulatedMessages()
+    if not simpleSettings.doNotDeleteAITextArchives then
+        text.deleteAIArchives()
+    end
+    discreteEvents.performOnAfterProduction(turn,tribe)
+    discreteEvents.performOnCityProcessingComplete(turn,tribe)
+    consolidated.afterProduction(turn,tribe)
+    consolidated.onCityProcessingComplete(turn,tribe)
+    attemptRequireWithKey(individualFileDirectory.."onAfterProduction","onAfterProduction")(turn,tribe)
+    attemptRequireWithKey(individualFileDirectory.."onCityProcessingComplete","onCityProcessingComplete")(turn,tribe)
+    delayedAction.doAfterProduction(turn,tribe)
+    eventTools.maintainUnitActivationTable()
+end
+civ.scen.onCityProcessingComplete(doAfterProduction)
+console.afterProduction = function() doAfterProduction(civ.getTurn(),civ.getCurrentTribe()) end
+console.onCityProcessingComplete = console.afterProduction
+registeredInThisFile["onAfterProduction"] = true
+registeredInThisFile["onCityProcessingComplete"] = true
 
 -- This is for events that should only happen when a unit is killed in a 'standard' Civilization ii combat
 local function doOnUnitDefeatedInCombat(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
@@ -472,6 +496,69 @@ civ.scen.onUnitKilled(function (loser,winner)
 end)
 
 registeredInThisFile["onUnitKilled"] = true
+
+local nukeFileFound,useNuke = requireIfAvailable("onUseNuclearWeapon")
+
+if not nukeFileFound then
+    useNuke = {}
+    useNuke.onUseNuclearWeapon = function(unit,tile) return true end
+end
+
+local function nukeDeath(loser,winner)
+    firstRoundOfCombat = true
+    local loserLocation = nil
+    -- vet status of the combatants before combat
+    local winnerVetStatus = nil
+    local loserVetStatus = nil
+    if loser == aggressor then
+        loserLocation = aggressorLocation
+        winnerVetStatus = victimVetStatus
+        loserVetStatus = aggressorVetStatus
+    else
+        loserLocation = loser.location
+        winnerVetStatus = aggressorVetStatus
+        loserVetStatus = victimVetStatus
+    end
+    promotion.customVetChance(loser,winner,aggressor,victim,loserLocation,victimVetStatus,aggressorVetStatus,promotionSettings.promotionChanceFunction)
+    doOnUnitDefeatedInCombat(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    local survivor = doOnUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    if not survivor then
+        doOnUnitDeath(loser)
+    end
+    doOnUnitDeletion(loser,survivor)
+    if survivor then
+        nukeDeath(survivor,winner)
+    end
+end
+
+civ.scen.onUseNuclearWeapon( function(unit,tile)
+    local result = useNuke.onUseNuclearWeapon(unit,tile)
+    if result then
+        local map = tile.z
+        for nearbyUnit in gen.nearbyUnits(tile,1) do
+            -- this is most of the unit killed stuff above
+            -- but demoted units won't be replaced
+            if nearbyUnit.location.z == map and nearbyUnit ~= unit then
+                nukeDeath(nearbyUnit,unit)
+            end
+        end
+    end
+    return result
+end)
+registeredInThisFile["onUseNuclearWeapon"] = true
+
+local formattedDateFileFound,formattedDate = requireIfAvailable("onGetFormattedDate")
+
+if not formattedDateFileFound then
+    formattedDate = {}
+    formattedDate.onGetFormattedDate = function(turn,defaultDateString) return defaultDateString end
+end
+
+civ.scen.onGetFormattedDate(formattedDate.onGetFormattedDate)
+registeredInThisFile["onGetFormattedDate"] = true
+
+
+
 
 -- deprecated and replaced by civ.scen.onInitiateCombat
 
@@ -583,19 +670,32 @@ registeredInThisFile["onCityFounded"] = true
 
 local function doBeforeProduction(turn,tribe)
     consolidated.beforeProduction(turn,tribe)
+    consolidated.onTribeTurnBegin(turn,tribe)
     discreteEvents.performOnBeforeProduction(turn,tribe)
+    discreteEvents.performOnTribeTurnBegin(turn,tribe)
     attemptRequireWithKey(individualFileDirectory.."onBeforeProduction","onBeforeProduction")(turn,tribe)
+    attemptRequireWithKey(individualFileDirectory.."onTribeTurnBegin","onTribeTurnBegin")(turn,tribe)
 end
 console.beforeProduction = function () doBeforeProduction(civ.getTurn(),civ.getCurrentTribe()) end
+console.onTribeTurnBegin = console.beforeProduction
+civ.scen.onTribeTurnBegin(doBeforeProduction)
 registeredInThisFile["onBeforeProduction"] = true
+registeredInThisFile["onTribeTurnBegin"] = true
 
 local function doOnCityProcessed(city)
-    discreteEvents.performOnCityProcessed(city)
     consolidated.onCityProcessed(city)
+    discreteEvents.performOnCityProcessed(city)
     attemptRequireWithKey(individualFileDirectory.."onCityProcessed","onCityProcessed")(city)
 end
 registeredInThisFile["onCityProcessed"] = true
 
+local function doOnTribeTurnEnd(turn,tribe)
+    discreteEvents.performOnTribeTurnEnd(turn,tribe)
+    consolidated.onTribeTurnEnd(turn,tribe)
+    attemptRequireWithKey(individualFileDirectory.."onTribeTurnEnd","onTribeTurnEnd")(turn,tribe)
+end
+civ.scen.onTribeTurnEnd(doOnTribeTurnEnd)
+registeredInThisFile["onTribeTurnEnd"] = true
 
 
 local baseProduction = gen.computeBaseProduction
@@ -603,26 +703,26 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
     -- note the use of civ.getCurrentTribe().id instead of city.owner.id
     -- this is because investigating a city can calculate the yield without it being
     -- that player's turn
-    local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
-    -- for production changes during the beforeProductionEvent
-    if flag.value("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone","eventMachinery") then
-        flag.setFalse("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone","eventMachinery")
-        doBeforeProduction(civ.getTurn(),civ.getCurrentTribe())
-        -- prepare for onCityProcessed execution point by resetting the list of processed cities
-        for key,val in pairs(state.processedCities) do
-            state.processedCities[key] = nil
-        end
-        -- if doBeforeProduction changed the tile production, we have to compensate for that
-        -- for the current city
-        local correctFood,correctShields,correctTrade = baseProduction(city)
-        extraFood = correctFood-food
-        food = correctFood
-        extraShields = correctShields - shields
-        shields = correctShields
-        extraTrade = correctTrade - trade
-        trade = correctTrade
-    end
-    
+    --local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
+    ---- for production changes during the beforeProductionEvent
+    --if flag.value("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone","eventMachinery") then
+    --    flag.setFalse("tribe"..tostring(civ.getCurrentTribe().id).."BeforeProductionNotDone","eventMachinery")
+    --    doBeforeProduction(civ.getTurn(),civ.getCurrentTribe())
+    --    -- prepare for onCityProcessed execution point by resetting the list of processed cities
+    --    for key,val in pairs(state.processedCities) do
+    --        state.processedCities[key] = nil
+    --    end
+    --    -- if doBeforeProduction changed the tile production, we have to compensate for that
+    --    -- for the current city
+    --    local correctFood,correctShields,correctTrade = baseProduction(city)
+    --    extraFood = correctFood-food
+    --    food = correctFood
+    --    extraShields = correctShields - shields
+    --    shields = correctShields
+    --    extraTrade = correctTrade - trade
+    --    trade = correctTrade
+    --end
+    --
     -- onCityProcessed execution point
     if city.owner == civ.getCurrentTribe() and (not state.processedCities[city.id]) then
         state.processedCities[city.id] = true
@@ -631,7 +731,8 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
 
     -- if doBeforeProduction 
     local fCh,sChBW,sChAW,tChBC,tChAC = cityYield.onCalculateCityYield(city,food,shields,trade)
-    return fCh+extraFood,sChBW+extraShields,sChAW,tChBC+extraTrade,tChAC
+    --return fCh+extraFood,sChBW+extraShields,sChAW,tChBC+extraTrade,tChAC
+    return fCh,sChBW,sChAW,tChBC,tChAC
 end)
 registeredInThisFile["onCalculateCityYield"] = true
 
@@ -666,6 +767,8 @@ if not rushBuySettingsFound then
     rushBuySettings.onGetRushBuyCost = function(city,cost) return cost end
 end
 civ.scen.onGetRushBuyCost(rushBuySettings.onGetRushBuyCost)
+
+
 
 function discreteEvents.linkStateToModules(state,stateTableKeys)
     local keyName = "globalState"

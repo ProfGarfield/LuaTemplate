@@ -233,8 +233,12 @@ for i=0,7 do
         treatiesT[j]=tribe.treaties[civ.getTribe(j)]
     end
     local techT = {}
-    for j=0,99 do
-        techT[j]=tribe:hasTech(civ.getTech(j))
+    for j=0,255 do
+        -- 253 is max number of techs, 0-252 is probably enough,
+        -- but no harm in extras
+        if civ.getTech(j) then
+            techT[j]=tribe:hasTech(civ.getTech(j))
+        end
     end
     tribeData[i] = {adjective = tribe.adjective, attitude=aT,betrayals = tribe.betrayals,
         futureTechs = tribe.futureTechs, government = tribe.government, id = tribe.id,
@@ -491,10 +495,14 @@ function placeData(topLeftTileDestinationX,topLeftTileDestinationY)
             tribe.leader.name = tribeDatum.leaderName
             tribe.leader.female = tribeDatum.leaderFemale
         end
-        for j=0,99 do
-            tribe:takeTech(civ.getTech(j))
-            if tribeDatum.technologies[j] then
-                tribe:giveTech(civ.getTech(j))
+        for j=0,255 do
+            -- 253 is max number of techs, 0-252 is probably enough,
+            -- but no harm in extras
+            if civ.getTech(j) then
+                tribe:takeTech(civ.getTech(j))
+                if tribeDatum.technologies[j] then
+                    tribe:giveTech(civ.getTech(j))
+                end
             end
         end
     end
