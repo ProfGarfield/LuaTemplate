@@ -38,9 +38,23 @@ eventsTable.onCityFounded = {}
 eventsTable.onCityFoundedIndex = 1
 
 function discreteEvents.performOnCityFounded(city)
+    local cityCancelledTable = {}
+    local cityCancelledIndex = 1
     for i = 1,eventsTable.onCityFoundedIndex-1 do
-        eventsTable.onCityFounded[i](city)
+        local cancellationFn = eventsTable.onCityFounded[i](city)
+        if cancellationFn and type(cancellationFn) == "function" then
+            cityCancelledTable[cityCancelledIndex] = cancellationFn
+            cityCancelledIndex = cityCancelledIndex+1
+        elseif cancellationFn then
+            error("discreteEventsRegistrar: one of your onCityFounded discrete events returns a value that is not a function.  That value is "..tostring(cancellationFn)..".  Your onCityFounded event does not need to return a value, but if it does, it should be a function (or nil).")
+        end
     end
+    local function cancellationFunction()
+        for j=1,cityCancelledIndex-1 do
+            cityCancelledTable[j]()
+        end
+    end
+    return cancellationFunction
 end
 
 eventsTable.onCityProcessed = {}

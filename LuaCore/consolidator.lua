@@ -43,6 +43,14 @@ end
 -- On City Founded
 function events.onCityFounded(city)
 
+    -- the cityCancelled() function is executed if the player
+    -- decides not to found the city after all
+    -- (so you can undo terrain changes, etc.
+    local function cityCancelled()
+
+    end
+    return cityCancelled
+
 end
 
 -- On City Processed

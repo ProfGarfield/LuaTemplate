@@ -63,7 +63,18 @@ function discreteEvents.onBribeUnit(unit,previousOwner)
 end
 
 function discreteEvents.onCityFounded(city) 
-    --civ.ui.text("City founded discrete event test")
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onCityFounded for "..city.name)
+    end
+    -- the cityCancelled() function is executed if the player
+    -- decides not to found the city after all
+    -- (so you can undo terrain changes, etc.
+    local function cityCancelled()
+        if _global.eventTesting then
+            civ.ui.text("discreteEvents.onCityFounded city cancelled for "..city.name)
+        end
+    end
+    return cityCancelled
 
 end
 

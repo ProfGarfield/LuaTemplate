@@ -26,16 +26,23 @@
 
 local TOTPPMajor = 0
 local TOTPPMinor = 18
+local TOTPPPatch = 1
 if not totpp.version then
-    local message = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.." or later.  Get the latest version of the TOTPP here (this message will also appear in the console, where you can copy the link): https://forums.civfanatics.com/threads/the-test-of-time-patch-project.517282/" 
-    civ.ui.text(message)
-    error(message)
+    local messageBox = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  A link to the TOTPP will be in the console error message."
+    local message1 = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  Get the latest version of the TOTPP here:"
+    local message2 = "https://forums.civfanatics.com/threads/the-test-of-time-patch-project.517282/" 
+    civ.ui.text(messageBox)
+    error(message1..message2)
 end
 if (totpp.version.major < TOTPPMajor) or 
-    (totpp.version.major == TOTPPMajor and totpp.version.minor < TOTPPMinor) then
-    local message = "You are using Test of Time Patch Project version "..totpp.version.major.."."..totpp.version.minor..".  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.." or later.  Get the latest version of the TOTPP here (this message will also appear in the console, where you can copy the link): https://forums.civfanatics.com/threads/the-test-of-time-patch-project.517282/" 
-    civ.ui.text(message)
-    error(message)
+    (totpp.version.major == TOTPPMajor and totpp.version.minor < TOTPPMinor)    or (totpp.version.major == TOTPPMajor and totpp.version.minor == TOTPPMinor
+    and totpp.version.patch < TOTPPPatch)
+    then
+    local messageBox = "You are using Test of Time Patch Project version "..totpp.version.major.."."..totpp.version.minor.."."..totpp.version.patch..".  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.   A link to the TOTPP will be in the console error message."
+    local message1 = "You are using Test of Time Patch Project version "..totpp.version.major.."."..totpp.version.minor.."."..totpp.version.patch..".  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  Get the latest version of the TOTPP here: "
+    local message2 = "https://forums.civfanatics.com/threads/the-test-of-time-patch-project.517282/" 
+    civ.ui.text(messageBox)
+    error(message1..message2)
 end
 
 
@@ -72,7 +79,8 @@ if string.find(package.path, scenarioFolderPath, 1, true) == nil then
     -- This line allows you to give the full path (civ.getToTDir()..\\rest\\of\\path) of a module,
     -- this allows checking for the custom music patch in <TOT Dir>\lua (and perhaps other stuff)
     -- without looking in that folder for other modules
-    ..";?.lua"
+    -- this is unneeded with the new onSelectMusic event
+    --..";?.lua"
     
 end
 
@@ -168,7 +176,6 @@ local setTraits = require("setTraits")
 local discreteEvents = require("discreteEventsRegistrar")
 require("discreteEvents")
 local consolidated = require("consolidatedEvents")
-requireIfAvailable("customMusicIntegration")
 
 
 
@@ -662,9 +669,29 @@ end)
 registeredInThisFile["onGameEnds"]=true
 
 civ.scen.onCityFounded(function(city)
-    discreteEvents.performOnCityFounded(city)
-    consolidated.onCityFounded(city)
-    attemptRequireWithKey(individualFileDirectory.."onCityFounded","onCityFounded")(city)
+    local discreteCancelFn = discreteEvents.performOnCityFounded(city) -- always returns a function
+    local consolidatedCancelFn = consolidated.onCityFounded(city) -- may return a function, so account for case where it doesn't
+    -- note that type(void) is an error, but
+    -- local a = void
+    -- type(a) -> nil
+    -- hence, consolidatedCancelFn will not be void
+    local separateCancelFn = attemptRequireWithKey(individualFileDirectory.."onCityFounded","onCityFounded",function() end)(city) -- may return a function, so account for case where it doesn't
+    if consolidatedCancelFn and type(consolidatedCancelFn) ~= 'function' then
+        error("consolidatedFunctions.onCityFounded: value returned that isn't a function.  The value is "..tostring(consolidatedCancelFn)..".  Your onCityFounded event does not need to return a value, but if it does, it should be a function (or nil).")
+    end
+    if separateCancelFn and type(separateCancelFn) ~= 'function' then
+        error("separateFunctions.onCityFounded: value returned that isn't a function.  The value is "..tostring(separateCancelFn)..".  Your onCityFounded event does not need to return a value, but if it does, it should be a function (or nil).")
+    end
+    local function linkedCancelFunction()
+        discreteCancelFn()
+        if consolidatedCancelFn then
+            consolidatedCancelFn()
+        end
+        if separateCancelFn then
+            separateCancelFn()
+        end
+    end
+    return linkedCancelFunction
 end)
 registeredInThisFile["onCityFounded"] = true
 
@@ -757,6 +784,9 @@ civ.scen.onChooseDefender(combatSettings.onChooseDefender)
 
 registeredInThisFile["onChooseDefender"] = true
 
+-- note: For this item, the function is registered in the required file
+requireIfAvailable("customMusicIntegration")
+registeredInThisFile["onSelectMusic"] = true
 
 
 
