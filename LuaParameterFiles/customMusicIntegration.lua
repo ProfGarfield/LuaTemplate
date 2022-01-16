@@ -9,7 +9,7 @@ local text = require("text")
 -- (There is an "Extended Music For TOTPP" addition that I wrote
 -- which benefits from modifying @PICKMUSICTOT, and which this
 -- module will supersede if active
-local useCustomMusic = true
+local useCustomMusic = false
 
 if useCustomMusic and totpp.patches.DirectShowMusic then
     -- do everything else in this file
