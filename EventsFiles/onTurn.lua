@@ -2,8 +2,9 @@
 local onTurn = {}
 
 function onTurn.onTurn(turn)
-    --civ.ui.text("on turn test separate file")
-
+    if _global.eventTesting then
+        civ.ui.text("on turn test separate file")
+    end
 end
 
 return onTurn

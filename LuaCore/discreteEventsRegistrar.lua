@@ -263,6 +263,25 @@ function discreteEvents.performOnKeyPress(keyId)
     end
 end
 
+
+eventsTable.onCanFoundCity = {}
+eventsTable.onCanFoundCityIndex = 1
+
+function discreteEvents.performOnCanFoundCity(unit)
+    -- the default value is true, so return false if
+    -- any of the discrete events return false
+    local resultSoFar = true
+    for i =1, eventsTable.onCanFoundCityIndex-1 do
+        local currentResult = eventsTable.onCanFoundCity[i](unit)
+        if currentResult == nil then
+            error('discreteEvents.performOnCanFoundCity: all discrete events registered by discreteEvents.onCanFoundCity must return a boolean value, that is either true or false.')
+        end
+        resultSoFar = resultSoFar and currentResult
+    end
+    return resultSoFar
+end
+
+
 local registeredEventTypes =
 [[
 discreteEvents.onActivateUnit 
@@ -287,6 +306,8 @@ discreteEvents.onKeyPress
 discreteEvents.onCityProcessingComplete
 discreteEvents.onTribeTurnBegin
 discreteEvents.onTribeTurnEnd
+discreteEvents.onCanFoundCity
+discreteEvents.onSchism
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -322,6 +343,8 @@ discreteEvents.performOnKeyPress
 discreteEvents.performOnCityProcessingComplete
 discreteEvents.performOnTribeTurnBegin
 discreteEvents.performOnTribeTurnEnd
+discreteEvents.performOnCanFoundCity
+discreteEvents.performOnSchism
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

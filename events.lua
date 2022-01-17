@@ -179,6 +179,9 @@ local consolidated = require("consolidatedEvents")
 
 
 
+
+
+
 --local triggerEvents = require("triggerEvents")
 local log = require("log")
 -- this module compresses (and decompresses) the state
@@ -294,9 +297,40 @@ end
 
 local individualFileDirectory = "EventsFiles\\"
 
+-- the results of attemptRequireWithKey are placed here
+-- this way, all the requires happen at once, so the warnings can
+-- be shown to the console
+local eventsFiles = {}
+eventsFiles.onTurn = attemptRequireWithKey(individualFileDirectory.."onTurn","onTurn")
+eventsFiles.onKeyPress = attemptRequireWithKey(individualFileDirectory.."onKeyPress","onKeyPress")
+eventsFiles.onCityProduction = attemptRequireWithKey(individualFileDirectory.."onCityProduction","onCityProduction")
+eventsFiles.attackBonus = attemptRequireWithKey('attackBonusSettings',"attackBonus")
+eventsFiles.onActivateUnit = attemptRequireWithKey(individualFileDirectory.."onActivateUnit","onActivateUnit")
+eventsFiles.onAfterProduction = attemptRequireWithKey(individualFileDirectory.."onAfterProduction","onAfterProduction")
+eventsFiles.onCityProcessingComplete = attemptRequireWithKey(individualFileDirectory.."onCityProcessingComplete","onCityProcessingComplete")
+eventsFiles.onUnitKilled = attemptRequireWithKey(individualFileDirectory.."onUnitKilled","onUnitKilled")
+eventsFiles.onUnitDefeated = attemptRequireWithKey(individualFileDirectory.."onUnitDefeated","onUnitDefeated")
+eventsFiles.onUnitDeath = attemptRequireWithKey(individualFileDirectory.."onUnitDeath","onUnitDeath")
+eventsFiles.onUnitDeathOutsideCombat = attemptRequireWithKey(individualFileDirectory.."onUnitDeath","onUnitDeathOutsideCombat")
+eventsFiles.onUnitDeleted = attemptRequireWithKey(individualFileDirectory.."onUnitDeath","onUnitDeleted") 
+eventsFiles.onCityTaken = attemptRequireWithKey(individualFileDirectory.."onCityTaken","onCityTaken") 
+eventsFiles.onCityDestroyed =  attemptRequireWithKey(individualFileDirectory.."onCityDestroyed","onCityDestroyed")
+eventsFiles.onScenarioLoaded = attemptRequireWithKey(individualFileDirectory.."onScenarioLoaded","onScenarioLoaded")
+eventsFiles.onNegotiation = attemptRequireWithKey(individualFileDirectory.."onNegotiation","onNegotiation",true)
+eventsFiles.onSchism = attemptRequireWithKey(individualFileDirectory.."onSchism","onSchism",true)
+eventsFiles.onCentauriArrival = attemptRequireWithKey(individualFileDirectory.."onCentauriArrival","onCentauriArrival")
+eventsFiles.onBribeUnit = attemptRequireWithKey(individualFileDirectory.."onBribeUnit","onBribeUnit")
+eventsFiles.onGameEnds = attemptRequireWithKey(individualFileDirectory.."onGameEnds","onGameEnds",true)
+eventsFiles.onBeforeProduction = attemptRequireWithKey(individualFileDirectory.."onBeforeProduction","onBeforeProduction")
+eventsFiles.onCityFounded = attemptRequireWithKey(individualFileDirectory.."onCityFounded","onCityFounded",function() end)
+eventsFiles.onTribeTurnBegin = attemptRequireWithKey(individualFileDirectory.."onTribeTurnBegin","onTribeTurnBegin")
+eventsFiles.onCityProcessed = attemptRequireWithKey(individualFileDirectory.."onCityProcessed","onCityProcessed")
+eventsFiles.onTribeTurnEnd = attemptRequireWithKey(individualFileDirectory.."onTribeTurnEnd","onTribeTurnEnd")
+eventsFiles.onCanFoundCity = attemptRequireWithKey(individualFileDirectory.."onCanFoundCity","onCanFoundCity",true)
 local function doOnChooseSeason()
     discreteEvents.performOnChooseSeason()
 end
+
 local onTurnFn = function(turn)
     -- this makes doAfterProduction work
     -- not necessary with civ.scen.onCityProcessingComplete
@@ -307,7 +341,7 @@ local onTurnFn = function(turn)
     doOnChooseSeason()
     discreteEvents.performOnTurn(turn)
     consolidated.onTurn(turn)
-    attemptRequireWithKey(individualFileDirectory.."onTurn","onTurn")(turn)
+    eventsFiles.onTurn(turn)
     delayedAction.doOnTurn(turn)
     for city in civ.iterateCities() do
         if simpleSettings.cancelWeLoveTheKing[city.owner.government] then
@@ -353,7 +387,7 @@ registeredInThisFile["onLoad"]=true
 civ.scen.onKeyPress(function(keyCode)
     discreteEvents.performOnKeyPress(keyCode)
     consolidated.onKeyPress(keyCode)
-    attemptRequireWithKey(individualFileDirectory.."onKeyPress","onKeyPress")(keyCode)
+    eventsFiles.onKeyPress(keyCode)
 end)
 
 
@@ -363,7 +397,7 @@ civ.scen.onCityProduction(function(city,prod)
     prod = promotionSettings.overrideProdVetStatus(city,prod)
     discreteEvents.performOnCityProduction(city,prod)
     consolidated.onCityProduction(city,prod)
-    attemptRequireWithKey(individualFileDirectory.."onCityProduction","onCityProduction")(city,prod)
+    eventsFiles.onCityProduction(city,prod)
 end)
 registeredInThisFile["onCityProduction"] = true
 
@@ -372,10 +406,10 @@ local function doOnUnitActivation(unit,source,repeatMove)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
     end
-    attemptRequireWithKey('attackBonusSettings',"attackBonus")(unit)
+    eventsFiles.attackBonus(unit)
     discreteEvents.performOnActivateUnit(unit,source,repeatMove)
     consolidated.onActivateUnit(unit,source,repeatMove)
-    attemptRequireWithKey(individualFileDirectory.."onActivateUnit","onActivateUnit")(unit,source,repeatMove)
+    eventsFiles.onActivateUnit(unit,source,repeatMove)
     -- don't need to run this for repeat moves
     if simpleSettings.enableCustomUnitSelection and not repeatMove then
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)
@@ -406,8 +440,8 @@ local function doAfterProduction(turn,tribe)
     discreteEvents.performOnCityProcessingComplete(turn,tribe)
     consolidated.afterProduction(turn,tribe)
     consolidated.onCityProcessingComplete(turn,tribe)
-    attemptRequireWithKey(individualFileDirectory.."onAfterProduction","onAfterProduction")(turn,tribe)
-    attemptRequireWithKey(individualFileDirectory.."onCityProcessingComplete","onCityProcessingComplete")(turn,tribe)
+    eventsFiles.onAfterProduction(turn,tribe)
+    eventsFiles.onCityProcessingComplete(turn,tribe)
     delayedAction.doAfterProduction(turn,tribe)
     eventTools.maintainUnitActivationTable()
 end
@@ -421,7 +455,7 @@ registeredInThisFile["onCityProcessingComplete"] = true
 local function doOnUnitDefeatedInCombat(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     discreteEvents.performOnUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     consolidated.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
-    attemptRequireWithKey(individualFileDirectory.."onUnitKilled","onUnitKilled")(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    eventsFiles.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     promotionSettings.checkForUpgradeCombat(loser,winner,loserLocation,loserVetStatus,winnerVetStatus)
 end
 
@@ -432,7 +466,7 @@ end
 local function doOnUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)-->nil or unit
     discreteEvents.performOnUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     consolidated.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
-    attemptRequireWithKey(individualFileDirectory.."onUnitDefeated","onUnitDefeated")(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    eventsFiles.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     log.onUnitKilled(winner,loser)
     promotionSettings.checkForUpgradeDefeat(loser,winner,loserLocation,loserVetStatus,winnerVetStatus)
     return promotionSettings.demotionFunction(loser,winner,loserLocation,loserVetStatus,winnerVetStatus)
@@ -443,21 +477,20 @@ registeredInThisFile["onUnitDefeated"] = true
 -- This event takes place whenever a unit 'dies', either through standard or event combat, or when events 'kill'
 -- the unit for some other reason
 local function doOnUnitDeath(dyingUnit)
-    attemptRequireWithKey(individualFileDirectory.."onUnitDeath","onUnitDeath")(dyingUnit)
-
+    eventsFiles.onUnitDeath(dyingUnit)
 end
 
 
 -- this happens whenever a unit 'dies', but not through combat (or 'defeat')
 local function doOnUnitDeathOutsideCombat(dyingUnit)
-    attemptRequireWithKey(individualFileDirectory.."onUnitDeath","onUnitDeathOutsideCombat")(dyingUnit)
+    eventsFiles.onUnitDeathOutsideCombat(dyingUnit)
 end
 
 -- this event has any maintenance that should be done if a unit is deleted,
 -- either because of combat, non combat 'death', or some other administrative deletion situation
 -- if the unit is not being 'replaced', replacingUnit will be nil
 local function doOnUnitDeletion(deletedUnit,replacingUnit)
-    attemptRequireWithKey(individualFileDirectory.."onUnitDeath","onUnitDeleted")(deletedUnit,replacingUnit)
+    eventsFiles.onUnitDeleted(deletedUnit,replacingUnit)
     eventTools.unitDeletion(deletedUnit)
 end
 registeredInThisFile["onUnitDeath"] = true
@@ -594,7 +627,7 @@ civ.scen.onCityTaken(function (city,defender)
     end
     discreteEvents.performOnCityTaken(city,defender)
     consolidated.onCityTaken(city,defender)
-    attemptRequireWithKey(individualFileDirectory.."onCityTaken","onCityTaken")(city,defender)
+    eventsFiles.onCityTaken(city,defender)
 end)
 registeredInThisFile["onCityTaken"]=true
 
@@ -604,7 +637,7 @@ civ.scen.onCityDestroyed(function (city)
     end
     discreteEvents.performOnCityDestroyed(city)
     consolidated.onCityDestroyed(city)
-    attemptRequireWithKey(individualFileDirectory.."onCityDestroyed","onCityDestroyed")(city)
+    eventsFiles.onCityDestroyed(city)
 end)
 registeredInThisFile["onCityDestroyed"] = true
 
@@ -612,7 +645,7 @@ civ.scen.onScenarioLoaded(function ()
     doOnChooseSeason()
     discreteEvents.performOnScenarioLoaded()
     consolidated.onScenarioLoaded()
-    attemptRequireWithKey(individualFileDirectory.."onScenarioLoaded","onScenarioLoaded")()
+    eventsFiles.onScenarioLoaded()
     if civ.getActiveUnit() then
         doOnUnitActivation(civ.getActiveUnit(),false)
     end
@@ -625,7 +658,7 @@ civ.scen.onNegotiation(function(talker,listener)
     -- if any return false, they can't
     local discreteEventsResult = discreteEvents.performOnNegotiation(talker,listener)
     local consolidatedEventsResult = consolidated.onNegotiation(talker,listener)
-    local individualEventsResult = attemptRequireWithKey(individualFileDirectory.."onNegotiation","onNegotiation",true)(talker,listener)
+    local individualEventsResult = eventsFiles.onNegotiation(talker,listener)
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 registeredInThisFile["onNegotiation"] = true
@@ -636,7 +669,7 @@ civ.scen.onSchism(function(tribe)
     -- if any return false, the tribe can't schism
     local discreteEventsResult = discreteEvents.performOnSchism(tribe)
     local consolidatedEventsResult = consolidated.onSchism(tribe)
-    local individualEventsResult = attemptRequireWithKey(individualFileDirectory.."onSchism","onSchism",true)(tribe)
+    local individualEventsResult = eventsFiles.onSchism(tribe)
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 
@@ -646,14 +679,14 @@ registeredInThisFile["onSchism"] = true
 civ.scen.onCentauriArrival(function(tribe)
     discreteEvents.performOnCentauriArrival(tribe)
     consolidated.onCentauriArrival(tribe)
-    attemptRequireWithKey(individualFileDirectory.."onCentauriArrival","onCentauriArrival")(tribe)
+    eventsFiles.onCentauriArrival(tribe)
 end)
 registeredInThisFile["onCentauriArrival"] = true
 
 civ.scen.onBribeUnit(function(unit,previousOwner)
    discreteEvents.performOnBribeUnit(unit,previousOwner)
    consolidated.onBribeUnit(unit,previousOwner)
-   attemptRequireWithKey(individualFileDirectory.."onBribeUnit","onBribeUnit")(unit,previousOwner)
+   eventsFiles.onBribeUnit(unit,previousOwner)
 end)
 registeredInThisFile["onBribeUnit"] = true
 
@@ -662,7 +695,7 @@ civ.scen.onGameEnds(function(reason)
     -- if any return false, the game doesn't end
     local discreteEventsResult = discreteEvents.performOnGameEnds(reason)
     local consolidatedEventsResult = consolidated.onGameEnds(reason)
-    local individualEventsResult = attemptRequireWithKey(individualFileDirectory.."onGameEnds","onGameEnds",true)(reason)
+    local individualEventsResult = eventsFiles.onGameEnds(reason)
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 
@@ -675,7 +708,7 @@ civ.scen.onCityFounded(function(city)
     -- local a = void
     -- type(a) -> nil
     -- hence, consolidatedCancelFn will not be void
-    local separateCancelFn = attemptRequireWithKey(individualFileDirectory.."onCityFounded","onCityFounded",function() end)(city) -- may return a function, so account for case where it doesn't
+    local separateCancelFn = eventsFiles.onCityFounded(city) -- may return a function, so account for case where it doesn't
     if consolidatedCancelFn and type(consolidatedCancelFn) ~= 'function' then
         error("consolidatedFunctions.onCityFounded: value returned that isn't a function.  The value is "..tostring(consolidatedCancelFn)..".  Your onCityFounded event does not need to return a value, but if it does, it should be a function (or nil).")
     end
@@ -700,8 +733,8 @@ local function doBeforeProduction(turn,tribe)
     consolidated.onTribeTurnBegin(turn,tribe)
     discreteEvents.performOnBeforeProduction(turn,tribe)
     discreteEvents.performOnTribeTurnBegin(turn,tribe)
-    attemptRequireWithKey(individualFileDirectory.."onBeforeProduction","onBeforeProduction")(turn,tribe)
-    attemptRequireWithKey(individualFileDirectory.."onTribeTurnBegin","onTribeTurnBegin")(turn,tribe)
+    eventsFiles.onBeforeProduction(turn,tribe)
+    eventsFiles.onTribeTurnBegin(turn,tribe)
 end
 console.beforeProduction = function () doBeforeProduction(civ.getTurn(),civ.getCurrentTribe()) end
 console.onTribeTurnBegin = console.beforeProduction
@@ -712,14 +745,14 @@ registeredInThisFile["onTribeTurnBegin"] = true
 local function doOnCityProcessed(city)
     consolidated.onCityProcessed(city)
     discreteEvents.performOnCityProcessed(city)
-    attemptRequireWithKey(individualFileDirectory.."onCityProcessed","onCityProcessed")(city)
+    eventsFiles.onCityProcessed(city)
 end
 registeredInThisFile["onCityProcessed"] = true
 
 local function doOnTribeTurnEnd(turn,tribe)
     discreteEvents.performOnTribeTurnEnd(turn,tribe)
     consolidated.onTribeTurnEnd(turn,tribe)
-    attemptRequireWithKey(individualFileDirectory.."onTribeTurnEnd","onTribeTurnEnd")(turn,tribe)
+    eventsFiles.onTribeTurnEnd(turn,tribe)
 end
 civ.scen.onTribeTurnEnd(doOnTribeTurnEnd)
 registeredInThisFile["onTribeTurnEnd"] = true
@@ -798,6 +831,29 @@ if not rushBuySettingsFound then
 end
 civ.scen.onGetRushBuyCost(rushBuySettings.onGetRushBuyCost)
 
+
+
+-- Checking if a unit can found a city
+-- Return true if the unit can found a city
+-- return false if it can't
+-- If any one of the consolidated event, the discrete events, 
+-- or the separate file event return false, then the city
+-- can't be built
+-- Notes: Returning true does NOT override any normal city
+-- building condition (like no adjacent cities, or cities at sea)
+-- This event is not called for advanced tribes (as of TOTPPv18.1),
+-- so it can't prevent them.  Setting that tile's fertility to 0
+-- will prevent it (and stop the AI from settling that tile also)
+local function onCanFoundCity(unit)
+    -- if all registered events return true for a unit, the city is allowed to be built (default behaviour)
+    -- if any return false, the city can't be built (so return false for this function)
+    local discreteEventsResult = discreteEvents.performOnCanFoundCity(unit)
+    local consolidatedEventsResult = consolidated.onCanFoundCity(unit)
+    local individualEventsResult = eventsFiles.onCanFoundCity(unit)
+    return discreteEventsResult and consolidatedEventsResult and individualEventsResult
+end
+civ.scen.onCanFoundCity(onCanFoundCity)
+registeredInThisFile["onCanFoundCity"] = true
 
 
 function discreteEvents.linkStateToModules(state,stateTableKeys)
