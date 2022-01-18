@@ -75,13 +75,8 @@
 -- civilopedia.description(conceptName,description)
 --  Adds string description to conceptName (string), adding the conceptName if it doesn't
 --  already exist.
--- civilopedia.description(conceptName,description,placeInPedia)
---  Adds string description to conceptName (string), adding the conceptName if it doesn't
---  already exist.  Tells the Civilopedia to place it in the placeInPedia(integer) place within the game
---  concepts.  Only one concept can be assigned to each place, and each concept can only be assigned
---  to one place.  A concept only needs to be assigned to a place once.  Any concept not
---  assigned to a place will be placed in the pedia in an order convenient for
---  the Lua Interpreter.  placeInPedia can be negative, and any gaps in places are ignored.
+--  The Concepts are arranged by the game in alphabetical order.  If you want to prioritize
+--  a concept, have the first character be a space.
 --
 -- Bulk Addition of Descriptions
 -- civilopedia.description({list of objects},description)
@@ -382,13 +377,6 @@ local GOVERNMENT_NAMES = {
 local CONCEPT_DESCRIPTIONS = {}
 -- CONCEPT_DESCRIPTIONS["Concept Name"]
 
--- the next 2 tables help keep track of concepts
-local conceptOrder = {}
--- conceptOrder[placeInList] = "Concept Name"
-
-local conceptWithOrder = {}
--- conceptWithOrder["Concept Name"] = placeInList or nil
-
 local function standardAddDescription(table,index,description)
     table[index] = table[index] or ""
     table[index] = table[index]..description.."\n\n"
@@ -405,7 +393,7 @@ local function addTerrainDescription(terrain,description,grasslandMod)
             table[t.map][2][1] = table[t.map][2][1]..description.."\n\n"
             table[t.map][2][2] = table[t.map][2][2]..description.."\n\n"
         elseif type(grasslandMod) ~= "string" then
-            error('civilopedia.description: When adding a modifier for the grassland description, it must be either "shield" or "base", or nil.')
+            error('civilopedia.description: When adding a modifier for the grassland description, it must be either "shield" or "base", or nil. Received:'..tostring(grasslandMod))
         elseif string.lower(grasslandMod) == "shield" then
             -- add description to both resources
             table[t.map][2][1] = table[t.map][2][1]..description.."\n\n"
@@ -415,7 +403,7 @@ local function addTerrainDescription(terrain,description,grasslandMod)
             -- (no shield)
             table[t.map][2][0] = table[t.map][2][0]..description.."\n\n"
         else
-            error('civilopedia.description: When adding a modifier for the grassland description, it must be either "shield" or "base", or nil.')
+            error('civilopedia.description: When adding a modifier for the grassland description, it must be either "shield" or "base", or nil. Received:"'..tostring(grasslandMod)..'"')
         end
     else
         -- the table is already initialized
@@ -436,24 +424,6 @@ local function addGovernmentDescription(govtID,description,name)
     GOVERNMENT_DESCRIPTIONS[govtID] = GOVERNMENT_DESCRIPTIONS[govtID]..description.."\n\n"
 end
 
-local function addConeptDescription(concept,description,place)
-    if place then
-        if type(place) ~= "number" or place ~= math.floor(place) then
-            error("civilopedia.description: When adding a third argument for a concept description, it must be an integer.  received:"..tostring(place))
-        elseif conceptOrder[place] and concept ~= conceptOrder[place] then
-            error("civilopedia.description: You have attempted to assign the concept '"..concept.."' to place "..place.." in the concept list, but that place is already taken by the concept '"..conceptOrder[place].."'.  Only one concept may be assigned to each place in order, however, you do not need to fill every place.  Any gaps will be ignored.")
-        elseif conceptWithOrder[concept] and conceptWithOrder[concept] ~= place then
-            error("civilopedia.description: You have attempted to assign the concept '"..concept.."' to place "..place.." in the concept list, but you have already assigned it to place "..conceptWithOrder[concept]..".  You can only assign a concept to one place in the Game Concepts.  However, you need only make an assignment once.  You do not need to include the third argument every time you add to the concept description.  If the concept is never assigned a position, it will be placed in whatever order the Lua Interpreter finds convenient.")
-        else
-            standardAddDescription(CONCEPT_DESCRIPTIONS,concept,description)
-            conceptOrder[place] = concept
-            conceptWithOrder[concept] = place
-        end
-    else
-        standardAddDescription(CONCEPT_DESCRIPTIONS,concept,description)
-    end
-end
-
 
 function pedia.description(object,description,extra)
     if type(description) ~= "string" then
@@ -467,7 +437,7 @@ function pedia.description(object,description,extra)
     end
     if type(object) == "string" then
         -- concept description
-        addConeptDescription(object,description,extra)
+        standardAddDescription(CONCEPT_DESCRIPTIONS,object,description)
     elseif type(object) == "number" then
         -- government description
         addGovernmentDescription(object,description,extra)
@@ -651,30 +621,8 @@ for i=0,6 do
 end
 
 output = output.."@CONCEPT_DESCRIPTIONS\n;\n"
-local conceptMinPlace = math.huge
-local conceptMaxPlace = -math.huge
-for place,concept in pairs(conceptOrder) do
-    if place > conceptMaxPlace then
-        conceptMaxPlace = place
-    end
-    if place < conceptMinPlace then
-        conceptMinPlace = place
-    end
-end
--- just in case table is empty
-if conceptMinPlace > conceptMaxPlace then
-    conceptMinPlace = 0
-    conceptMaxPlace = 0
-end
-for i=conceptMinPlace,conceptMaxPlace do
-    if conceptOrder[i] then
-        output = output.."@@"..conceptOrder[i].."\n"..CONCEPT_DESCRIPTIONS[conceptOrder[i]].."\n\n"
-    end
-end
 for concept,description in pairs(CONCEPT_DESCRIPTIONS) do
-    if not conceptWithOrder[concept] then
-        output = output.."@@"..concept.."\n"..description.."\n\n"
-    end
+    output = output.."@@"..concept.."\n"..description.."\n\n"
 end
 output = output.."\n\n\n@This must be here to terminate search!!!\n"
 

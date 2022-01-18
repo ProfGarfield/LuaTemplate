@@ -79,13 +79,8 @@ local gen = require("generalLibrary")
 -- civilopedia.description(conceptName,description)
 --  Adds string description to conceptName (string), adding the conceptName if it doesn't
 --  already exist.
--- civilopedia.description(conceptName,description,placeInPedia)
---  Adds string description to conceptName (string), adding the conceptName if it doesn't
---  already exist.  Tells the Civilopedia to place it in the placeInPedia(integer) place within the game
---  concepts.  Only one concept can be assigned to each place, and each concept can only be assigned
---  to one place.  A concept only needs to be assigned to a place once.  Any concept not
---  assigned to a place will be placed in the pedia in an order convenient for
---  the Lua Interpreter.  placeInPedia can be negative, and any gaps in places are ignored.
+--  The Concepts are arranged by the game in alphabetical order.  If you want to prioritize
+--  a concept, have the first character be a space.
 --
 -- Bulk Addition of Descriptions
 -- civilopedia.description({list of objects},description)
@@ -134,21 +129,21 @@ civilopedia.description(gen.original.aFusionPower,"Adds 25% to spaceship mass/th
 --civilopedia.description(gen.original.a,"")
 --civilopedia.description(gen.original.a,"")
 
-civilopedia.description("Disband",[[When a friendly unit becomes obsolete, costs too much to maintain, or causes unhappiness among your population, you might want to eliminate the unit. To eliminate a unit, order it to disband by holding down the shift key and pressing "D", or by selecting "Disband" from the Orders menu. Once disbanded, the unit is permanently removed from the game.]],1)
+civilopedia.description("Disband",[[When a friendly unit becomes obsolete, costs too much to maintain, or causes unhappiness among your population, you might want to eliminate the unit. To eliminate a unit, order it to disband by holding down the shift key and pressing "D", or by selecting "Disband" from the Orders menu. Once disbanded, the unit is permanently removed from the game.]])
 civilopedia.description("Disband",[[When a unit is disbanded inside a friendly city, half of the unit's production cost in Shields is added to the production of whatever unit, Improvement, or Wonder is currently under production in the city.]])
 civilopedia.description("Irrigation",[[When the early farmers moved down from the hills into the valleys of the Nile, Tigris, and Euphrates Rivers, they had to develop the technology of irrigation. The freshwater rivers passed through lands essentially barren due to the lack of rainfall. Through irrigation, water could be removed from the rivers and spread on the nearby land, making it suitable for farming.]])
 
-civilopedia.description("Irrigation",[[Irrigation increases Food production in Grasslands, Plains, Deserts, and Hills. Only squares vertically or horizontally adjacent to water (Oceans or Rivers) or another irrigated square can be irrigated. After the discovery of Refrigeration, terrain squares can be double-irrigated to create farmland. Settlers and Engineers can be ordered to irrigate by pressing the "I" key, or by selecting "Build Irrigation" from the Orders menu.]],4)
+civilopedia.description("Irrigation",[[Irrigation increases Food production in Grasslands, Plains, Deserts, and Hills. Only squares vertically or horizontally adjacent to water (Oceans or Rivers) or another irrigated square can be irrigated. After the discovery of Refrigeration, terrain squares can be double-irrigated to create farmland. Settlers and Engineers can be ordered to irrigate by pressing the "I" key, or by selecting "Build Irrigation" from the Orders menu.]],1)
 
 
 
-civilopedia.description("Fortify",[[Roman legions on campaign halted their march early enough each evening to build a completely fortified camp for the night. They had learned the value of defensive fortifications when under attack. Where possible, it was the standard practice of most armies to build defensive works of some type whenever expecting an attack. Fortified defenders had their fighting strength multiplied, making it much harder to defeat them.]],2)
+civilopedia.description("Fortify",[[Roman legions on campaign halted their march early enough each evening to build a completely fortified camp for the night. They had learned the value of defensive fortifications when under attack. Where possible, it was the standard practice of most armies to build defensive works of some type whenever expecting an attack. Fortified defenders had their fighting strength multiplied, making it much harder to defeat them.]])
 
 civilopedia.description("Fortify",[[Ground units can be ordered to fortify by pressing the "F" key, or by selecting "Fortify" from the Orders menu. The defensive value of fortified units is increased by 50 percent.]])
 
 civilopedia.description("Fortress",[[Once your civilization has discovered Construction, Settlers and Engineers have the ability to construct fortresses. Fortresses can be utilized to defend city perimeters and to block key points of access from enemy armies. A properly manned fortress can provide an effective defense by doubling the defensive strength of all units stationed within. Unlike normal combat, units stacked within a fortress defend and are destroyed one at a time in battle, rather than being destroyed simultaneously. Fortresses themselves do not suffer damage in the attack.
 
-Settlers and Engineers can construct fortresses by pressing the "F" key, or choosing the Build Fortress command from the Orders menu. Units within a fortress have their defensive strengths doubled. Under a Republic, units stationed inside fortresses built within three squares of their home city do not cause unhappiness.]],3)
+Settlers and Engineers can construct fortresses by pressing the "F" key, or choosing the Build Fortress command from the Orders menu. Units within a fortress have their defensive strengths doubled. Under a Republic, units stationed inside fortresses built within three squares of their home city do not cause unhappiness.]])
 
 
 civilopedia.description(civ.getTerrain(0,2,0),[[The areas of land between desert regions and forests in temperate and tropical climates usually consist of grasslands. These fertile regions, covered with various types of vegetation, once occupied large areas of North and South America, Africa, and Eurasia. These areas are characterized by marked wet and dry seasons, with annual periods of drought. Although many grasslands are naturally occurring, grasslands can also be created through deforestation of woodland areas. Grasslands are often cultivated and used as pastures and grazing lands. Because of the relatively low rainfall in these regions, the topsoil is high in nutrients. Grasslands are, therefore, well suited for growing crops, especially grain crops.]])
@@ -169,6 +164,6 @@ civilopedia.description(gen.original.iAqueduct,"Allows a city to grow beyond siz
 civilopedia.description(gen.original.wPyramids,"Counts as a "..gen.original.iGranary.name.." in every city.")
 
 
---civilopedia.makeDescribeTxt()
+civilopedia.makeDescribeTxt()
 
 return {}
