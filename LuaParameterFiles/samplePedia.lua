@@ -95,6 +95,8 @@ civilopedia.description(gen.original.uSpy,"Has better diplomatic function than o
 
 civilopedia.description(gen.original.uNuclearMsl,"Owning this unit changes diplomacy to reflect nuclear capability.")
 
+civilopedia.description({gen.original.uNuclearMsl, gen.original.uEngineers, gen.original.uFreight, gen.original.uSpy},"This unit has special features.")
+
 civilopedia.description(gen.original.aAlphabet,"Doubles the literacy demographics. This is cummulative with the effects of Writing, University, and Literacy")
 civilopedia.description(gen.original.aAutomobile,"Increases population based pollution.")
 civilopedia.description(gen.original.aAutomobile,"Automobile works with Electronics to change city pictures to the modern style (6th row in the cities.bmp file).")

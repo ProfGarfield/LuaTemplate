@@ -431,7 +431,7 @@ function pedia.description(object,description,extra)
     end
     if type(object) == "table" then
         for _,value in pairs(object) do
-            pedia.description(value)
+            pedia.description(value,description,extra)
         end
         return
     end
