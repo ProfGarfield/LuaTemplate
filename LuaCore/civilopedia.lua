@@ -1,0 +1,704 @@
+-- The functions in this file are used to collect information
+-- in order to generate a Describe.txt for the civilopedia
+--
+-- The structure of the generated files will mimic the version
+-- of the Civilopedia Describe.txt provided by Knighttime's 
+-- Medieval Millennium
+--
+--
+-- Purpose of the Civilopedia Module
+--
+-- The Civilopedia Module automatically generates a describe.txt
+-- file based on information provided to it.  It allows the scenario
+-- designer to add documentation to the Civilopedia at the same time
+-- and place as the code which creates the feature.
+
+-- Using the Civilopedia Module
+--
+-- The Civilopedia Module provides one main function:
+-- civilopedia.description(object,description,extra)
+-- It is used in slightly different ways depending
+-- on what you want to add to the describe.txt file
+-- that will be generated.
+--
+-- In all cases, the description string (the second argument)
+-- will be added to the existing description for the object
+-- in question.  Since there is no guarantee about the order
+-- that the files will be required (and the corresponding
+-- civilopedia.description function run), The text segments will not
+-- necessarily be in the correct order, and you will have to change
+-- them when you proofread the describe.txt file.
+--
+-- Take care to make sure that these function calls are outside your 
+-- events, otherwise they won't contribute to the Civilopedia unless you
+-- happen to trigger that event before generating the Pedia.
+--
+-- Technology Description
+-- civilopedia.description(techObject,description)
+--  Add string description for the advance corresponding to the techObject supplied.
+--
+-- Improvement Description
+-- civilopedia.description(improvementObject,description)
+--  Add string description to improvement corresponding to the improvementObject supplied.
+--
+-- Wonder Description
+-- civilopedia.description(wonderObject,description)
+--  Add string description to wonder corresponding to the wonderObject supplied.
+--
+-- Unit Type Description
+-- civilopedia.description(unitTypeObject,description)
+--  Add string description to unit type corresponding to the unitTypeObject supplied.
+--
+-- Terrain Description
+-- civilopedia.description(terrainObject,description)
+--  Add string description to terrain corresponding to the terrainObject supplied.
+-- civilopedia.description(civ.getTerrain(map,2,0),description,"base")
+--  Adds string description to the grassland replacement without shield for the given map,
+--  and not to the shield version
+-- civilopedia.description(civ.getTerrain(map,2,0),description,"shield")
+--  Adds string description to the grassland replacement with shield for the given map, 
+--  and not to the base version
+-- civilopedia.description(civ.getTerrain(map,2,0),description)
+--  Adds string description to all versions of the grassland replacement for the given map.
+--
+-- Government Description
+-- civilopedia.description(governmentID,description)
+--  Adds string description to the government corresponding to the governmentID (integer)
+--  (i.e. 0=Anarchy, 1=Despotism, 2=Monarchy, 3=Communism, 4=Fundamentalism, 5=Republic, 6=Democracy)
+-- civilopedia.description(governmentID,description,governmentName)
+--  Adds string description to the government corresponding to the governmentID,
+--  changes the name in the describe.txt to governmentName
+--  Note: This change doesn't affect the name of governments in the game.
+--  To do that, you change the Rules.txt @GOVERNMENTS
+--
+-- Game Concept Description
+-- civilopedia.description(conceptName,description)
+--  Adds string description to conceptName (string), adding the conceptName if it doesn't
+--  already exist.
+-- civilopedia.description(conceptName,description,placeInPedia)
+--  Adds string description to conceptName (string), adding the conceptName if it doesn't
+--  already exist.  Tells the Civilopedia to place it in the placeInPedia(integer) place within the game
+--  concepts.  Only one concept can be assigned to each place, and each concept can only be assigned
+--  to one place.  A concept only needs to be assigned to a place once.  Any concept not
+--  assigned to a place will be placed in the pedia in an order convenient for
+--  the Lua Interpreter.  placeInPedia can be negative, and any gaps in places are ignored.
+--
+-- Bulk Addition of Descriptions
+-- civilopedia.description({list of objects},description)
+--  adds description to all values in the table
+--  
+-- to generate the describe.txt file, input to the console
+-- require("civilopedia").makeDescribeTxt()
+-- or, with Lua scenario template, 
+-- console.makeDescribeTxt()
+
+local pedia = {}
+local maxTechs = 253
+
+local originalAdvancesNames = {
+
+[0]="Advanced Flight",
+"Alphabet",
+"Amphibious Warfare",
+"Astronomy",
+"Atomic Theory",
+"Automobile",
+"Banking",
+"Bridge Building",
+"Bronze Working",
+"Ceremonial Burial",
+"Chemistry",
+"Chivalry",
+"Code of Laws",
+"Combined Arms",
+"Combustion",
+"Communism",
+"Computers",
+"Conscription",
+"Construction",
+"Corporation",
+"Currency",
+"Democracy",
+"Economics",
+"Electricity",
+"Electronics",
+"Engineering",
+"Environmentalism",
+"Espionage",
+"Explosives",
+"Feudalism",
+"Flight",
+"Fundamentalism",
+"Fusion Power",
+"Genetic Engineering",
+"Guerrilla Warfare",
+"Gunpowder",
+"Horseback Riding",
+"Industrialization",
+"Invention",
+"Iron Working",
+"Labor Union",
+"Laser",
+"Leadership",
+"Literacy",
+"Machine Tools",
+"Magnetism",
+"Map Making",
+"Masonry",
+"Mass Production",
+"Mathematics",
+"Medicine",
+"Metallurgy",
+"Miniaturization",
+"Mobile Warfare",
+"Monarchy",
+"Monotheism",
+"Mysticism",
+"Navigation",
+"Nuclear Fission",
+"Nuclear Power",
+"Philosophy",
+"Physics",
+"Plastics",
+"Plumbing",
+"Polytheism",
+"Pottery",
+"Radio",
+"Railroad",
+"Recycling",
+"Refining",
+"Refrigeration",
+"Republic",
+"Robotics",
+"Rocketry",
+"Sanitation",
+"Seafaring",
+"Space Flight",
+"Stealth",
+"Steam Engine",
+"Steel",
+"Superconductor",
+"Tactics",
+"Theology",
+"Theory of Gravity",
+"Trade",
+"University",
+"Warrior Code",
+"Wheel",
+"Writing",
+"Future Technology",
+"User Def Tech A",
+"User Def Tech B",
+"User Def Tech C",
+"Extra Advance 1",
+"Extra Advance 2",
+"Extra Advance 3",
+"Extra Advance 4",
+"Extra Advance 5",
+"Extra Advance 6",
+"Extra Advance 7",
+}
+
+local originalImprovementsNames = {
+[0]="Nothing",
+"Palace",
+"Barracks",
+"Granary",
+"Temple",
+"MarketPlace",
+"Library",
+"Courthouse",
+"City Walls",
+"Aqueduct",
+"Bank",
+"Cathedral",
+"University",
+"Mass Transit",
+"Colosseum",
+"Factory",
+"Manufacturing Plant",
+"SDI Defense",
+"Recycling Center",
+"Power Plant",
+"Hydro Plant",
+"Nuclear Plant",
+"Stock Exchange",
+"Sewer System",
+"Supermarket",
+"Superhighways",
+"Research Lab",
+"SAM Missile Battery",
+"Coastal Fortress",
+"Solar Plant",
+"Harbor",
+"Offshore Platform",
+"Airport",
+"Police Station",
+"Port Facility",
+"Transporter",
+"SS Structural",
+"SS Component",
+"SS Module",
+"(Capitalization)",
+}
+
+local originalWonderNames = {
+[0]="Pyramids",
+"Hanging Gardens",
+"Colossus",
+"Lighthouse",
+"Great Library",
+"Oracle",
+"Great Wall",
+"Sun Tzu's War Academy",
+"King Richard's Crusade",
+"Marco Polo's Embassy",
+"Michelangelo's Chapel",
+"Copernicus' Observatory",
+"Magellan's Expedition",
+"Shakespeare's Theatre",
+"Leonardo's Workshop",
+"J. S. Bach's Cathedral",
+"Isaac Newton's College",
+"Adam Smith's Trading Co.",
+"Darwin's Voyage",
+"Statue of Liberty",
+"Eiffel Tower",
+"Women's Suffrage",
+"Hoover Dam",
+"Manhattan Project",
+"United Nations",
+"Apollo Program",
+"SETI Program",
+"Cure for Cancer",
+}
+
+local originalUnitNames = {
+[0]="Settlers",
+"Engineers",
+"Warriors",
+"Phalanx",
+"Archers",
+"Legion",
+"Pikemen",
+"Musketeers",
+"Fanatics",
+"Partisans",
+"Alpine Troops",
+"Riflemen",
+"Marines",
+"Paratroopers",
+"Mech. Inf.",
+"Horsemen",
+"Chariot",
+"Elephant",
+"Crusaders",
+"Knights",
+"Dragoons",
+"Cavalry",
+"Armor",
+"Catapult",
+"Cannon",
+"Artillery",
+"Howitzer",
+"Fighter",
+"Bomber",
+"Helicopter",
+"Stlth Ftr.",
+"Stlth Bmbr.",
+"Trireme",
+"Caravel",
+"Galleon",
+"Frigate",
+"Ironclad",
+"Destroyer",
+"Cruiser",
+"AEGIS Cruiser",
+"Battleship",
+"Submarine",
+"Carrier",
+"Transport",
+"Cruise Msl.",
+"Nuclear Msl.",
+"Diplomat",
+"Spy",
+"Caravan",
+"Freight",
+"Explorer",
+"Extra Land",
+"Extra Ship",
+"Extra Air",
+}
+
+local originalGovernemntNames = {
+[0] = "Anarchy",
+"Despotism",
+"Monarchy",
+"Communism",
+"Fundamentalism",
+"Republic",
+"Democracy",
+}
+
+
+
+local ADVANCE_DESCRIPTIONS = {}
+-- indexed by advances id
+
+local IMPROVEMENT_DESCRIPTIONS = {}
+-- indexed by improvement id
+
+local WONDER_DESCRIPTIONS = {}
+-- indexed by wonder id
+
+local UNIT_DESCRIPTIONS = {}
+-- indexed by unitType id
+
+local TERRAIN_AND_RESOURCE_DESCRIPTIONS = {}
+-- TERRAIN_AND_RESOURCE_DESCRIPTIONS[mapID][baseTerrainID][resourceID]
+for mapID = 0,3 do
+    TERRAIN_AND_RESOURCE_DESCRIPTIONS[mapID] = {}
+    for baseTerrainID = 0,15 do
+        TERRAIN_AND_RESOURCE_DESCRIPTIONS[mapID][baseTerrainID] = {}
+        for resourceID = 0,2 do
+            TERRAIN_AND_RESOURCE_DESCRIPTIONS[mapID][baseTerrainID][resourceID] = ""
+        end
+    end
+end
+
+local GOVERNMENT_DESCRIPTIONS = {}
+-- GOVERNMENT_DESCRIPTIONS[governmentNumber]
+local GOVERNMENT_NAMES = {
+[0] = "Anarchy",
+"Despotism",
+"Monarchy",
+"Communism",
+"Fundamentalism",
+"Republic",
+"Democracy",
+}
+
+
+local CONCEPT_DESCRIPTIONS = {}
+-- CONCEPT_DESCRIPTIONS["Concept Name"]
+
+-- the next 2 tables help keep track of concepts
+local conceptOrder = {}
+-- conceptOrder[placeInList] = "Concept Name"
+
+local conceptWithOrder = {}
+-- conceptWithOrder["Concept Name"] = placeInList or nil
+
+local function standardAddDescription(table,index,description)
+    table[index] = table[index] or ""
+    table[index] = table[index]..description.."\n\n"
+end
+
+local function addTerrainDescription(terrain,description,grasslandMod)
+    local table = TERRAIN_AND_RESOURCE_DESCRIPTIONS
+    local t = terrain
+    if terrain.type == 2 then
+        -- handle grassland special
+        if not grasslandMod then
+            -- add description to all versions of grassland
+            table[t.map][2][0] = table[t.map][2][0]..description.."\n\n"
+            table[t.map][2][1] = table[t.map][2][1]..description.."\n\n"
+            table[t.map][2][2] = table[t.map][2][2]..description.."\n\n"
+        elseif type(grasslandMod) ~= "string" then
+            error('civilopedia.description: When adding a modifier for the grassland description, it must be either "shield" or "base", or nil.')
+        elseif string.lower(grasslandMod) == "shield" then
+            -- add description to both resources
+            table[t.map][2][1] = table[t.map][2][1]..description.."\n\n"
+            table[t.map][2][2] = table[t.map][2][2]..description.."\n\n"
+        elseif string.lower(grasslandMod) == "base" then
+            -- add description only to base version of grassland
+            -- (no shield)
+            table[t.map][2][0] = table[t.map][2][0]..description.."\n\n"
+        else
+            error('civilopedia.description: When adding a modifier for the grassland description, it must be either "shield" or "base", or nil.')
+        end
+    else
+        -- the table is already initialized
+        table[t.map][t.type][t.resource] = table[t.map][t.type][t.resource]..description.."\n\n"
+    end
+end
+
+local function addGovernmentDescription(govtID,description,name)
+    if govtID < 0 or govtID > 6 or govtID ~= math.floor(govtID) then
+        error("civilopedia.description: Can only add descriptions to integers between 0 and 6 (inclusive), because no other number corresponds to a Civilization II government.  Received:"..tostring(govtID))
+    end
+    if type(name) == "string" then
+        GOVERNMENT_NAMES[govtID] = name
+    elseif name then
+        error("civilopedia.description: When adding a third argument for a government description, it must be a string.  received:"..tostring(name))
+    end
+    GOVERNMENT_DESCRIPTIONS[govtID] = GOVERNMENT_DESCRIPTIONS[govtID] or ""
+    GOVERNMENT_DESCRIPTIONS[govtID] = GOVERNMENT_DESCRIPTIONS[govtID]..description.."\n\n"
+end
+
+local function addConeptDescription(concept,description,place)
+    if place then
+        if type(place) ~= "number" or place ~= math.floor(place) then
+            error("civilopedia.description: When adding a third argument for a concept description, it must be an integer.  received:"..tostring(place))
+        elseif conceptOrder[place] and concept ~= conceptOrder[place] then
+            error("civilopedia.description: You have attempted to assign the concept '"..concept.."' to place "..place.." in the concept list, but that place is already taken by the concept '"..conceptOrder[place].."'.  Only one concept may be assigned to each place in order, however, you do not need to fill every place.  Any gaps will be ignored.")
+        elseif conceptWithOrder[concept] and conceptWithOrder[concept] ~= place then
+            error("civilopedia.description: You have attempted to assign the concept '"..concept.."' to place "..place.." in the concept list, but you have already assigned it to place "..conceptWithOrder[concept]..".  You can only assign a concept to one place in the Game Concepts.  However, you need only make an assignment once.  You do not need to include the third argument every time you add to the concept description.  If the concept is never assigned a position, it will be placed in whatever order the Lua Interpreter finds convenient.")
+        else
+            standardAddDescription(CONCEPT_DESCRIPTIONS,concept,description)
+            conceptOrder[place] = concept
+            conceptWithOrder[concept] = place
+        end
+    else
+        standardAddDescription(CONCEPT_DESCRIPTIONS,concept,description)
+    end
+end
+
+
+function pedia.description(object,description,extra)
+    if type(description) ~= "string" then
+        error("civilopedia.description: The second argument (the description) must always be a string.  Instead recevied: "..tostring(description))
+    end
+    if type(object) == "table" then
+        for _,value in pairs(object) do
+            pedia.description(value)
+        end
+        return
+    end
+    if type(object) == "string" then
+        -- concept description
+        addConeptDescription(object,description,extra)
+    elseif type(object) == "number" then
+        -- government description
+        addGovernmentDescription(object,description,extra)
+    elseif type(object) == "nil" then
+        error("civilopedia.description: attempt to add description for a nil.")
+    elseif civ.isTech(object) then
+        -- advance description
+        standardAddDescription(ADVANCE_DESCRIPTIONS,object.id,description)
+    elseif civ.isImprovement(object) then
+        -- improvement description
+        standardAddDescription(IMPROVEMENT_DESCRIPTIONS,object.id,description)
+    elseif civ.isWonder(object) then
+        -- wonder description
+        standardAddDescription(WONDER_DESCRIPTIONS,object.id,description)
+    elseif civ.isUnitType(object) then
+        -- unit description
+        standardAddDescription(UNIT_DESCRIPTIONS,object.id,description)
+    elseif civ.isTerrain(object) then
+        -- terrain description
+        addTerrainDescription(object,description,extra)
+    elseif civ.isBaseTerrain(object) then
+        -- tell user to use terrain instead
+        error("civilopedia.description: Can't add a description for a baseterrain object.  Provide a terrain object instead (civ.getTerrain(map,terrainType,resource))")
+    else
+        error("civilopedia.description: attempt to add description for an invalid object: "..tostring(object))
+    end
+end
+
+
+
+local function generateIndexLine(lineNumber,object,description,originalNameTable)
+    local originalName = ""
+    if originalNameTable[lineNumber] then
+        originalName = " ("..originalNameTable[lineNumber]..")"
+    end
+    local objectName = "Not Included"
+    if type(object) == "string" then
+        objectName = object
+    elseif object and object.name then
+        objectName = object.name
+    end
+    if not description or description == "" then
+        return "-1,\t\t;\t"..lineNumber.."\t"..objectName..originalName.."\n"
+    else
+        return lineNumber..",\t\t;\t"..lineNumber.."\t"..objectName..originalName.."\n"
+    end
+end
+local function generateDescriptionLine(number, object,description,originalNameTable)
+    local originalName = ""
+    if originalNameTable[number] then
+        originalName = " ("..originalNameTable[number]..")"
+    end
+    local objectName = "Not Included"
+    if type(object) == "string" then
+        objectName = object
+    elseif object and object.name then
+        objectName = object.name
+    end
+    if not description or description == "" then
+        return "@@"..number..",\t"..objectName..originalName.."\n\n"
+    else
+        return "@@"..number..",\t"..objectName..originalName.."\n"..description.."\n\n"
+    end
+end
+
+function pedia.makeDescribeTxt()
+local output = [==[
+;
+;   Civilopedia Descriptions Text File
+;   Copyright (c) 1997 MicroProse Software, Inc.
+;
+;
+]==]
+output = output..os.date(";\tFile generated on %d %B, %Y using the Civilopedia module\n")
+output = output..[==[
+;   The generated file is based on the Describe.txt file that shipped
+;   with Knighttime's Medieval Millennium mod
+;
+
+@ADVANCE_DESCRIPTIONS
+]==]
+output = output.."\n;\n@@ADVANCE_INDEX\n"
+for i=0,maxTechs-1 do
+    output = output..generateIndexLine(i,civ.getTech(i),ADVANCE_DESCRIPTIONS[i],originalAdvancesNames)
+end
+output = output.."-2,\t\t;\tMUST BE HERE! TERMINATOR!\n\n"
+
+for i=0,maxTechs-1 do
+    output = output..generateDescriptionLine(i,civ.getTech(i),ADVANCE_DESCRIPTIONS[i],originalAdvancesNames)
+end
+
+output = output..[==[
+@IMPROVEMENT_DESCRIPTIONS
+;
+]==]
+
+output = output.."@@IMPROVEMENT_INDEX\n"
+for i=0,39 do
+    output = output..generateIndexLine(i,civ.getImprovement(i),IMPROVEMENT_DESCRIPTIONS[i],originalImprovementsNames)
+end
+output = output.."-2,\t\t;\tMUST BE HERE! TERMINATOR!\n\n"
+for i=0,39 do
+    output = output..generateDescriptionLine(i,civ.getImprovement(i),IMPROVEMENT_DESCRIPTIONS[i],originalImprovementsNames)
+end
+
+output = output..[==[
+@WONDER_DESCRIPTIONS
+;
+]==]
+output = output.."@@WONDER_INDEX\n"
+for i=0,27 do
+    output = output..generateIndexLine(i,civ.getWonder(i),WONDER_DESCRIPTIONS[i],originalWonderNames)
+end
+output = output.."-2,\t\t;\tMUST BE HERE! TERMINATOR!\n\n"
+for i=0,27 do
+    output = output..generateDescriptionLine(i,civ.getWonder(i),WONDER_DESCRIPTIONS[i],originalWonderNames)
+end
+
+output = output..[==[
+@UNIT_DESCRIPTIONS
+;
+]==]
+output = output.."@@UNIT_INDEX\n"
+for i=0,civ.cosmic.numberOfUnitTypes -1 do
+    output = output..generateIndexLine(i,civ.getUnitType(i),UNIT_DESCRIPTIONS[i],originalUnitNames)
+end
+output = output.."-2,\t\t;\tMUST BE HERE! TERMINATOR!\n\n"
+for i=0,civ.cosmic.numberOfUnitTypes -1 do
+    output = output..generateDescriptionLine(i,civ.getUnitType(i),UNIT_DESCRIPTIONS[i],originalUnitNames)
+end
+
+local terrainLine = 0
+local terrainIndexOutput = "@@TERRAIN_INDEX\n"
+local terrainDescriptionOutput = ""
+local width,height,mapNumber=civ.getAtlasDimensions()
+for map=0,mapNumber-1 do
+    for resourceID = 0,2 do
+        for baseTerrainID=0,15 do
+            if baseTerrainID==2 then
+                terrainIndexOutput = terrainIndexOutput..generateIndexLine(terrainLine,
+                    civ.getTerrain(map,2,0),TERRAIN_AND_RESOURCE_DESCRIPTIONS[map][2][resourceID],{})
+                terrainDescriptionOutput = terrainDescriptionOutput..generateDescriptionLine(terrainLine,
+                    civ.getTerrain(map,2,0),TERRAIN_AND_RESOURCE_DESCRIPTIONS[map][2][resourceID],{})
+                terrainLine = terrainLine+1
+            else
+                local terrainExists,terrain = pcall(civ.getTerrain,map,baseTerrainID,resourceID)
+                if terrainExists then
+                    terrainIndexOutput = terrainIndexOutput..generateIndexLine(terrainLine,
+                        civ.getTerrain(map,baseTerrainID,resourceID),
+                        TERRAIN_AND_RESOURCE_DESCRIPTIONS[map][baseTerrainID][resourceID],{})
+                    terrainDescriptionOutput = terrainDescriptionOutput..generateDescriptionLine(terrainLine,
+                        civ.getTerrain(map,baseTerrainID,resourceID),
+                        TERRAIN_AND_RESOURCE_DESCRIPTIONS[map][baseTerrainID][resourceID],{})
+                    terrainLine = terrainLine+1
+                end
+            end
+        end
+    end
+end
+terrainIndexOutput = terrainIndexOutput.."-2,\t\t;\tMUST BE HERE! TERMINATOR!\n\n"
+output = output..[==[
+
+@TERRAIN_AND_RESOURCE_DESCRIPTIONS
+;
+]==]
+output = output..terrainIndexOutput..terrainDescriptionOutput
+
+output = output..[==[
+
+@GOVERNMENT_DESCRIPTIONS
+;
+]==]
+
+output = output.."@@GOVERNMENT_INDEX\n"
+for i=0,6 do
+    output = output..i..",\t\t;\t"..GOVERNMENT_NAMES[i].." ("..originalGovernemntNames[i]..")\n"
+end
+output = output.."-2,\t\t;\tMUST BE HERE! TERMINATOR!\n\n"
+for i=0,6 do
+    output = output.."@@"..GOVERNMENT_NAMES[i].."\n"..(GOVERNMENT_DESCRIPTIONS[i] or "").."\n\n"
+end
+
+output = output.."@CONCEPT_DESCRIPTIONS\n;\n"
+local conceptMinPlace = math.huge
+local conceptMaxPlace = -math.huge
+for place,concept in pairs(conceptOrder) do
+    if place > conceptMaxPlace then
+        conceptMaxPlace = place
+    end
+    if place < conceptMinPlace then
+        conceptMinPlace = place
+    end
+end
+-- just in case table is empty
+if conceptMinPlace > conceptMaxPlace then
+    conceptMinPlace = 0
+    conceptMaxPlace = 0
+end
+for i=conceptMinPlace,conceptMaxPlace do
+    if conceptOrder[i] then
+        output = output.."@@"..conceptOrder[i].."\n"..CONCEPT_DESCRIPTIONS[conceptOrder[i]].."\n\n"
+    end
+end
+for concept,description in pairs(CONCEPT_DESCRIPTIONS) do
+    if not conceptWithOrder[concept] then
+        output = output.."@@"..concept.."\n"..description.."\n\n"
+    end
+end
+output = output.."\n\n\n@This must be here to terminate search!!!\n"
+
+local destinationDirectory = civ.getToTDir()
+local genHere, gen = pcall(require,"generalLibrary")
+if genHere then
+    local directoryFound, scenDir = pcall(gen.getScenarioDirectory)
+    if directoryFound then
+        destinationDirectory = scenDir
+    end
+end
+local fileLocation = destinationDirectory.."\\"..tostring(os.time()).."describe.txt"
+
+local file = io.open(fileLocation,"a")
+io.output(file)
+io.write(output)
+io.close(file)
+print("describe.txt file written to "..fileLocation)
+end
+
+if _G.console then
+    console.makeDescribeTxt = pedia.makeDescribeTxt
+end
+
+
+
+return pedia
