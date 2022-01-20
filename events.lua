@@ -26,7 +26,7 @@
 
 local TOTPPMajor = 0
 local TOTPPMinor = 18
-local TOTPPPatch = 1
+local TOTPPPatch = 2
 if not totpp.version then
     local messageBox = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  A link to the TOTPP will be in the console error message."
     local message1 = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  Get the latest version of the TOTPP here:"
