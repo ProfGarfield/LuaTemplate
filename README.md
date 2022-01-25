@@ -69,50 +69,6 @@ This directory contains a few files documenting parts of the Lua Scenario Templa
 
 If you find it convenient to add additional lua files to your scenario, the require function will look for them in the main scenario directory, the LuaCore Directory, the LuaParameterFiles directory, the EventsFiles directory, and the MechanicsFiles directory.  If you wish to place a file in any other directory, you must include the directory path starting from one of the directories listed above.
 
-## Download Individual Files
-
-If you want to download files individually, you may do so with these links:
-
-### LuaCore
-[generalLibrary.lua](generalLibrary.lua)
-
-
-aStarCiv.lua
-attackBonus.lua
-calendar.lua
-canBuild.lua
-characterTable.lua
-civilopedia.lua
-civlua.lua
-civluaModified.lua
-civluaModifiedX.lua
-combatCalculator.lua
-combatModifiers.lua
-consolidator.lua
-context.lua
-counter.lua
-delayedAction.lua
-diplomacy.lua
-discreteEventsRegistrar.lua
-eventTools.lua
-flag.lua
-functions.lua
-generalLibrary.lua
-helpkey.lua
-keyboard.lua
-legacyEventBuilder.lua
-legacyEventEngine.lua
-log.lua
-lualzw.lua
-manager.lua
-munitions.lua
-promotion.lua
-reactionBase.lua
-readRules.lua
-secureHashAlgorithm.lua
-strategicBombing.lua
-text.lua
-traits.lua
 
 
 
