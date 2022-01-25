@@ -74,7 +74,7 @@ If you find it convenient to add additional lua files to your scenario, the requ
 If you want to download files individually, you may do so with these links:
 
 ### LuaCore
-[generalLibrary.lua](LuaCore/generalLibrary.lua)
+[generalLibrary.lua](generalLibrary.lua)
 
 
 aStarCiv.lua
