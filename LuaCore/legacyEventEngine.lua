@@ -14,7 +14,7 @@ local func = require("functions")
 -- this is the last date that I've modified this file (or, at least remembered to change this line
 -- yyyy-mm-dd
 --
-local currentModifyDate = "2021-11-06"
+local currentModifyDate = "2022-01-24"
 --
 -- Usage: If the discreteEvents Module (discreteEventsRegistrar.lua) is available, 
 -- the event triggers will function automatically.
@@ -70,12 +70,14 @@ local discreteEventsFound, discreteEvents = requireIfAvailable("discreteEventsRe
 
 local eventTable = {} --require(legacyEventTableName)
 local eventHashValue = nil
+local globalContinuousFlagsOverride = nil -- override the default global nature of continuous flags if true
 local function supplyLegacyEventsTable(table)
     if type(table)~="table" then
         error("legacyEventEngine.supplyLegacyEventsTable expects a table as input")
     else
         eventTable = table
         eventHashValue = eventTable["eventHash"]
+        globalContinuousFlagsOverride = eventTable["continuousFlagsPerTribe"]
     end
 end
 
@@ -546,6 +548,11 @@ local function setFlagOn(flagNumber, tribe, continuous)
             g_LegacyState.legacyFlags[i][flagNumber]={status=true, continuous=continuous}
         end
     end
+    if not globalContinuousFlagsOverride then
+        for i=0,7 do
+            g_LegacyState.legacyFlags[i][flagNumber]["continuous"]=continuous
+        end
+    end
 end
 
 local function clearFlagOff(flagNumber, tribe, continuous)
@@ -560,6 +567,11 @@ local function clearFlagOff(flagNumber, tribe, continuous)
     else
         for i=0,7 do
             g_LegacyState.legacyFlags[i][flagNumber]={status=false, continuous=continuous}
+        end
+    end
+    if not globalContinuousFlagsOverride then
+        for i=0,7 do
+            g_LegacyState.legacyFlags[i][flagNumber]["continuous"]=continuous
         end
     end
 end
@@ -577,6 +589,11 @@ local function doMask(maskStringOrNum,tribeID,makeState,continuous)
         for i=0,31 do
             if maskNum & 1<<i == 1<<i then
                 g_LegacyState.legacyFlags[tribeID][i] = {status=makeState,continuous=continuous}
+                if not globalContinuousFlagsOverride then
+                    for tribeID=0,7 do
+                        g_LegacyState.legacyFlags[tribeID][i]["continuous"]=continuous
+                    end
+                end
             end
         end
     elseif string.lower(maskStringOrNum:sub(1,2))=="0b" then
@@ -584,6 +601,11 @@ local function doMask(maskStringOrNum,tribeID,makeState,continuous)
         for i=0,31 do
             if maskString:sub(-(i+1),-(i+1)) == "1" then
                 g_LegacyState.legacyFlags[tribeID][i] = {status=makeState,continuous=continuous}
+                if not globalContinuousFlagsOverride then
+                    for tribeID=0,7 do
+                        g_LegacyState.legacyFlags[tribeID][i]["continuous"]=continuous
+                    end
+                end
             end
         end
     else
@@ -1226,7 +1248,7 @@ local function isIndividualCivFlagConditionTrue(ANDIFTable,tribeID)
         return false
     end
     --local isDesiredFlagSetting = nil
-    desiredFlagSetting = nil
+    local desiredFlagSetting = nil
     if ANDIFTable["state"]=="on" or ANDIFTable["state"]=="set" then
         -- desired flag setting is true
        -- isDesiredFlagSetting = function (bool) return bool end

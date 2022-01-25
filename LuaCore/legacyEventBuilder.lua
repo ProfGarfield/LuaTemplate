@@ -1,4 +1,8 @@
-
+-- By default, each flag's 'continuous' status is global.  That is, if flag 1 is set to continuous for
+-- tribe 2, then it is set to continuous for all tribes.  And, if flag 1 is not set to continuous for
+-- tribe 3, then it is no longer continuous for all other tribes as well.
+-- The legacy event engine can override this by including the line
+-- @CONTINUOUSFLAGSPERTRIBE
 local hash = require("secureHashAlgorithm")
 local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName,eventOutputFileName,
     batchInfo,eventsToConvert,scenarioFolderPath,currentFolder)
@@ -206,6 +210,9 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
             end
             if line == "" then
                 -- ignore an empty line
+            elseif line == "@continuousflagspertribe" then
+                -- legacy event engine global continuous flags override
+                eventTable["continuousFlagsPerTribe"]=true
             elseif line == "@if" then
                 eventTable[eventTableIndex]={IF={}}
                 atIfOpen=true
