@@ -1925,7 +1925,7 @@ Returns the current turn number.
 
 
 getUnit
-civ.getUnit(id) -> integer
+civ.getUnit(id) -> unit
 
 Returns the unit with id `id`, or `nil` if it doesn't exist.
 
@@ -3131,7 +3131,7 @@ documentation["civ"]["childs"]["getTribe"] = { type = "function", description = 
 
 documentation["civ"]["childs"]["getTurn"] = { type = "function", description = "civ.getTurn() -> integer\n\nReturns the current turn number.", args = "()", returns = "(integer)", valuetype = "integer",}
 
-documentation["civ"]["childs"]["getUnit"] = { type = "function", description = "civ.getUnit(id) -> integer\n\nReturns the unit with id `id`, or `nil` if it doesn't exist.", args = "(id: integer)", returns = "(integer|nil)", valuetype = "integer",}
+documentation["civ"]["childs"]["getUnit"] = { type = "function", description = "civ.getUnit(id) -> integer\n\nReturns the unit with id `id`, or `nil` if it doesn't exist.", args = "(id: integer)", returns = "(unitObject|nil)", valuetype = "unitObject",}
 
 documentation["civ"]["childs"]["getUnitType"] = { type = "function", description = "civ.getUnitType(id) -> unitType\n\nReturns the unit type with id `id`, or `nil` if it doesn't exist.", args = "(id: integer)", returns = "(unitTypeObject|nil)", valuetype = "unitTypeObject",}
 

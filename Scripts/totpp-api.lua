@@ -3274,4 +3274,4 @@ documentation["cityObject"]["childs"]["sizeForTribe"] = { type = [[value]], desc
 
 documentation["cityObject"]["childs"]["tradeRoutes"] = { type = [[value]], description = "(get)\ncity.tradeRoutes[id] -> traderoute\n\nReturns the trade route with id `id` (0-2), or `nil` if not in use.",} -- no valuetype for this table like property
 
-return documentation
+return {api=documentation, keyWordList = {}}
