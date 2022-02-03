@@ -438,7 +438,7 @@ local function eventDelayed(eventIndex,performEventOnTurn,triggerAttacker,trigge
     g_LegacyState.eventStatusTable=g_LegacyState.eventStatusTable or {}
     g_LegacyState.eventStatusTable[eventIndex] = g_LegacyState.eventStatusTable[eventIndex] or {}
     g_LegacyState.eventStatusTable[eventIndex].delayedEvents = g_LegacyState.eventStatusTable[eventIndex].delayedEvents or {}
-    g_LegacyState.eventStatusTable[eventIndex].delayedEvents[#g_LegacyState.eventStatusTable[eventIndex].delayedEvents+1] = {performOnTurn=perfromEventOnTurn, triggerAttacker=triggerAttacker, triggerDefender=triggerDefender, triggerReceiver = triggerReceiver,}
+    g_LegacyState.eventStatusTable[eventIndex].delayedEvents[#g_LegacyState.eventStatusTable[eventIndex].delayedEvents+1] = {performOnTurn=performEventOnTurn, triggerAttacker=triggerAttacker, triggerDefender=triggerDefender, triggerReceiver = triggerReceiver,}
 end
 
 local function eventJustOnceExecuted(eventIndex)
