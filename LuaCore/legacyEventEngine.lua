@@ -14,7 +14,7 @@ local func = require("functions")
 -- this is the last date that I've modified this file (or, at least remembered to change this line
 -- yyyy-mm-dd
 --
-local currentModifyDate = "2022-01-24"
+local currentModifyDate = "2022-02-02"
 --
 -- Usage: If the discreteEvents Module (discreteEventsRegistrar.lua) is available, 
 -- the event triggers will function automatically.
@@ -849,9 +849,9 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
         local transBit = 1<<(thenTable["transport"]["type"])
         if unitType then
             if thenTable["transport"]["state"] == "on" or thenTable["transport"]["state"] == "set" then
-                unitType[mode.."Transport"]= unitType[mode.."Transport"] | transBit
+                unitType[tMode.."Transport"]= unitType[tMode.."Transport"] | transBit
             elseif thenTable["transport"]["state"] == "on" or thenTable["transport"]["state"] == "set" then
-                unitType[mode.."Transport"]= unitType[mode.."Transport"] & ~transBit
+                unitType[tMode.."Transport"]= unitType[tMode.."Transport"] & ~transBit
             end
         end
     end
@@ -1025,6 +1025,7 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
             -- however, the list of leaders given by tribe.leader.id starts at 0, so correct this
             leaderID= thenTable["negotiator"]["who"]+1
         elseif type(thenTable["negotiator"]["who"]) == "string" then
+            local inputString = thenTable["negotiator"]["who"]
             leaderID = stringToTribe(inputString,triggerAttackerString,triggerDefenderString,triggerReceiverString) and stringToTribe(inputString,triggerAttackerString,triggerDefenderString,triggerReceiverString).leader.id
         end
         if leaderID then
