@@ -118,7 +118,7 @@ end
 -- this moves unit on a tile after a target is captured by another player
 -- updated elsewhere to a target being created as well
 local moveUnitsAfterTargetCapturedFn = function(tile,target)
-  newOwner = target.owner
+  local newOwner = target.owner
   for unit in tile.units do
     if unit.owner ~= newOwner then
       gen.moveUnitAdjacent(unit)
