@@ -25,6 +25,7 @@
 -- are checking if there is a console table
 
 math.randomseed(os.time())
+
 local TOTPPMajor = 0
 local TOTPPMinor = 18
 local TOTPPPatch = 4
