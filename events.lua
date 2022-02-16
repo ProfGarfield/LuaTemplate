@@ -24,9 +24,10 @@
 -- Put this before requirements, in case any required items
 -- are checking if there is a console table
 
+math.randomseed(os.time())
 local TOTPPMajor = 0
 local TOTPPMinor = 18
-local TOTPPPatch = 2
+local TOTPPPatch = 4
 if not totpp.version then
     local messageBox = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  A link to the TOTPP will be in the console error message."
     local message1 = "You are using Test of Time Patch Project version 0.15 or older.  This scenario requires TOTPP v"..TOTPPMajor.."."..TOTPPMinor.."."..TOTPPPatch.." or later.  Get the latest version of the TOTPP here:"
@@ -176,6 +177,8 @@ local setTraits = require("setTraits")
 local discreteEvents = require("discreteEventsRegistrar")
 require("discreteEvents")
 local consolidated = require("consolidatedEvents")
+
+attemptToRun('targetSettings',"WARNING: targetSettings.lua not found.  You will not have strategic targets.")
 
 
 

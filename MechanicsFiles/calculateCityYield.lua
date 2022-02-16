@@ -3,6 +3,7 @@ local gen = require("generalLibrary")
 local object = require("object")
 local cityYield = {}
 local baseProduction = gen.computeBaseProduction
+local strategicTargetsAvailable, strat = gen.requireIfAvailable("strategicTargets")
 
 function cityYield.onCalculateCityYield(city,food,shields,trade)
     local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
@@ -14,8 +15,13 @@ function cityYield.onCalculateCityYield(city,food,shields,trade)
     -- corresponding line below
     -- Any changes to terrain production should go here
     
-
-
+    -- verify strategic targets, in case terrain changes or something
+    if strategicTargetsAvailable then
+      for target in strat.iterateTargets(city) do
+        strat.verifyTarget(target)
+      end
+    end
+    
 
 
     -- Any changes to terrain production should be before this line

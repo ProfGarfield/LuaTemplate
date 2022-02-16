@@ -421,7 +421,7 @@ end
 -- gen.allowNilValueAccess(dataTable) --> void
 -- gen.setScenarioDirectory(directoryPath) --> void
 -- gen.getScenarioDirectory() --> string
---  
+-- gen.isStateSavable(item) --> boolean
 --
 --
 --
@@ -725,7 +725,7 @@ local function distance(tileUnitCityA,tileUnitCityB,zDist)
     elseif civ.isTile(tileUnitCityA) then
         locA = tileUnitCityA
     else
-        error("gen.distance: first argument must be a tile (or coordinates of a tile), or a unit or a city.")
+        error("gen.distance: first argument must be a tile (or coordinates of a tile), or a unit or a city. Received: "..tostring(tileUnitCityA))
     end
     if type(tileUnitCityB)=="table" then
         locB=toTile(tileUnitCityB)
@@ -734,7 +734,7 @@ local function distance(tileUnitCityA,tileUnitCityB,zDist)
     elseif civ.isTile(tileUnitCityB) then
         locB = tileUnitCityB
     else
-        error("gen.distance: second argument must be a tile (or coordinates of a tile), or a unit or a city.")
+        error("gen.distance: second argument must be a tile (or coordinates of a tile), or a unit or a city. Received: "..tostring(tileUnitCityB))
     end
     if civ.game.rules.flatWorld then
         return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
@@ -4770,6 +4770,213 @@ function gen.getScenarioDirectory()
     end
 end
 
+-- gen.isStateSavable(item) --> boolean
+--  An item is "state savable" if it is either
+--  nil
+--  a number
+--  a string
+--  a boolean
+--  a table with keys that are numbers or strings
+--    and with values that are also state savable
+function gen.isStateSavable(item)
+  if type(item) == "table" then
+    for key,value in pairs(item) do
+      if type(key) ~= "number" and type(key) ~="string" then
+        return false
+      end
+      if not gen.isStateSavable(value) then
+        return false
+      end
+    end
+    return true
+  elseif type(item) == "number" then
+    return true
+  elseif type(item) == "string" then
+    return true
+  elseif type(item) == "nil" then
+    return true
+  elseif type(item) == "boolean" then
+    return true
+  else
+    return false
+  end  
+end
+
+-- gen.calculateWeight(item,weightTable,extraArgument=nil) --> number or false
+-- weightTable has functions as keys, and numbers or false as values
+--      {[keyFunc(item,extraArgument)-->boolean] = number or boolean or string or function(item) -> number}
+--      for each key in the weight table, apply keyFunc to the item
+--      if keyFunc(item,extraArgument) then
+--          if the value is a number, add the number to the weight
+--          if the value is a string add item[value] to the weight
+--          if the value is a function, add value(item,extraArgument) to the weight
+--          if the value is false, return 'false' as the weight
+--          if the value is true, do nothing
+--      else
+--          if the value is a number, do nothing
+--          if the value is false, do nothing
+--          if the value is a string, do nothing
+--          if the value is true, return 'false' as the weight
+--      
+--      That is, false means that keyFunc must not apply to the item
+--      while true means that keyFunc must apply to the item
+--
+--      default weight is 0
+--
+local function calculateWeight(item,weightTable,extraArgument)
+    local defaultWeight = 0
+    for keyFunc, value in pairs(weightTable) do
+        if keyFunc(item,extraArgument) then
+            if type(value) == "number" then
+                defaultWeight = defaultWeight + value
+            elseif value == false then
+                return false
+            elseif type(value) == "string" then
+                defaultWeight = defaultWeight + item[value]
+            elseif type(value) == "function" then
+                defaultWeight = defaultWeight + value(item,extraArgument)
+            elseif type(value) == "boolean" then
+            else
+                error("gen.calculateWeight: weightTable (2nd argument) values must be numbers, booleans, strings or functions.  Received: "..tostring(value))
+            end
+        else
+            if value == true then
+                return false
+            end
+        end
+    end
+    return defaultWeight
+end
+gen.calculateWeight = calculateWeight
+
+-- takes a new item and a new weight, and sorts them
+-- into the sortedItems and sortedWeights list
+-- if changeOrder(weight1,weight2) is true,
+-- weight2 should be before weight1
+-- changeOrder(nil,weight2) should always be true
+-- If at the end there are more than maxLength items in the
+-- list, the last item is removed
+
+local function bubbleUp(sortedItems,sortedWeights,maxLength,newItem,newWeight,changeOrder)
+    sortedItems[maxLength+1] = newItem
+    sortedWeights[maxLength+1] = newWeight
+    for i=maxLength,1,-1 do
+        if changeOrder(sortedWeights[i],sortedWeights[i+1]) then
+            sortedItems[i],sortedItems[i+1] = sortedItems[i+1],sortedItems[i]
+            sortedWeights[i],sortedWeights[i+1] = sortedWeights[i+1],sortedWeights[i]
+        else
+            break
+        end
+    end
+    sortedItems[maxLength+1] = nil
+    sortedWeights[maxLength+1] = nil
+end
+
+
+-- gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
+--      wrap this to construct
+--      gen.getBiggestWeight and gen.getSmallestWeight
+--      listOrIterator
+--          if iterator, returns the items for consideration
+--          if table, each item is a value in the table, and the table consists only of those values
+--      weightTableOrWeightFunction
+--          if weightTable, use gen.calculateWeight(item,weightTable,extraArgument) as the weight function
+--          a weightFunction(item,extraArgument) must return either a number or false.  When false is returned,
+--          the item is not considered at all
+--      getTopX
+--          if absent, the item with the largest weight is returned, or nil if no valid item is found
+--          if integer, a table with that number of items is returned, with index 1 associated with the
+--          item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
+--          items, the corresponding values are nil
+--      changeOrder function
+--          if changeOrder(weight1,weight2) is true,
+--          weight2 should be before weight1
+--          changeOrder(nil,weight2) should always be true
+--      functionName string
+
+function gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
+    local weightFunction = nil 
+    if type(weightTableOrWeightFunction) == "table" then
+        weightFunction = function(item,extraArgument) return calculateWeight(item,weightTableOrWeightFunction,extraArgument) end
+    elseif type(weightTableOrWeightFunction) == "function" then
+        weightFunction = weightTableOrWeightFunction
+    else
+        error(functionName..": second argument must be either a table or a function(item)->(number or false).  Received: "..tostring(weightTableOrWeightFunction))
+    end
+    local iterator = nil
+    if type(listOrIterator) == "function" then
+        -- iterator provided
+        iterator = listOrIterator
+    elseif type(listOrIterator) == "table" then
+        -- table provided
+        iterator = coroutine.wrap( function() for _,item in pairs(listOrIterator) do coroutine.yield(item) end end)
+    else
+        error(functionName..": first argument must either be an iterator (a type of function), or a table.  Received: "..tostring(listOrIterator))
+    end
+    local maxLength = getTopX or 1
+    local sortedItems = {}
+    local sortedWeights = {}
+    for item in iterator do
+        local weight = weightFunction(item,extraArgument)
+        if weight then
+            bubbleUp(sortedItems,sortedWeights,maxLength,item,weight,changeOrder)
+        end
+    end
+    if getTopX then
+        return sortedItems,sortedWeights
+    else
+        return sortedItems[1],sortedWeights[1]
+    end
+end
+
+
+-- gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
+--      listOrIterator
+--          if iterator, returns the items for consideration
+--          if table, each item is a value in the table, and the table consists only of those values
+--      weightTableOrWeightFunction
+--          if weightTable, use gen.calculateWeight(item,weightTable) as the weight function
+--          a weightFunction must return either a number or false.  When false is returned,
+--          the item is not considered at all
+--      getTopX
+--          if absent, the item with the largest weight is returned, or nil if no valid item is found
+--          if integer, a table with that number of items is returned, with index 1 associated with the
+--          item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
+--          items, the corresponding values are nil
+--          as a second return value, a weight or table of weights (or nil) is returned
+function gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX,extraArgument)
+    local changeFunction = function(weight1,weight2)
+        return (type(weight2) == "number") and (weight1 == nil or weight1 < weight2)
+    end
+    local functionName = "gen.getBiggestWeights"
+    return gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction, getTopX, changeFunction, functionName,extraArgument)
+end
+
+-- gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
+--      listOrIterator
+--          if iterator, returns the items for consideration
+--          if table, each item is a value in the table, and the table consists only of those values
+--      weightTableOrWeightFunction
+--          if weightTable, use gen.calculateWeight(item,weightTable) as the weight function
+--          a weightFunction must return either a number or false.  When false is returned,
+--          the item is not considered at all
+--      getTopX
+--          if absent, the item with the smallest weight is returned, or nil if no valid item is found
+--          if integer, a table with that number of items is returned, with index 1 associated with the
+--          item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
+--          items, the corresponding values are nil
+--          as a second return value, a weight or table of weights (or nil) is returned
+function gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX,extraArgument)
+    local changeFunction = function(weight1,weight2)
+        return (type(weight2) == "number") and (weight1 == nil or weight1 > weight2)
+    end
+    local functionName = "gen.getSmallestWeights"
+    return gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction, getTopX, changeFunction, functionName,extraArgument)
+end
+
+
+
+--[[
 local markerOptions = {}
 markerOptions["irrigation"]=true
 markerOptions["mine"]=true
@@ -4802,7 +5009,7 @@ end
 --    tileMarkerInfo[tribe.id] = tileMarkerInfo[tribe.id] or {"originalChart"=tile.visibleImprovements[tribe]}
 --
 --end
-
+--]]
 
 
 

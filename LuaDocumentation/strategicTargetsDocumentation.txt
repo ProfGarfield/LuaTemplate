@@ -1,0 +1,312 @@
+The strategicTargets module provides tools for associating city improvements
+with terrain types and 'target' units that can be attacked.
+
+Linking the module:
+local strat = require("strategicTargets")
+
+
+The Target Object:
+
+
+The bulk of this module's work is done with the targetObject, which functions much like the other TOTPP objects.
+
+targetObject:
+
+Properties (* means a term will be described later):
+
+
+active (get)
+target.active -> boolean
+
+True if the targetLostFunction* hasn't been run yet, false if it has.
+
+
+id (get)
+target.id -> integer
+
+Id of the target
+
+
+unit (get)
+target.unit -> unitObject or nil
+
+Returns the unit that is acting as the target, or nil if the unit was
+destroyed, or if no unit was registered as the target.  If a unit is
+registered with the target, but is no longer there, the target will
+be lost* the next time it is verified*.
+
+
+hasRegisteredUnit (get)
+target.hasRegisteredUnit -> boolean
+
+Returns true if a unit was registered as the target, and false if not.  (You might choose not to register a unit if you want a tile's terrain to be
+tied to a city improvement, but not be vulnerable to attack.)
+
+
+owner (get/set)
+target.owner -> tribeObject
+
+Returns the tribe that owns the target.
+
+
+city (get)
+target.city -> cityObject or nil
+
+Returns the city registered with the target.  If a city is registered
+with the target, but no longer exists, the target will be lost* the
+next time it is verified*.
+
+
+cityLocation (get)
+target.cityLocation -> tileObject or nil
+
+Returns the tile where the registered city is supposed to be, or nil
+if there is no registered city.
+
+
+improvement (get)
+target.improvement -> improvementObject or wonderObject or nil
+
+Returns the improvement or wonder that is associated with the target,
+or nil if no improvement is registered with this target.  If the target
+has a registered city and improvement, but the improvement is missing
+from that city, the target will be lost* the next time it is verified*.
+
+
+customData (get)
+target.customData -> stateSavableValue
+
+Returns a stateSavableValue, which can contain custom information about
+that target, such as terrain changes that must be made when the target
+is lost*.  A stateSavableValue is a string, number, boolean, nil, or table
+with string or number keys, and stateSavable values.  Verified with
+gen.isStateSavable(item) -> bool.
+
+
+targetLocation (get)
+target.targetLocation -> tileObject or nil
+
+Returns the tile where the target's unit is located.  Returns nil if the
+target has no unit registered.
+
+
+captureWithCity (get)
+target.captureWithCity -> boolean
+
+Returns true if an intact target is captured with its registered city,
+and false otherwise.  That is, when the target is verified* and the
+registered city's owner is different from the target's owner, the target
+will be transfered to the city's owner if captureWithCity is true, and
+lost* if it is false.
+
+
+class (get)
+target.class -> string
+
+Returns a targets 'class'.  The class can be used to differentiate between
+different 'types' of target, which may be useful for your 
+targetVerificationFunction* or targetLostFunction*.  
+The default workings of the module do not rely on the target class.
+Note: the createTarget function assigns a class of "default" if no class is specified.
+
+
+
+Losing/Destroying a Target, targetLostFunction
+
+A target can be destroyed by using the function strat.destroyTarget(target), 
+or automatically when a target fails some sort of verification*.
+The strategic targets module also automatically registers a
+unitDefeated event that destroys the associated target when appliccable.
+
+When a target is destroyed, the targetLostFunction(target) --> void
+is executed.  The default function does nothing, so you must register
+a function with the effects that you like.  You can use target properties
+(such as the improvement and customData) to provide data to the function.
+
+Use strat.registerTargetLostFn(tLostFn) to register the targetLostFunction.
+
+The targetLostFunction will only run once, even if it is called multiple
+times for the same target.
+
+Destroying a target removes its information from the state table and
+makes strat.getTarget(id) return nil for that id.
+
+
+Verifying a Target
+
+It is possible for things to happen that should destroy a target, but
+that the game can't immediately detect (for example, selling the associated
+city improvement).  To handle these cases, we periodically 'verify'
+targets, in order to destroy them if they are not in order.
+
+A target can be verified by using strat.verifyTarget(target) ->bool,
+which returns true if the target is verified, and false if it is not.
+
+The verification procedure checks if the unit registered with the target
+is still alive (if a unit was registered), if the registered city still
+exists (if a city was registered), and if the registered improvement/wonder
+still exists (if registered).  If any of these conditions are false,
+the target is destroyed with strat.destroyTarget, and false is returned.
+The verification procedure also checks if the city's owner is the
+same as the target's owner, and either changes ownership of the target
+or destroys the target, depending on target.captureWithCity.
+
+The above checks can't be overridden (except by not registering the
+relevant property), but you can also add additional checks that
+must be satisfied by creating a function
+
+targetVerificationFunction(target) --> boolean
+return true if the target is verified, and false if it should be destroyed
+
+and register it using strat.registerTargetVerificationFn(tVerifyFn)
+
+Targets are verified on these occasions:
+All targets are verified when a target is destroyed.
+All targets registered to a city are verified when the city is captured.
+All targets owned by a tribe are verified at the start of that tribe's turn.
+
+This module also has code to verify all targets registered to a city when
+onCalculateCityYield is executed.
+
+
+Other Parts of a Strategic Target System
+
+You will almost certainly need to make an onCityProduction event to
+create targets when relevant city items are produced.  For that,
+you will need the strat.createTarget function:
+
+-- strat.createTarget(tile,targetType,cityOrOwner, 
+    class="default",improvement=nil,customData=nil,captureWithCity=false)
+-- creates a target on the supplied tile, with unit type given by targetType,
+-- associated with the provided city (or no city, but just an owner if a tribe is supplied instead)
+-- an improvement or wonder that the target is associated with
+-- (if a city is specified, the target will be destroyed if the
+-- city no longer has that improvement)
+-- if nil is supplied, the target is not associated with any particular
+-- improvement
+-- class is a string to facilitate giving targets different 'types'
+-- customData is a string, number, nil or (nested) table of string, number, nil.
+-- captureWithCity is a boolean, true if the target is captured when
+-- a city is captured, and false if it is destroyed when the city
+-- is captured
+
+You are likely to also want to add extra conditions to whether a city can
+build strategic items, based on whether there is actually a place for them
+to change the terrain (or some other condition).  The canBuild module
+provides a function to register supplemental conditions outside of the
+canBuildSettings module:
+
+canBuild.registerSupplementalCondition(item,
+  function(defaultBuildFunction,city,item) --> boolean)
+
+
+Additionally, you may want to specify what happens to other units
+on a tile when a target is created or captured.  By default, all units
+not owned by the targetOwner are moved to an adjacent square using
+gen.moveUnitAdjacent.  However, you can register some other function with
+strat.registerMoveUnitsAfterTargetCreatedOrCapturedFn(
+function(tile,target)--> void)
+The function takes the tile the target is on, as well as the target as arguments.
+
+
+This module provides a builder function for a strategic system
+
+-- strat.basicStrategicFunctions(isStrategicItemFn,tileEffectsFn)
+--  --> targetLostFunction(target) --> void,
+--      targetVerificationFunction(target) --> void,
+--      registerSupplementalConditionsFunction() --> void,
+--      cityProductionEventFunction(city,item) --> void
+--
+-- isStrategicItemFn
+--    function(item) --> boolean
+--      item: improvement or wonder
+--      return true if the item is strategic
+--      (creates targets/changes terrain upon construction/destruction)
+--      false otherwise
+--
+-- tileEffectsFn(city,item) --> false or table of
+--    {
+--      tile = tileObject
+--        a tile where something will happen
+--      constructionBaseTerrain = baseTerrainObject or nil
+--        change the base terrain to this upon construction
+--        nil means no change to terrain
+--      constructionResource = 0,1,2 or nil
+--        change the terrain resource to this upon construction
+--        nil means no change to the resource
+--        (ignored if grassland is the baseTerrain of the tile,
+--         after the constructionBaseTerrain change is made)
+--      destructionBaseTerrain = baseTerrainObject or nil
+--        change the base terrain of the tile to this
+--        when the target is destroyed
+--        nil means no change to the terrain
+--      destructionResource = 0,1,2, or nil
+--        change the terrain resource to this upon target destruction
+--        nil means no change to the resource
+--        (ignored if grassland is the baseTerrain of the tile,
+--         after the destructionBaseTerrain change is made)
+--      targetUnitType = unitTypeObject or true or nil
+--        if unitTypeObject, create a target with that unit type
+--        on this tile.  nil means no target on this tile.
+--        true means create a 'target' without a unit, for example
+--        if you want to tie a terrain change to whether or not
+--        the item is still in the city
+--      captureWithCity = bool or nil
+--        if true, the target on this tile is caputured with the city
+--        provided the item is still intact.  False or nil means it
+--        is destroyed instead.  For basicStrategicFunctions,
+--        if any target is destroyed, the item is removed, so all
+--        other targets will be destroyed.  If you want a target
+--        to be capured, all the targets for the item should be true
+--    }
+--  return false if the item can't be constructed in the city
+--  (this will only be called on items where isStrategicItemFn(item) returns true)
+
+Provided Functions:
+
+strat.registerTargetLostFn(targetLostFunction) --> void
+
+strat.registerTargetVerificationFn(targetVerificationFunction) --> void
+
+strat.registerMoveUnitsAfterTargetCreatedOrCapturedFn(moveUnitsFunction) --> void
+
+strat.destroyTarget(target) --> void
+
+strat.verifyTarget(target) --> boolean
+-- If a target should be destroyed
+--    e.g. unit missing, city missing, improvement missing
+--    then the target is destroyed and false is returned
+-- otherwise, true is returned
+-- if the target should be captured, but hasn't been, change
+-- the owner to city's owner
+-- if the target should be destroyed upon capture, but hasn't been,
+-- it is destroyed
+
+strat.isTarget(possibleTarget) --> boolean
+-- returns true if the possibleTarget actually is a target, false otherwise
+
+strat.createTarget(tile,targetType,cityOrOwner,class="default",improvement=nil,customData=nil,captureWithCity=false) --> targetObject
+-- creates a target on the supplied tile, with unit type given by targetType,
+-- associated with the provided city (or no city, but just an owner if a tribe is supplied instead)
+-- an improvement or wonder that the target is associated with
+-- (if a city is specified, the target will be destroyed if the
+-- city no longer has that improvement)
+-- if nil is supplied, the target is not associated with any particular
+-- improvement
+-- class is a string to facilitate giving targets different 'types'
+-- customData is a string, number, nil or (nested) table of string, number, nil.
+-- captureWithCity is a boolean, true if the target is captured when
+-- a city is captured, and false if it is destroyed when the city
+-- is captured
+
+strat.getTarget(id) --> targetObject or nil
+
+strat.iterateTargets(filterItem)
+-- if filterItem is nil, iterate through all targets
+-- if filterItem is a city, return only targets associated with that city
+-- if filterItem is a tribe, return only targets owned by that tribe
+-- if filterItem is a string, return only targets with that class
+-- if filterItem is a unitType, return only targets of that unit type (including active targets where the unit has been destroyed
+-- if filterItem is a tile, return targets on that tile
+-- if filterItem is an improvement or wonder, return targets associated with that improvement/wonder
+

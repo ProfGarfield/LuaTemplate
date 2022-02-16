@@ -283,6 +283,13 @@ writeToFile = writeToFile..[[print("Note: transporters are replaced by pollution
 writeToFile = writeToFile..[===[
 
 function placeData(topLeftTileDestinationX,topLeftTileDestinationY)
+    local newMapWidth, newMapHeight, newMapNumber = civ.getAtlasDimensions()
+    for i=0,newMapNumber-1 do
+        if not civ.getMap(i).customResources then
+            civ.ui.text("Map "..tostring(i).." does not have custom resource placement enabled.  Press CTRL+F8 to enable custom resource placement on each map, and then run placeData again.")
+            return
+        end
+    end
     local xOffset = topLeftTileDestinationX -- add this offset to each original x value
     local yOffset = topLeftTileDestinationY -- add this offset to each original y value
 --    if xOffset % 2 ~= yOffset % 2 then
@@ -295,7 +302,6 @@ function placeData(topLeftTileDestinationX,topLeftTileDestinationY)
     end
 -- for now, will only copy entire map, so don't have to worry about placing stuff that
 -- falls off the map
-    local newMapWidth, newMapHeight, newMapNumber = civ.getAtlasDimensions()
     if newMapWidth < originalMapWidth then
         civ.ui.text("Your new map has a smaller width than the map you copied from.  At the moment, you must be able to fit your entire original map into the new map.  If you need to reduce the map size, contact Prof. Garfield in the Civfanatics forums.")
     end
@@ -320,9 +326,6 @@ function placeData(topLeftTileDestinationX,topLeftTileDestinationY)
     if yOffset+originalMapHeight > newMapHeight then
         civ.ui.text("Your choice of topLeftTileDestinationY is too big.  This would place the Southern part of your old map outside the new map.  At this time, this functionality is not provided.  If you need this functionality, contact Prof. Garfield in the Civfanatics forums.")
         return
-    end
-    for i=0,newMapNumber-1 do
-        civ.getMap(i).customResources = true
     end
 
     local function newTile(tileTriple)

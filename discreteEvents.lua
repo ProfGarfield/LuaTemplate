@@ -91,6 +91,7 @@ end
 function discreteEvents.onCityTaken(city,defender) 
     --civ.ui.text(city.name.." taken from "..defender.name.." discrete event")
 
+
 end
 
 function discreteEvents.onScenarioLoaded() 
