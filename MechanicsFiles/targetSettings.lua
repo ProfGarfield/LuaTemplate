@@ -152,16 +152,4 @@ end
 
 strat.registerMoveUnitsAfterTargetCreatedOrCapturedFn(moveUnitsAfterTargetCreatedOrCapturedFunction)
 
-function discreteEvents.onKeyPress(keyID)
-  for item in strat.iterateTargets() do
-    if strat.isTarget(item) == false then
-      error("target not recognized")
-    end
-  end
-  for key,item in pairs(object) do
-    if strat.isTarget(item) == true then
-      error(tostring(key).." recognized as a target")
-    end
-  end
-  print("checked stuff")
-end
+
