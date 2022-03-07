@@ -180,6 +180,7 @@ require("discreteEvents")
 local consolidated = require("consolidatedEvents")
 
 attemptToRun('targetSettings',"WARNING: targetSettings.lua not found.  You will not have strategic targets.")
+attemptToRun('navySettings', "WARNING: navySettings.lua not found.  You will not have the navy settings from that file.")
 
 
 
