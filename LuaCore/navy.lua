@@ -388,6 +388,10 @@ local function groundUnitActivatedOnLand(unit)
     if unit.owner.isHuman or applyToAI then
         local adjacentPeaceCity = false
         local adjacentAlliedCity = false
+        -- it appears that dead (or missing) units can be activated
+        if unit.location.x > 65000 then
+            return
+        end
         for _,tile in pairs(gen.getAdjacentTiles(unit.location)) do
             if tile.city and diplomacy.peaceTreatyExists(unit.owner,tile.city.owner) then
                 adjacentPeaceCity = true

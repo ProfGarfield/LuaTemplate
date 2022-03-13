@@ -213,8 +213,11 @@ local function makeBasicDemotionFunction(demotionTable)
         if nDTVal.demoteOnlyIfVeteran and (not loserVetStatus) then
             return false
         end
-        local demotedUnit = civ.createUnit(newDemotionTable[loserTypeID].replacementUnitType,loser.owner,loser.location)
+        local demotedUnit = civ.createUnit(newDemotionTable[loserTypeID].replacementUnitType,loser.owner,loserTile)
         gen.copyUnitAttributes(loser,demotedUnit)
+        -- note, need to do this so if the attacker is demoted, the replacement ends up
+        -- in the right place.
+        demotedUnit:teleport(loserTile)
         if nDTVal.vetStatus == "give" then
             demotedUnit.veteran = true
         elseif nDTVal.vetStatus == "remove" then
@@ -480,8 +483,8 @@ local function checkUpgradeInfo(upgradeInfo,tableKey,nilDefeatedUnitTypes,defeat
         print(civ.getUnitType(tableKey).name..": healUnit must be a boolean or an integer.")
         makeUpgradeInfoError = true
     end
-    if upgradeInfo.spendMove and type(upgradeInfo.healUnit) ~="true" and (type(upgradeInfo.healUnit)~="number" or
-        math.floor(upgradeInfo.spendMove) ~= upgradeInfo.healUnit) then
+    if upgradeInfo.spendMove and type(upgradeInfo.spendMove) ~= "boolean" and (type(upgradeInfo.spendMove)~="number" or
+        math.floor(upgradeInfo.spendMove) ~= upgradeInfo.spendMove) then
         print(civ.getUnitType(tableKey).name..": spendMove must be a boolean or an integer.")
         makeUpgradeInfoError = true
     end

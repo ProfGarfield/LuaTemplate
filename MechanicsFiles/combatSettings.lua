@@ -22,6 +22,8 @@ local register = {}
 local gen = require("generalLibrary")
 --
 local combatCalculator = require("combatCalculator")
+local rules = require("rules")
+local text = require("text")
 
 
 
@@ -106,7 +108,12 @@ Modifiers that can be disabled by setting their value to "0" (the numeric value,
 
 local function computeCombatStatistics(attacker, defender, isSneakAttack)
     
-    local combatModifierOverride = {}
+    local combatModifierOverride = {aCustomMult=1,dCustomMult=1}
+    -- Modifier from rules files:
+    local aMult, dMult = rules.combatGroupCustomModifiers(attacker,defender)
+    combatModifierOverride.aCustomMult = combatModifierOverride.aCustomMult*aMult
+    combatModifierOverride.dCustomMult = combatModifierOverride.dCustomMult*dMult
+
 
 
 	local attackerStrength, attackerFirepower, defenderStrength, defenderFirepower,
@@ -146,7 +153,16 @@ function register.onChooseDefender(defaultFunction,tile,attacker,isCombat)
     for possibleDefender in tile.units do
         local attackerStrength, attackerFirepower, defenderStrength, defenderFirepower
             = computeCombatStatistics(attacker,possibleDefender,false)
-        local defenderValue = defenderStrength*possibleDefender.hitpoints//possibleDefender.type.hitpoints
+        -- below is what appears to be the standard civ II calculation
+        --local defenderValue = defenderStrength*possibleDefender.hitpoints//possibleDefender.type.hitpoints
+        -- instead of defender strength, however, defenderStrength/attackerStrength is used to account
+        -- for attack buffs/debuffs (which are very few in original game)
+        local defenderValue = nil
+        if attackerStrength == 0 then
+            defenderValue = math.huge
+        else
+            defenderValue = (defenderStrength/attackerStrength)*possibleDefender.hitpoints//possibleDefender.type.hitpoints
+        end
         if defenderValue > bestDefenderValue or 
             (defenderValue == bestDefenderValue and possibleDefender.id < bestDefender.id) then
             bestDefenderValue = defenderValue
@@ -179,6 +195,14 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
     --if calculatedDefenderFirepower ~= defenderPower then
     --    civ.ui.text("DefenderFP: calculated: "..calculatedDefenderFirepower.." actual: "..defenderPower)
     --end
+    if calculatedAttackerStrength == 0 then
+        maxCombatRounds = 0
+        if attacker.owner.isHuman then
+            text.simple("Our "..attacker.type.name.." unit can't fight the defending "..defender.type.name..".  The attack has been cancelled.","Defense Minister")
+        end
+    end
+    --civ.ui.text("Attacker Strength: "..calculatedAttackerStrength.." Defender Strength: "..calculatedDefenderStrength)
+            
     return coroutine.create(function()
         local round = 0
         while(round < maxCombatRounds and attacker.hitpoints >0 and defender.hitpoints > 0) do

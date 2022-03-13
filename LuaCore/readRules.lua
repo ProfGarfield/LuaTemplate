@@ -72,9 +72,11 @@ end
 
 local readRules = {}
 
-function readRules.readRules(rulesPath)
+function readRules.readRules(rulesPath,emptyTableInsteadOfError)
     local f = io.open(rulesPath, "r")
-    if f == nil then
+    if f == nil and emptyTableInsteadOfError then
+        return {}
+    elseif f == nil then
         error("readRules.readRules: the path \n"..rulesPath.."\n is not a valid file.")
     else
         io.close(f)
