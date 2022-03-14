@@ -14,7 +14,7 @@ local func = require("functions")
 -- this is the last date that I've modified this file (or, at least remembered to change this line
 -- yyyy-mm-dd
 --
-local currentModifyDate = "2022-02-02"
+local currentModifyDate = "2022-03-13"
 --
 -- Usage: If the discreteEvents Module (discreteEventsRegistrar.lua) is available, 
 -- the event triggers will function automatically.
@@ -438,7 +438,7 @@ local function eventDelayed(eventIndex,performEventOnTurn,triggerAttacker,trigge
     g_LegacyState.eventStatusTable=g_LegacyState.eventStatusTable or {}
     g_LegacyState.eventStatusTable[eventIndex] = g_LegacyState.eventStatusTable[eventIndex] or {}
     g_LegacyState.eventStatusTable[eventIndex].delayedEvents = g_LegacyState.eventStatusTable[eventIndex].delayedEvents or {}
-    g_LegacyState.eventStatusTable[eventIndex].delayedEvents[#g_LegacyState.eventStatusTable[eventIndex].delayedEvents+1] = {performOnTurn=performEventOnTurn, triggerAttacker=triggerAttacker, triggerDefender=triggerDefender, triggerReceiver = triggerReceiver,}
+    g_LegacyState.eventStatusTable[eventIndex].delayedEvents[(#g_LegacyState.eventStatusTable[eventIndex].delayedEvents)+1] = {performOnTurn=performEventOnTurn, triggerAttacker=triggerAttacker, triggerDefender=triggerDefender, triggerReceiver = triggerReceiver,}
 end
 
 local function eventJustOnceExecuted(eventIndex)
@@ -463,7 +463,7 @@ end
 --    end
 --end
 -- clears active event conditions, unless they are continuous
-local function resetEventConditions()
+local function resetEventConditions() 
     g_LegacyState.eventStatusTable=g_LegacyState.eventStatusTable or {}
     for eventIndex, eventStatus in pairs(g_LegacyState.eventStatusTable) do
         clearSatisfiedEventConditions(eventIndex)
@@ -866,6 +866,15 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
                 if firstUnit then
                     civ.deleteUnit(firstUnit)
                 end
+                -- changing terrain removes cities, terrain improvements, and river squares
+                if tile.city then
+                    civ.deleteCity(tile.city)
+                end
+                -- only the unit flag (00000001) should remain, if applicable
+                tile.improvements = tile.improvements & 1
+                if type(tile.river) == "boolean" then
+                    tile.river = false
+                end
             end
         end
     end
@@ -1107,10 +1116,12 @@ local function performDelayedActions(turn)
         -- this global variable is for error reporting
         -- it can also be accessed from the console in the event of an error
         g_EventNumber = i
+        if g_LegacyState.eventStatusTable[i] then
+        end
         if g_LegacyState.eventStatusTable[i] and g_LegacyState.eventStatusTable[i].delayedEvents then
             for index,delayedEventInfo in pairs(g_LegacyState.eventStatusTable[i].delayedEvents) do
                 if turn == delayedEventInfo.performOnTurn then
-                    performDelayedActions(i,delayedEventInfo.triggerAttacker,
+                    performLegacyEventActions(i,delayedEventInfo.triggerAttacker,
                         delayedEventInfo.triggerDefender,delayedEventInfo.triggerReceiver,true)
                     g_LegacyState.eventStatusTable[i].delayedEvents[index]=nil
                 end
@@ -1422,15 +1433,16 @@ end
 --
 --
 local function onTurnEventsAndMaintenance(turnNumber)
-    if turnNumber == 1 then
-        for index,val in pairs(g_LegacyState) do
-            g_LegacyState[index] = nil
-        end
-        g_LegacyState["modifyDate"]=currentModifyDate
-        if eventHashValue then
-            g_LegacyState.storedEventHashValue = eventHashValue
-        end
-    end
+    -- moved to checkForScenarioBeingSaved
+    --if turnNumber == 1 then
+    --    for index,val in pairs(g_LegacyState) do
+    --        g_LegacyState[index] = nil
+    --    end
+    --    g_LegacyState["modifyDate"]=currentModifyDate
+    --    if eventHashValue then
+    --        g_LegacyState.storedEventHashValue = eventHashValue
+    --    end
+    --end
     resetEventConditions()
     performDelayedActions(turnNumber)
     doTurnEvents(turnNumber)
@@ -1854,7 +1866,30 @@ local function luaTrigger(triggerName,triggerAttackerString,triggerDefenderStrin
     doTriggerEventsFunction(luaTriggerConditionMet,triggerName,nil,triggerAttackerString,triggerDefenderString,triggerReceiverString)
 end
 
+local function checkForScenarioBeingSaved()
+    if civ.scen.params.name ~= "" and civ.scen.params.name ~= g_LegacyState["scenarioName"] then
+        local clearStateDialog = civ.ui.createDialog()
+        clearStateDialog:addText("It appears that you are saving a scenario.  Do you wish to clear the saved information in the legacy events?  This will reset justOnce events, clear any pending delayed events, and other similar information.")
+        clearStateDialog:addOption("No, I don't want to clear that information.",1)
+        clearStateDialog:addOption("Yes, reset the Legacy Events.",2)
+        local choice = clearStateDialog:show()
+        if choice == 2 then
+            for index,val in pairs(g_LegacyState) do
+                g_LegacyState[index] = nil
+            end
+            g_LegacyState["modifyDate"]=currentModifyDate
+            if eventHashValue then
+                g_LegacyState.storedEventHashValue = eventHashValue
+            end
+        end
+    end
+    g_LegacyState["scenarioName"] = civ.scen.params.name
+end
+
 if discreteEventsFound then
+    function discreteEvents.onSave()
+        checkForScenarioBeingSaved()
+    end
     function discreteEvents.onTurn(turn)
         onTurnEventsAndMaintenance(turn)
     end

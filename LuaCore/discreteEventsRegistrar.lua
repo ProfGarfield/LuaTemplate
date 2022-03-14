@@ -281,6 +281,13 @@ function discreteEvents.performOnCanFoundCity(unit)
     return resultSoFar
 end
 
+eventsTable.onSave = {}
+eventsTable.onSaveIndex = 1
+function discreteEvents.performOnSave()
+    for i=1, eventsTable.onSaveIndex-1 do
+        eventsTable.onSave[i]()
+    end
+end
 
 local registeredEventTypes =
 [[
@@ -308,6 +315,7 @@ discreteEvents.onTribeTurnBegin
 discreteEvents.onTribeTurnEnd
 discreteEvents.onCanFoundCity
 discreteEvents.onSchism
+discreteEvents.onSave
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -345,6 +353,7 @@ discreteEvents.performOnTribeTurnBegin
 discreteEvents.performOnTribeTurnEnd
 discreteEvents.performOnCanFoundCity
 discreteEvents.performOnSchism
+discreteEvents.performOnSave
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

@@ -370,6 +370,7 @@ registeredInThisFile["onCanBuild"]=true
 
 
 local function doOnSave() --> string
+    discreteEvents.performOnSave()
     -- compress the text representation of the state table, so saved game files are smaller
     return lualzw.compress(civlua.serialize(state))
 end
