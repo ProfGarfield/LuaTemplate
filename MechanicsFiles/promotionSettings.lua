@@ -198,8 +198,15 @@ end
 
 local unitVetTable = {}
 
+--local function overrideProdVetStatus(city,prod)
+--    return promotion.overrideProductionVetStatus(city,prod,unitVetTable)
+--end
 local function overrideProdVetStatus(city,prod)
-    return promotion.overrideProductionVetStatus(city,prod,unitVetTable)
+    local extraVetChance = 0 -- use this if you want to have production veteran
+    -- modification without replacing the rules_lst.txt features
+    -- Note: extraVetChance has no effect if there is no
+    -- @LSTPRODUCTIONVETERANSTATUS section in the rules_lst
+    return rules.productionVeteranReplacement(city,prod,extraVetChance)
 end
 promotionSettings.overrideProdVetStatus = overrideProdVetStatus
 

@@ -11,6 +11,7 @@ local keyboard = require("keyboard")
 local readFromFile = "rules_lst.txt"
 local rulesTable = readRules.readRules(gen.getScenarioDirectory().."\\"..readFromFile,true)
 local rules = {}
+local originalRules = readRules.loadedRules
 
 local function paddString(str,characters)
     while string.len(str) < characters do
@@ -194,10 +195,16 @@ else
 
 end
 
-local function makeGenerateSectionWithUnits(preamble,sectionName,BForward)
+local function makeGenerateSectionWithUnits(preamble,sectionName,MakeBForward)
     return function()
         local sampleSection = preamble.."\n"..sectionName.."\n"
         for i=0,civ.cosmic.numberOfUnitTypes-1 do
+            local BForward = ""
+            if type(MakeBForward) == "string" then
+                BForward = MakeBForward
+            else
+                BForward = MakeBForward(civ.getUnitType(i))
+            end
             sampleSection = sampleSection..paddString(civ.getUnitType(i).name..",",unitNameCharacterAllotment+4)..BForward.."; id: "..i.."\n"
         end
         return sampleSection
@@ -297,6 +304,7 @@ local buildDemotionSection = makeGenerateSectionWithUnits(demotionsPreamble,demo
 
 verifySection(demotionsSection,civ.cosmic.numberOfUnitTypes-1,buildDemotionSection)
 if rulesTable[demotionsSection] then
+    checkNames(demotionsSection)
     local demotionGroups = buildGroups(demotionsSection, demotionMaskSize,1,civ.cosmic.numberOfUnitTypes-1,civ.getUnitType)
     rules.demotionTable = {}
     local rulesSection = rulesTable[demotionsSection]
@@ -378,6 +386,7 @@ local buildPromotionSection = makeGenerateSectionWithUnits(promotionPreamble,pro
 
 verifySection(promotionSection,civ.cosmic.numberOfUnitTypes-1,buildPromotionSection)
 if rulesTable[promotionSection] then
+    checkNames(promotionSection)
     rules.upgradeInfoTable = {}
     rules.promotionChanceTable = {}
     local rulesSection = rulesTable[promotionSection]
@@ -444,6 +453,320 @@ else
     rules.upgradeInfoTable = {}
 end
 
+local colToLetter = {[0] = "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"}
+local letterToCol = {}
+for col,letter in pairs(colToLetter) do
+    letterToCol[letter]=col
+    letterToCol[string.lower(letter)] = col
+end
+for i=0,25 do
+    letterToCol[i]=i
+end
+
+local function percentChanceFromLine(lineTable,column,section,itemID,itemTypeString)
+    local entry = lineTable[letterToCol[column]]
+    local number = tostring(entry)
+    if not number then
+        error("Lua Scenario Template Rules "..section..": Column "..column.." should have a numerical value (representing a percent chance).  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(entry))
+    end
+    return number/100
+end
+
+local function improvementWonderTechFromLine(lineTable,column,section,itemID,itemTypeString,allowNil,allowTechnology)
+    local entry = lineTable[letterToCol[column]]
+    if allowNil and string.lower(entry) == "nil" then
+        return nil
+    end
+    local number = tonumber(entry)
+    local nilInterjection = ""
+    if allowNil then
+        nilInterjection = " nil or"
+    end
+    local techInterjection = ""
+    if allowTechnology then
+        techInterjection = ", or technology if the number is negative or 0"
+    end
+    if not number then
+        error("Lua Scenario Template Rules "..section..": Column "..column.." should be"..nilInterjection.." a number representing the ID of a city improvement or wonder"..techInterjection..".  Pyramids has ID 40 in this system, Hanging Gardens 41 and so on.  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(entry))
+    end
+    local impWon = nil
+    if allowTechnology and number <= 0 then
+        impWon = civ.getTech(-number)
+    elseif number < 40 then
+        impWon = civ.getImprovement(number)
+    else
+        impWon = civ.getWonder(number-40)
+    end
+    if not impWon then
+        error("Lua Scenario Template Rules "..section..": Column "..column.." should be"..nilInterjection.." a number representing the ID of a city improvement or wonder"..techInterjection..".  Pyramids has ID 40 in this system, Hanging Gardens 41 and so on.  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(entry))
+    end
+    return impWon
+end
+
+local function toPercentString(number)
+    number = number * 100
+    number = math.floor(number)
+    return tostring(number).."%"
+end
+
+local function getVetBuilding(unitType)
+    if unitType.domain == 0 then
+        return gen.original.iBarracks
+    elseif unitType.domain == 1 then
+        return gen.original.iAirport
+    else
+        return gen.original.iPortFacility
+    end
+end
+
+local function vetBuilding(unitType)
+    if unitType.domain == 0 then
+        return gen.original.iBarracks.name
+    elseif unitType.domain == 1 then
+        return gen.original.iAirport.name
+    else
+        return gen.original.iPortFacility.name
+    end
+end
+
+local function getVetWonder(unitType)
+    if unitType.domain == 0 then
+        return gen.original.wSunTzusWarAcademy
+    elseif unitType.domain == 2 then
+        return gen.original.wLighthouse
+    else
+        return nil
+    end
+end
+
+local function vetWonder(unitType)
+    if unitType.domain == 0 then
+        return gen.original.wSunTzusWarAcademy.name
+    elseif unitType.domain == 2 then
+        return gen.original.wLighthouse.name
+    else
+        return nil
+    end
+end
+
+-- converts an ID to either an improvement or wonder
+-- pyramids have id 40 in this system
+local function getImprovementWonderTech(id)
+    if id <= 0 then
+        return civ.getTech(-id)
+    elseif id < 40 then
+        return civ.getImprovement(id)
+    else
+        return civ.getWonder(id-40)
+    end
+end
+
+-- Converts an enhanced mask to a table of values, 0 index is the rightmost
+-- bit.  output[index]=conversionTable[maskChar]
+--  allowedCharactersInfo is an explanation string for errors
+local function maskMap(maskString,conversionTable,allowedCharactersInfo,section,column,itemID,itemTypeString,desiredMaskLength)
+    local lineTable = rulesTable[section][itemID]
+    local maskLength = string.len(maskString)
+    if maskLength ~= desiredMaskLength then
+        error("Lua Scenario Template Rules "..section..": Column "..column.." should have "..desiredMaskLength.." of the following characters: "..allowedCharacterInfo..".  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(maskString).." ("..string.len(maskString).." characters)") 
+    end
+
+    local output = {}
+    for i=1,maskLength do
+        local char = string.sub(maskString,-i,-i)
+        output[i-1] = conversionTable[char]
+        if conversionTable[char] == nil then
+            --local flagString = string.rep(".",maskLength-i).."X"..string.rep(".",i-1)
+            error("Lua Scenario Template Rules "..section..": Column "..column.." should have "..desiredMaskLength.." of the following characters: "..allowedCharactersInfo..".  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(maskString).." ("..string.len(maskString).." characters)") 
+        end
+    end
+    return output
+end
+
+
+
+local productionVeteranSection = "@LSTPRODUCTIONVETERANSTATUS"
+local productionVeteranSectionPreamble= [[
+;       Production Veteran Status
+; A) Unit Name: No direct effect, but if the unit name doesn't match
+;       the name for the unit with the same ID, a warning is printed
+;       in the console
+; B) Base Veteran Status Chance Increment: Percent chance the unit produced will be
+;       veteran, before applying improvements and wonders
+; C) Standard Improvement Veteran Chance Increment: Percent chance that a barracks,
+;       port facility, or airport will produce a veteran unit
+;       (add this with the base chance)
+; D) Wonder Veteran Chance Increment: Percent chance that a unit produced by a civ
+;       owning Sun Tzu or Lighthouse will be veteran
+;       (add this with previous chances for total chance)
+; E) First Supplemental Improvement: ID of improvement or wonder that will add
+;       a chance for a produced unit to be veteran
+;       (Pyramids is ID 40 in this system, Hanging Gardens 41 and so on)
+;       nil means don't use this improvement
+; F) First Supplemental Veteran Chance Increment: If the supplemental improvement is in
+;       the city, or the wonder is owned and active by the tribe, then
+;       this is the percent chance that the produced unit will be veteran
+;       (add with all previous chances for the total chance)
+; G) Second Supplemental Improvement: ID of improvement or wonder that will add
+;       a chance for a produced unit to be veteran
+;       (Pyramids is ID 40 in this system, Hanging Gardens 41 and so on)
+;       nil means don't use this improvement
+; H) Second Supplemental Veteran Chance Increment: If the supplemental improvement is in
+;       the city, or the wonder is owned and active by the tribe, then
+;       this is the percent chance that the produced unit will be veteran
+;       (add with all previous chances for the total chance)
+; I) Tribe Bonus Mask:
+;       0-9: Multiply value by 10%, and add that chance to the probability a unit
+;       will be produced veteran by the associated tribe/government
+;       *: 100% chance the tribe/govt will produce a veteran unit
+;       0000000000000001    Tribe 0 (Barbarians)
+;       0000000000000010    Tribe 1
+;       0000000000000100    Tribe 2
+;       0000000000001000    Tribe 3
+;       0000000000010000    Tribe 4
+;       0000000000100000    Tribe 5
+;       0000000001000000    Tribe 6
+;       0000000010000000    Tribe 7
+;       0000000100000000    Anarchy  
+;       0000001000000000    Despotism
+;       0000010000000000    Monarchy
+;       0000100000000000    Communism
+;       0001000000000000    Fundamentalism
+;       0010000000000000    Republic
+;       0100000000000000    Democracy
+;       1000000000000000    Unassigned Bit
+; 
+;        A               B      C      D      E      F      G      H             I  ]]
+
+local function makeBForwardProdVet(unitType)
+    if unitType.role == 6 then
+        -- special defaults for diplomats/spies
+        return "  0,   000,   000,   nil,   000,   nil,   000,   0000*00000000000"
+    else
+        return "  0,   100,   100,   nil,   000,   nil,   000,   0000000000000000"
+    end
+end
+
+local productionVetSectionMaskConversionTable = {}
+for i=0,9 do
+    productionVetSectionMaskConversionTable[tostring(i)] = i/10
+end
+productionVetSectionMaskConversionTable["*"] = 1
+
+local buildProductionVeteranSection = makeGenerateSectionWithUnits(productionVeteranSectionPreamble,
+    productionVeteranSection,makeBForwardProdVet)
+
+verifySection(productionVeteranSection,civ.cosmic.numberOfUnitTypes-1,buildProductionVeteranSection)
+if rulesTable[productionVeteranSection] then
+    checkNames(productionVeteranSection)
+    local productionVeteranTable = {}
+    -- productionVeteranTable[unitType.id] = {
+    --  baseVetChance = number (probability, not percent probability)
+    --  standardImprovement = number
+    --  standardWonder = number
+    --  supplementalImprovement1 = improvement or wonder or tech or nil
+    --  supplementalChance1 = number
+    --  supplementalImprovement2 = improvement or wonder or tech or nil
+    --  supplementalChance2 = number
+    --  tribeBonuses = table of number 0-7 tribe id 8-15 govt 0-7
+
+    for unitID = 0,civ.cosmic.numberOfUnitTypes-1 do
+        local datum = {}
+        local rulesLine = rulesTable[productionVeteranSection][unitID]
+        datum.baseVetChance = percentChanceFromLine(rulesLine,"B",productionVeteranSection,unitID,"unit")
+        datum.standardImprovement = percentChanceFromLine(rulesLine,"C",productionVeteranSection,unitID,"unit")
+        datum.standardWonder = percentChanceFromLine(rulesLine,"D",productionVeteranSection,unitID,"unit")
+        datum.supplementalImprovement1 = improvementWonderTechFromLine(rulesLine,"E",productionVeteranSection,unitID,"unit",true,true)
+        datum.supplementalChance1 = percentChanceFromLine(rulesLine,"F",productionVeteranSection,unitID,"unit")
+        datum.supplementalImprovement2 = improvementWonderTechFromLine(rulesLine,"G",productionVeteranSection,unitID,"unit",true,true)
+        datum.supplementalChance2 = percentChanceFromLine(rulesLine,"H",productionVeteranSection,unitID,"unit")
+        datum.tribeBonuses = maskMap(rulesLine[letterToCol["I"]],productionVetSectionMaskConversionTable,
+            "0-9 and *",productionVeteranSection, "I",unitID,"unit",16)
+        productionVeteranTable[unitID] = datum
+        local vetPedia = ""
+        if datum.baseVetChance > 0 then
+            vetPedia = vetPedia.."By default, a "..civ.getUnitType(unitID).name.." has a "..toPercentString(datum.baseVetChance).." chance of being produced as a veteran.\n"
+        end
+        if datum.standardImprovement < 1 and datum.standardImprovement > 0 then
+            vetPedia = vetPedia.."The "..vetBuilding(civ.getUnitType(unitID)).." improvement increases the chance of producing a veteran by "..toPercentString(datum.standardImprovement)..".\n"
+        elseif datum.standardImprovement == 0 then
+            vetPedia = vetPedia.."The "..vetBuilding(civ.getUnitType(unitID)).." improvement does not increase the chance of producing a veteran.\n"
+        end
+        if datum.standardWonder < 1 and datum.standardWonder > 0 and vetWonder(civ.getUnitType(unitID)) then
+            vetPedia = vetPedia.."The "..vetWonder(civ.getUnitType(unitID)).." wonder increases the chance of producing a veteran by "..toPercentString(datum.standardWonder)..".\n"
+        elseif datum.standardWonder == 0 and vetWonder(civ.getUnitType(unitID)) then
+            vetPedia = vetPedia.."The "..vetWonder(civ.getUnitType(unitID)).." wonder does not increase the chance of producing a veteran.\n"
+        end
+        if datum.supplementalImprovement1 then
+            vetPedia = vetPedia..datum.supplementalImprovement1.name.." increases the chance of producing a veteran by "..toPercentString(datum.supplementalChance1)..".\n"
+        end
+        if datum.supplementalImprovement2 then
+            vetPedia = vetPedia..datum.supplementalImprovement2.name.." increases the chance of producing a veteran by "..toPercentString(datum.supplementalChance2)..".\n"
+        end
+        for i=0,7 do
+            if datum.tribeBonuses[i] ~= 0 then
+                vetPedia = vetPedia.."The chance to produce a veteran is increased by "..toPercentString(datum.tribeBonuses[i]).." for the "..civ.getTribe(i).name..".\n"
+            end
+        end
+        for i=0,6 do
+            if datum.tribeBonuses[i+8] ~= 0 then
+                vetPedia = vetPedia..originalRules["@GOVERNMENTS"][i][0].." increases chance to produce a veteran by "..toPercentString(datum.tribeBonuses[i])..".\n"
+            end
+        end
+        civilopedia.description(civ.getUnitType(unitID),vetPedia)
+    end
+    function rules.productionVeteranReplacement(city,prod,outsideVetChance)
+        if civ.isUnit(prod) then
+            local newProd = gen.replaceUnit(prod,prod.type)
+            local info = productionVeteranTable[prod.type.id]
+            local veteranChance = info.baseVetChance
+            outsideVetChance = outsideVetChance or 0
+            veteranChance = veteranChance + outsideVetChance
+            -- returns true if the city has the improvement, 
+            -- or if the tribe owns the wonder and it is still active
+            -- return false otherwise, including if nil is provided
+            local function hasBenefitOf(city,improvementWonderTech)
+                if civ.isImprovement(improvementWonderTech) then
+                    return city:hasImprovement(improvementWonderTech)
+                elseif civ.isWonder(improvementWonderTech) and improvementWonderTech.city then
+                    return improvementWonderTech.city.owner == city.owner
+                elseif civ.isTech(improvementWonderTech) then
+                    return civ.hasTech(city.owner,improvementWonderTech)
+                else
+                    return false
+                end
+            end
+            if hasBenefitOf(city,getVetBuilding(prod.type)) then
+                veteranChance = veteranChance + info.standardImprovement
+            end
+            if hasBenefitOf(city,getVetWonder(prod.type)) then
+                veteranChance = veteranChance + info.standardWonder
+            end
+            if hasBenefitOf(city,info.supplementalImprovement1) then
+                veteranChance = veteranChance + info.supplementalChance1
+            end
+            if hasBenefitOf(city,info.supplementalImprovement2) then
+                veteranChance = veteranChance + info.supplementalChance2
+            end
+            veteranChance = veteranChance+info.tribeBonuses[city.owner.id]
+            veteranChance = veteranChance+info.tribeBonuses[city.owner.government+8]
+            local vetStatus = math.random() <= veteranChance
+            newProd.veteran = vetStatus
+            return newProd
+        else
+            return prod
+        end
+    end
+else
+    function rules.productionVeteranReplacement(city,prod,outsideVetChance)
+        return prod
+    end
+end
+
+
+
+
+
 local function generateRulesLST()
     local fileLocation = gen.getScenarioDirectory().."\\"..tostring(os.time())..readFromFile
     local message = "Do you wish to generate a Lua Scenario Template Rules File?  It will be written to "..fileLocation
@@ -459,7 +782,8 @@ local function generateRulesLST()
 ;
 ]]
     fileText = fileText.."\n\n"..buildLuaCombatGroupsSection().."\n"
-        ..buildLuaCombatGroupNamesSection().."\n"..buildDemotionSection().."\n"..buildPromotionSection()
+        ..buildLuaCombatGroupNamesSection().."\n"..buildDemotionSection().."\n"..buildPromotionSection().."\n"
+        ..buildProductionVeteranSection().."\n"
     local file =  io.open(fileLocation,"a")
     io.output(file)
     io.write(fileText)

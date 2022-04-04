@@ -58,6 +58,10 @@ simpleSettings.customWeightFunction = nil
 -- Not sure why you'd want this, but here it is
 simpleSettings.doNotDeleteAITextArchives = nil
 
+-- makes aircraft defend first when units with the
+-- fighter ability attack air protected stacks
+simpleSettings.fightersAttackAirFirst = true
+
 
 
 

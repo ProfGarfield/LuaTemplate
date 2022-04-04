@@ -286,6 +286,9 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                 if nextLineParameterOpen.maprect then
                     -- put the map rectangle coordinates into the "maprect" index of the open action
                     eventTable[eventTableIndex]["THEN"][getOpenAction()]["maprect"]=mapRectangleToTable(line)
+                    if eventTable[eventTableIndex]["THEN"][getOpenAction()]["maprect"][4][2] == nil then
+                        error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The line after a 'maprect' line should be four coordinates separated by commas (8 numbers separated by commas).  Received:\n"..line)
+                    end
                     -- close the nextLineParameter for maprect
                     nextLineParameterOpen.maprect=false
                 elseif nextLineParameterOpen.moveto then

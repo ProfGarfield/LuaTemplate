@@ -24,6 +24,7 @@ local gen = require("generalLibrary")
 local combatCalculator = require("combatCalculator")
 local rules = require("rules")
 local text = require("text")
+local simpleSettings = require("simpleSettings")
 
 
 
@@ -134,7 +135,46 @@ local function computeCombatStatistics(attacker, defender, isSneakAttack)
     return attackerStrength, attackerFirepower, defenderStrength, defenderFirepower
 end
 
+-- use this function to add to (or subtract from) the calculated
+-- defender value in order to change onChooseDefender
+-- e.g. if you add 1e8 (100 million) to all air in air protected stacks
+-- when attacked by a fighter, air units will always defend first if they
+-- are available.
+-- If the combat calculator gives an attacker an attack value of 0,
+-- this is converted to a defenderValue of 1e7 (10 million)
+-- If you want this to defend (and cancel the attack) instead of the air unit
+-- (presuming it isn't an air unit itself), you could add 1e6 (1 million) instead
+-- calculated defenderValues are defenderStrength/attackerStrength*healthPercentage.
+-- This should be less than 10,000 (127*8 = 1016), unless you have defense multipliers 
+-- of 10 or more, and an attacker with 1 attack and facing a 1/8 penalty.
+local function defenderValueModifier(defender,tile,attacker)
+    return 0
+end
 
+-- a sample function for making fighters attack air protected
+-- stacks first.  Replaces above function if simpleSettings
+-- key is set to true
+if simpleSettings.fightersAttackAirFirst then
+    local function tileHasCarrierUnit(tile)
+        for unit in tile.units do
+            if gen.isCarryAir(unit.type) then
+                return true
+            end
+        end
+        return false
+    end
+    defenderValueModifier = function(defender,tile,attacker)
+        if gen.isAttackAir(attacker.type) and defender.type.domain == 1 
+            and defender.type.range >= 2 and
+            not gen.hasAirbase(tile) and not tile.city and
+            not tileHasCarrierUnit(tile) then
+            return 1e8
+        else
+            return 0
+        end
+
+    end
+end
 
 
 -- register.onChooseDefender
@@ -159,10 +199,11 @@ function register.onChooseDefender(defaultFunction,tile,attacker,isCombat)
         -- for attack buffs/debuffs (which are very few in original game)
         local defenderValue = nil
         if attackerStrength == 0 then
-            defenderValue = math.huge
+            defenderValue = 1e7 -- 10 million
         else
             defenderValue = (defenderStrength/attackerStrength)*possibleDefender.hitpoints//possibleDefender.type.hitpoints
         end
+        defenderValue = defenderValue + defenderValueModifier(possibleDefender,tile,attacker)
         if defenderValue > bestDefenderValue or 
             (defenderValue == bestDefenderValue and possibleDefender.id < bestDefender.id) then
             bestDefenderValue = defenderValue
