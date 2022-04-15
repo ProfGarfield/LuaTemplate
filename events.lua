@@ -332,9 +332,16 @@ eventsFiles.onTribeTurnBegin = attemptRequireWithKey(individualFileDirectory.."o
 eventsFiles.onCityProcessed = attemptRequireWithKey(individualFileDirectory.."onCityProcessed","onCityProcessed")
 eventsFiles.onTribeTurnEnd = attemptRequireWithKey(individualFileDirectory.."onTribeTurnEnd","onTribeTurnEnd")
 eventsFiles.onCanFoundCity = attemptRequireWithKey(individualFileDirectory.."onCanFoundCity","onCanFoundCity",true)
+eventsFiles.onEnterTile = attemptRequireWithKey(individualFileDirectory.."onEnterTile","onEnterTile")
+
 local function doOnChooseSeason()
     discreteEvents.performOnChooseSeason()
 end
+
+-- this is so the "activateUnitBackstop" function
+-- doesn't run at certain times, like when
+-- other events are underway
+local suppressActivateUnitBackstop = false
 
 local onTurnFn = function(turn)
     -- this makes doAfterProduction work
@@ -343,6 +350,7 @@ local onTurnFn = function(turn)
     --    flag.setTrue("tribe"..tostring(i).."AfterProductionNotDone","eventMachinery")
     --    flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone","eventMachinery")
     --end
+    suppressActivateUnitBackstop = true
     doOnChooseSeason()
     discreteEvents.performOnTurn(turn)
     consolidated.onTurn(turn)
@@ -353,6 +361,7 @@ local onTurnFn = function(turn)
             gen.clearWeLoveTheKing(city)
         end
     end
+    suppressActivateUnitBackstop = false
 end
 civ.scen.onTurn(onTurnFn)
 console.onTurn = function() onTurnFn(civ.getTurn()) end
@@ -367,6 +376,33 @@ civ.scen.onCanBuild(function(defaultBuildFunction,city,item)
 end)
 
 registeredInThisFile["onCanBuild"]=true
+
+-- onEnterTile(unit,previousTile)
+-- executes when a unit successfully enters a tile (so not when it attacks
+-- a unit or fails to enter a tile because it lacks movement points)
+local function onEnterTile(unit,previousTile)
+    discreteEvents.performOnEnterTile(unit,previousTile)
+    consolidated.onEnterTile(unit,previousTile)
+    eventsFiles.onEnterTile(unit,previousTile)
+end
+
+
+local previousUnitActivated = nil
+local locationOfPreviousUnitActivated = nil
+local function executeOnEnterTile(currentActiveUnit)
+    -- check that there was a previous unit activated, that the unit is still on the map
+    -- (so not destroyed/deleted) and that the unit is on a different square from
+    -- the previous check.  If so, perform the onEnterTile function
+    if previousUnitActivated and previousUnitActivated.location ~= locationOfPreviousUnitActivated
+        and previousUnitActivated.location.x < 60000 then
+        onEnterTile(previousUnitActivated,locationOfPreviousUnitActivated)
+    end
+    previousUnitActivated = currentActiveUnit
+    if previousUnitActivated then
+        locationOfPreviousUnitActivated = previousUnitActivated.location
+    end
+    --civ.ui.text("on enter tile check "..tostring(previousUnitActivated))
+end
 
 
 local function doOnSave() --> string
@@ -391,9 +427,11 @@ registeredInThisFile["onLoad"]=true
 
 
 civ.scen.onKeyPress(function(keyCode)
+    suppressActivateUnitBackstop = true
     discreteEvents.performOnKeyPress(keyCode)
     consolidated.onKeyPress(keyCode)
     eventsFiles.onKeyPress(keyCode)
+    suppressActivateUnitBackstop = false
 end)
 
 
@@ -407,7 +445,10 @@ civ.scen.onCityProduction(function(city,prod)
 end)
 registeredInThisFile["onCityProduction"] = true
 
+local activateUnitBackstopMostRecent = false
+local previousUnitActivationTime = os.time()+os.clock()
 local function doOnUnitActivation(unit,source,repeatMove)
+    executeOnEnterTile(unit)
     if (unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionHuman)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
@@ -420,12 +461,37 @@ local function doOnUnitActivation(unit,source,repeatMove)
     if simpleSettings.enableCustomUnitSelection and not repeatMove then
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)
     end
+    activateUnitBackstopMostRecent = false
+    previousUnitActivationTime = os.time()+os.clock()
 end
 
 registeredInThisFile["onActivateUnit"]=true
 
+-- this function is run occasionally to make sure events tied
+-- to unit activation run smoothly, specifically events that
+-- use unit activation as a substitute for checking AFTER
+-- something has happened.  For example, onEnterTile
+-- and unit upgrades
+-- This check is done occasionally in onDrawTile
+-- and also in onTribeTurnEnd
+local function activateUnitBackstop()
+    executeOnEnterTile(nil)
+    promotionSettings.performPendingUpgrades()
+    activateUnitBackstopMostRecent = true
+end
+local function onDrawTileFn()
+    return function() 
+        if civ.getCurrentTribe().isHuman and not suppressActivateUnitBackstop and not activateUnitBackstopMostRecent and os.time()+os.clock() >= previousUnitActivationTime + 2 and not civ.getActiveUnit() then
+            activateUnitBackstop()
+        end
+    end
+end
+
+civ.scen.onDrawTile(onDrawTileFn())
+
 gen.linkActivationFunction(doOnUnitActivation)
 civ.scen.onActivateUnit(function(unit,source,repeatMove)
+    suppressActivateUnitBackstop = true
     --if flag.value("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery") then
     --    flag.setFalse("tribe"..tostring(unit.owner.id).."AfterProductionNotDone","eventMachinery")
     --    doAfterProduction(civ.getTurn(),unit.owner)
@@ -435,6 +501,7 @@ civ.scen.onActivateUnit(function(unit,source,repeatMove)
     diplomacy.checkTreaties()
     doOnUnitActivation(unit,source,repeatMove)
     eventTools.unitActivation(unit,source)
+    suppressActivateUnitBackstop = false
 end)
 
 local function doAfterProduction(turn,tribe)
@@ -450,6 +517,7 @@ local function doAfterProduction(turn,tribe)
     eventsFiles.onCityProcessingComplete(turn,tribe)
     delayedAction.doAfterProduction(turn,tribe)
     eventTools.maintainUnitActivationTable()
+    suppressActivateUnitBackstop = false
 end
 civ.scen.onCityProcessingComplete(doAfterProduction)
 console.afterProduction = function() doAfterProduction(civ.getTurn(),civ.getCurrentTribe()) end
@@ -517,6 +585,7 @@ local aggressor = nil
 local victim = nil
 
 civ.scen.onUnitKilled(function (loser,winner)
+    suppressActivateUnitBackstop = true
     firstRoundOfCombat = true
     local loserLocation = nil
     -- vet status of the combatants before combat
@@ -538,7 +607,7 @@ civ.scen.onUnitKilled(function (loser,winner)
         doOnUnitDeath(loser)
     end
     doOnUnitDeletion(loser,survivor)
-
+    suppressActivateUnitBackstop = false
 end)
 
 registeredInThisFile["onUnitKilled"] = true
@@ -578,6 +647,7 @@ local function nukeDeath(loser,winner)
 end
 
 civ.scen.onUseNuclearWeapon( function(unit,tile)
+    suppressActivateUnitBackstop = true
     local result = useNuke.onUseNuclearWeapon(unit,tile)
     if result then
         local map = tile.z
@@ -589,6 +659,7 @@ civ.scen.onUseNuclearWeapon( function(unit,tile)
             end
         end
     end
+    suppressActivateUnitBackstop = false
     return result
 end)
 registeredInThisFile["onUseNuclearWeapon"] = true
@@ -602,7 +673,6 @@ end
 
 civ.scen.onGetFormattedDate(formattedDate.onGetFormattedDate)
 registeredInThisFile["onGetFormattedDate"] = true
-
 
 
 
@@ -628,54 +698,66 @@ registeredInThisFile["onGetFormattedDate"] = true
 
 
 civ.scen.onCityTaken(function (city,defender)
+    suppressActivateUnitBackstop = true
     if simpleSettings.rehomeUnitsInCapturedCity then
         gen.rehomeUnitsInCapturedCity(city,defender)
     end
     discreteEvents.performOnCityTaken(city,defender)
     consolidated.onCityTaken(city,defender)
     eventsFiles.onCityTaken(city,defender)
+    suppressActivateUnitBackstop = false
 end)
 registeredInThisFile["onCityTaken"]=true
 
 civ.scen.onCityDestroyed(function (city)
+    suppressActivateUnitBackstop = true
     if simpleSettings.rehomeUnitsInCapturedCity then
         gen.rehomeUnitsInCapturedCity(city,city.owner)
     end
     discreteEvents.performOnCityDestroyed(city)
     consolidated.onCityDestroyed(city)
     eventsFiles.onCityDestroyed(city)
+    suppressActivateUnitBackstop = false
 end)
 registeredInThisFile["onCityDestroyed"] = true
 
 civ.scen.onScenarioLoaded(function ()
+    suppressActivateUnitBackstop = true
     doOnChooseSeason()
     discreteEvents.performOnScenarioLoaded()
     consolidated.onScenarioLoaded()
     eventsFiles.onScenarioLoaded()
     if civ.getActiveUnit() then
         doOnUnitActivation(civ.getActiveUnit(),false)
+        --executeOnEnterTile(civ.getActiveUnit())
     end
     eventTools.maintainUnitActivationTable()
+    activateUnitBackstopMostRecent = true -- around this time, the backstop runs for some unknown reason, this stops that until unit activation happens again
+    suppressActivateUnitBackstop = false
 end)
 registeredInThisFile["onScenarioLoaded"] = true
 
 civ.scen.onNegotiation(function(talker,listener)
+    suppressActivateUnitBackstop = true
     -- if all registered events return true for a talker and listener, then they can talk
     -- if any return false, they can't
     local discreteEventsResult = discreteEvents.performOnNegotiation(talker,listener)
     local consolidatedEventsResult = consolidated.onNegotiation(talker,listener)
     local individualEventsResult = eventsFiles.onNegotiation(talker,listener)
+    suppressActivateUnitBackstop = false
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 registeredInThisFile["onNegotiation"] = true
 
 
 civ.scen.onSchism(function(tribe)
+    suppressActivateUnitBackstop = true
     -- if all registered events return true for a tribe, that tribe can schism (default behaviour)
     -- if any return false, the tribe can't schism
     local discreteEventsResult = discreteEvents.performOnSchism(tribe)
     local consolidatedEventsResult = consolidated.onSchism(tribe)
     local individualEventsResult = eventsFiles.onSchism(tribe)
+    suppressActivateUnitBackstop = false
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 
@@ -690,9 +772,11 @@ end)
 registeredInThisFile["onCentauriArrival"] = true
 
 civ.scen.onBribeUnit(function(unit,previousOwner)
+    suppressActivateUnitBackstop = true
    discreteEvents.performOnBribeUnit(unit,previousOwner)
    consolidated.onBribeUnit(unit,previousOwner)
    eventsFiles.onBribeUnit(unit,previousOwner)
+   suppressActivateUnitBackstop = false
 end)
 registeredInThisFile["onBribeUnit"] = true
 
@@ -708,6 +792,7 @@ end)
 registeredInThisFile["onGameEnds"]=true
 
 civ.scen.onCityFounded(function(city)
+    suppressActivateUnitBackstop = true
     local discreteCancelFn = discreteEvents.performOnCityFounded(city) -- always returns a function
     local consolidatedCancelFn = consolidated.onCityFounded(city) -- may return a function, so account for case where it doesn't
     -- note that type(void) is an error, but
@@ -730,11 +815,13 @@ civ.scen.onCityFounded(function(city)
             separateCancelFn()
         end
     end
+    suppressActivateUnitBackstop = false
     return linkedCancelFunction
 end)
 registeredInThisFile["onCityFounded"] = true
 
 local function doBeforeProduction(turn,tribe)
+    suppressActivateUnitBackstop = true
     consolidated.beforeProduction(turn,tribe)
     consolidated.onTribeTurnBegin(turn,tribe)
     discreteEvents.performOnBeforeProduction(turn,tribe)
@@ -756,6 +843,7 @@ end
 registeredInThisFile["onCityProcessed"] = true
 
 local function doOnTribeTurnEnd(turn,tribe)
+    activateUnitBackstop()
     discreteEvents.performOnTribeTurnEnd(turn,tribe)
     consolidated.onTribeTurnEnd(turn,tribe)
     eventsFiles.onTribeTurnEnd(turn,tribe)

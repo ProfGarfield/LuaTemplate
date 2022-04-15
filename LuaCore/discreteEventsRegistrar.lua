@@ -289,6 +289,16 @@ function discreteEvents.performOnSave()
     end
 end
 
+
+eventsTable.onEnterTile = {}
+eventsTable.onEnterTileIndex = 1
+
+function discreteEvents.performOnEnterTile(unit,previousTile)
+    for i = 1,eventsTable.onEnterTileIndex-1 do
+        eventsTable.onEnterTile[i](unit,previousTile)
+    end
+end
+
 local registeredEventTypes =
 [[
 discreteEvents.onActivateUnit 
@@ -316,6 +326,7 @@ discreteEvents.onTribeTurnEnd
 discreteEvents.onCanFoundCity
 discreteEvents.onSchism
 discreteEvents.onSave
+discreteEvents.onEnterTile
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -354,6 +365,7 @@ discreteEvents.performOnTribeTurnEnd
 discreteEvents.performOnCanFoundCity
 discreteEvents.performOnSchism
 discreteEvents.performOnSave
+discreteEvents.performOnEnterTile
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

@@ -208,6 +208,15 @@ function discreteEvents.onCanFoundCity(unit,advancedTribe)
     return true
 end
 
+-- onEnterTile(unit,previousTile)
+-- executes when a unit successfully enters a tile (so not when it attacks
+-- a unit or fails to enter a tile because it lacks movement points)
+function discreteEvents.onEnterTile(unit,previousTile)
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onEnterTile: "..unit.type.name.." has entered tile ("..text.coordinates(unit.location)..") from tile ("..text.coordinates(previousTile)..").")
+    end
+
+end
 
 -- ===============================================================================
 --

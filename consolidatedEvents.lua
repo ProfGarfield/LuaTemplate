@@ -256,6 +256,16 @@ function events.onCanFoundCity(unit,advancedTribe)
 end
 
 
+-- onEnterTile(unit,previousTile)
+-- executes when a unit successfully enters a tile (so not when it attacks
+-- a unit or fails to enter a tile because it lacks movement points)
+function events.onEnterTile(unit,previousTile)
+    if _global.eventTesting then
+        civ.ui.text("consolidated.onEnterTile: "..unit.type.name.." has entered tile ("..text.coordinates(unit.location)..") from tile ("..text.coordinates(previousTile)..").")
+    end
+
+end
+
 -- ===============================================================================
 --
 --          End of File
