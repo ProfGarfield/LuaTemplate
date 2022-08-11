@@ -342,6 +342,8 @@ end
 -- doesn't run at certain times, like when
 -- other events are underway
 local suppressActivateUnitBackstop = false
+local humanUnitActive = false
+local humanPlayerActive = false
 
 local onTurnFn = function(turn)
     -- this makes doAfterProduction work
@@ -380,7 +382,10 @@ registeredInThisFile["onCanBuild"]=true
 -- onEnterTile(unit,previousTile)
 -- executes when a unit successfully enters a tile (so not when it attacks
 -- a unit or fails to enter a tile because it lacks movement points)
-local function onEnterTile(unit,previousTile)
+local function onEnterTile(unit,previousTile,previousDomainSpec)
+    -- onEnterTile priority is for transport events, so units can
+    -- 'drag' other units into the tile before the regular onEnterTile event
+    discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDomainSpec)
     discreteEvents.performOnEnterTile(unit,previousTile)
     consolidated.onEnterTile(unit,previousTile)
     eventsFiles.onEnterTile(unit,previousTile)
@@ -389,17 +394,19 @@ end
 
 local previousUnitActivated = nil
 local locationOfPreviousUnitActivated = nil
+local previousDomainSpec = nil
 local function executeOnEnterTile(currentActiveUnit)
     -- check that there was a previous unit activated, that the unit is still on the map
     -- (so not destroyed/deleted) and that the unit is on a different square from
     -- the previous check.  If so, perform the onEnterTile function
     if previousUnitActivated and previousUnitActivated.location ~= locationOfPreviousUnitActivated
         and previousUnitActivated.location.x < 60000 then
-        onEnterTile(previousUnitActivated,locationOfPreviousUnitActivated)
+        onEnterTile(previousUnitActivated,locationOfPreviousUnitActivated,previousDomainSpec)
     end
     previousUnitActivated = currentActiveUnit
     if previousUnitActivated then
         locationOfPreviousUnitActivated = previousUnitActivated.location
+        previousDomainSpec = previousUnitActivated.domainSpec
     end
     --civ.ui.text("on enter tile check "..tostring(previousUnitActivated))
 end
@@ -449,6 +456,7 @@ local activateUnitBackstopMostRecent = false
 local previousUnitActivationTime = os.time()+os.clock()
 local function doOnUnitActivation(unit,source,repeatMove)
     executeOnEnterTile(unit)
+    humanUnitActive = unit.owner.isHuman
     if (unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionHuman)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
@@ -467,27 +475,6 @@ end
 
 registeredInThisFile["onActivateUnit"]=true
 
--- this function is run occasionally to make sure events tied
--- to unit activation run smoothly, specifically events that
--- use unit activation as a substitute for checking AFTER
--- something has happened.  For example, onEnterTile
--- and unit upgrades
--- This check is done occasionally in onDrawTile
--- and also in onTribeTurnEnd
-local function activateUnitBackstop()
-    executeOnEnterTile(nil)
-    promotionSettings.performPendingUpgrades()
-    activateUnitBackstopMostRecent = true
-end
-local function onDrawTileFn()
-    return function() 
-        if civ.getCurrentTribe().isHuman and not suppressActivateUnitBackstop and not activateUnitBackstopMostRecent and os.time()+os.clock() >= previousUnitActivationTime + 2 and not civ.getActiveUnit() then
-            activateUnitBackstop()
-        end
-    end
-end
-
-civ.scen.onDrawTile(onDrawTileFn())
 
 gen.linkActivationFunction(doOnUnitActivation)
 civ.scen.onActivateUnit(function(unit,source,repeatMove)
@@ -671,9 +658,47 @@ if not formattedDateFileFound then
     formattedDate.onGetFormattedDate = function(turn,defaultDateString) return defaultDateString end
 end
 
-civ.scen.onGetFormattedDate(formattedDate.onGetFormattedDate)
+-- this function is run occasionally to make sure events tied
+-- to unit activation run smoothly, specifically events that
+-- use unit activation as a substitute for checking AFTER
+-- something has happened.  For example, onEnterTile
+-- and unit upgrades
+-- This check is done occasionally in onGetFormattedDate
+-- and also in onTribeTurnEnd
+local function activateUnitBackstop()
+    executeOnEnterTile(nil)
+    promotionSettings.performPendingUpgrades()
+    activateUnitBackstopMostRecent = true
+end
+
+
+civ.scen.onGetFormattedDate(function(turn,defaultDateString)
+        if humanUnitActive and (not suppressActivateUnitBackstop) and (not activateUnitBackstopMostRecent) and os.time()+os.clock() >= previousUnitActivationTime + 2 and (not civ.getActiveUnit()) then
+            activateUnitBackstop()
+        end
+        return formattedDate.onGetFormattedDate(turn,defaultDateString)
+    end
+)
 registeredInThisFile["onGetFormattedDate"] = true
 
+-- this code was replaced by the code above, it is here just in case, but it was causing errors
+--local altGetActiveUnit = function()
+--    gen.limitedExecutions("alt",4,function() civ.ui.text("active unit check human playerActive: "..tostring(humanPlayerActive)) end)
+--    return civ.getActiveUnit()
+--end
+--
+--local function onDrawTileFn()
+--    if humanUnitActive and (not suppressActivateUnitBackstop) and (not activateUnitBackstopMostRecent) and os.time()+os.clock() >= previousUnitActivationTime + 2 and (not altGetActiveUnit()) then
+--        return function() 
+--                civ.ui.text("Backstop")
+--                activateUnitBackstop()
+--            end
+--    else
+--        return function() end
+--    end
+--end
+--
+--civ.scen.onDrawTile(onDrawTileFn())
 
 
 -- deprecated and replaced by civ.scen.onInitiateCombat
@@ -734,6 +759,7 @@ civ.scen.onScenarioLoaded(function ()
     eventTools.maintainUnitActivationTable()
     activateUnitBackstopMostRecent = true -- around this time, the backstop runs for some unknown reason, this stops that until unit activation happens again
     suppressActivateUnitBackstop = false
+    humanPlayerActive = civ.getCurrentTribe().isHuman
 end)
 registeredInThisFile["onScenarioLoaded"] = true
 
@@ -828,6 +854,8 @@ local function doBeforeProduction(turn,tribe)
     discreteEvents.performOnTribeTurnBegin(turn,tribe)
     eventsFiles.onBeforeProduction(turn,tribe)
     eventsFiles.onTribeTurnBegin(turn,tribe)
+    humanUnitActive = false
+    humanPlayerActive = tribe.isHuman
 end
 console.beforeProduction = function () doBeforeProduction(civ.getTurn(),civ.getCurrentTribe()) end
 console.onTribeTurnBegin = console.beforeProduction
@@ -847,6 +875,7 @@ local function doOnTribeTurnEnd(turn,tribe)
     discreteEvents.performOnTribeTurnEnd(turn,tribe)
     consolidated.onTribeTurnEnd(turn,tribe)
     eventsFiles.onTribeTurnEnd(turn,tribe)
+    humanPlayerActive = false
 end
 civ.scen.onTribeTurnEnd(doOnTribeTurnEnd)
 registeredInThisFile["onTribeTurnEnd"] = true

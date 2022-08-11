@@ -1,4 +1,5 @@
 local func = require "functions"
+local text = require "text"
 
 -- insert help = require "helpkey"
 
@@ -61,7 +62,7 @@ local function helpKey(keyID, helpKeyNumber,flagTextTable, unitTypeTextTable,uni
             helpWindow:addText(func.splitlines("\n^"..unitTypeTextTable[helpUnitType.id]))
         end
         if unitTextFunction and unitTextFunction(helpUnit) then
-            helpWindow:addText(func.splitlines("\n^"..unitTextFunction(helpUnit)))
+            text.addMultiLineTextToDialog("\n^"..unitTextFunction(helpUnit),helpWindow)
         end 
         helpWindow:show()
     end -- if keyID == helpKeyNumber

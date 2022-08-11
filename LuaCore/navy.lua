@@ -430,16 +430,14 @@ local function groundUnitActivatedOnLand(unit)
     end
 end
 
-local function moveOrDeleteForbiddenCargo(ship,cargo)
-    for _,adjacentTile in pairs(gen.getAdjacentTiles(ship.location)) do
-        if adjacentTile.city and adjacentTile.city.owner == cargo.owner then
-            cargo:teleport(adjacentTile)
+local function moveOrDeleteForbiddenCargo(ship,cargo,previousTile)
+    if previousTile.city and previousTile.city.owner == cargo.owner then
+            cargo:teleport(previousTile)
             cargo.carriedBy = nil
             if cargo.owner.isHuman then
-                text.simple("In this scenario, "..cargo.type.name.." units can't be transported by "..ship.type.name.." units.  Your "..cargo.type.name.." has been moved to "..adjacentTile.city.name..".","Scenario Rules: Shipping")
+                text.simple("In this scenario, "..cargo.type.name.." units can't be transported by "..ship.type.name.." units.  Your "..cargo.type.name.." has been moved to "..previousTile.city.name..".","Scenario Rules: Shipping")
             end
             return
-        end
     end
     if cargo.owner.isHuman then
         text.simple("In this scenario, "..cargo.type.name.." units can't be transported by "..ship.type.name.." units.  Since there is no friendly city in an adjacent square, your "..cargo.type.name.." unit has been deleted.","Scenario Rules: Shipping")
@@ -459,13 +457,15 @@ function navy.beachSettingsUnitActivation(unit)
                     gen.setToNoOrders(unitInCity)
                 end
             end
-        elseif unit.type.domain == 2 and unit.type.hold > 0 and (unit.owner.isHuman or applyToAI) then
-            for unitOnTile in unit.location.units do
-                if unitOnTile.carriedBy == unit and forbidTransportTable[unitTypeID][unitOnTile.type.id] then
-                    moveOrDeleteForbiddenCargo(unit,unitOnTile)
-                end
-            end
         end
+        -- moved to navy.onEnterTile
+        --elseif unit.type.domain == 2 and unit.type.hold > 0 and (unit.owner.isHuman or applyToAI) then
+        --    for unitOnTile in unit.location.units do
+        --        if unitOnTile.carriedBy == unit and forbidTransportTable[unitTypeID][unitOnTile.type.id] then
+        --            moveOrDeleteForbiddenCargo(unit,unitOnTile)
+        --        end
+        --    end
+        --end
     elseif unit.location.baseTerrain.type == 10 then
         -- if the ground unit is activated at sea, ship holds should be normal
         resetShipHolds()
@@ -475,6 +475,7 @@ function navy.beachSettingsUnitActivation(unit)
         groundUnitActivatedOnLand(unit)
     end
 end
+
 
 -- Carrier Units
 -- If a unit is not within the carrierSettings table, it will either always
@@ -491,6 +492,9 @@ end
 --  clearPropertyFor = nil or table of tribes
 --      the carrier property is always disabled for these tribes
 --      (not sure why you'd want this)
+--  hold = integer or nil
+--      The carrier can hold this many aircraft
+--      nil means unlimited capacity
 --
 
 local carrierTable = {}
@@ -505,6 +509,9 @@ local carrierTable = {}
 --      disableTribes = {[tribeID] = bool or nil}
 --          if true, the unit is never a carrier when this tribe is active
 --          false or nil means follow forbiddenUnits
+--      hold = integer or math.huge
+--          if integer, the carrier can hold this many aircraft
+--          if nil, it can hold unlimited aircraft
 
 function navy.registerCarrierSettings(cSettings)
     if type(cSettings) ~= "table" then
@@ -530,6 +537,7 @@ function navy.registerCarrierSettings(cSettings)
         for _,tribe in pairs(clearPropertyFor) do
             carrierTable[unitTypeID].disableTribes[tribe.id] = true
         end
+        carrierTable[unitTypeID].hold = settings.hold or math.huge
     end
 end
 
@@ -548,6 +556,76 @@ function navy.unitActivationSetCarrierStatus(unit,source,repeatedMove)
     end
 end
 
+function navy.onEnterTile(unit,previousTile,previousDomainSpec)
+    if not (unit.owner.isHuman or applyToAI) then
+        return
+    end
+    if unit.type.domain == 2 and unit.type.hold > 0 and not unit.location.city then
+        for unitOnTile in unit.location.units do
+            if unitOnTile.carriedBy == unit and forbidTransportTable[unitTypeID][unitOnTile.type.id] then
+                moveOrDeleteForbiddenCargo(unit,unitOnTile,previousTile)
+            end
+        end
+    end
+    -- prevent aircraft carrier from departing with non-sleeping aircraft
+    if carrierTable[unit.type.id] and previousTile.city then
+        local carrying = 0
+        local capacity = carrierTable[unit.type.id].hold
+        for unitOnTile in unit.location.units do
+            if unit ~= unitOnTile and unitOnTile.type.domain == 1 and 
+                not (unitOnTile.carriedBy and unitOnTile.carriedBy ~= unit) then
+                -- check if the unit can't be carried by the carrier, or if it is not sleeping
+                if carrierTable[unit.type.id].forbiddenUnits[unitOnTile.type.id] or
+                    (not gen.isSleeping(unitOnTile)) or (carrying >= capacity)  then
+                    -- if so, teleport back into the city
+                    unitOnTile:teleport(previousTile)
+                else
+                    -- otherwise, make it carriedBy the carrier
+                    unitOnTile.carriedBy = unit
+                    carrying = carrying + 1
+                end
+            end
+        end
+    end
+    -- if carrier picks up unit from a different carrier, this moves it back
+    if carrierTable[unit.type.id] then
+        for unitOnTile in unit.location.units do
+            if (unitOnTile.carriedBy and unitOnTile.carriedBy.location == previousTile)
+                or carrierTable[unit.type.id].forbiddenUnits[unitOnTile.type.id] then
+                unitOnTile:teleport(previousTile)
+            end
+        end
+    end
+    -- 
+    if unit.type.domain == 1 and unit.moveSpent == unit.type.move then
+        local carrierLandingAttempt = false
+        local carriers = {}
+        for unitOnTile in unit.location.units do
+            if unitOnTile.type.domain == 1 and unitOnTile ~= unit and unitOnTile.carriedBy then
+                carriers[unitOnTile.carriedBy.id] = 1 + (carriers[unitOnTile.carriedBy.id] or 0)
+            end
+        end
+        for possibleCarrier in unit.location.units do
+            if carrierTable[possibleCarrier.type.id] and 
+                not carrierTable[possibleCarrier.type.id].forbiddenUnits[unit.type.id] then
+                carrierLandingAttempt = true
+                if (carriers[possibleCarrier.id] or 0) < carrierTable[possibleCarrier.type.id].hold then
+                    unit.carriedBy = possibleCarrier
+                    break
+                end
+            end
+        end
+        if carrierLandingAttempt and not unit.carriedBy then
+            unit.domainSpec = previousDomainSpec+1
+            if unit.owner.isHuman and unit.domainSpec < unit.type.range then
+                text.simple("No ship has room for our "..unit.type.name.." unit, so it remains aloft.","Defense Minister")
+            elseif unit.owner.isHuman then
+                text.simple("No ship has room for our "..unit.type.name.." unit, so it has run out of fuel and crashed.","Defense Minister")
+                gen.killUnit(unit)
+            end
+        end
+    end
+end
 function navy.linkState(stateTable)
     if type(stateTable) == "table" then
         canUnload = stateTable
@@ -578,6 +656,10 @@ end
 function discreteEvents.onActivateUnit(unit,source,repeatMove)
     navy.unitActivationSetCarrierStatus(unit,source,repeatMove)
     navy.beachSettingsUnitActivation(unit)
+end
+
+function discreteEvents.onEnterTilePriority(unit,previousTile,previousDomainSpec)
+    navy.onEnterTile(unit,previousTile,previousDomainSpec)
 end
 
 function discreteEvents.onTurn(turn)

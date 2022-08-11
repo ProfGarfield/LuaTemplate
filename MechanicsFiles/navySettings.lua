@@ -213,6 +213,9 @@ beachShipSettings[gen.original.uFrigate.id] = {
 --  clearPropertyFor = nil or table of tribes
 --      the carrier property is always disabled for these tribes
 --      (not sure why you'd want this)
+--  hold = integer or nil
+--      The carrier can hold this many aircraft
+--      nil means unlimited capacity
 
 
 local carrierSettings = {}
@@ -221,6 +224,7 @@ carrierSettings[gen.original.uCarrier.id] = {
     canNotUse = {gen.original.uBomber, gen.original.uStlthBmbr, gen.original.uNuclearMsl},
     setPropertyFor = {civ.getTribe(2),civ.getTribe(3)},
     clearPropertyFor = {civ.getTribe(4)},
+    hold = 1,
 }
 carrierSettings[gen.original.uTrireme.id] = {
     canNotUse = {gen.original.uBomber, gen.original.uStlthBmbr, gen.original.uStlthFtr},

@@ -293,9 +293,20 @@ end
 eventsTable.onEnterTile = {}
 eventsTable.onEnterTileIndex = 1
 
-function discreteEvents.performOnEnterTile(unit,previousTile)
+function discreteEvents.performOnEnterTile(unit,previousTile,previousDomainSpec)
     for i = 1,eventsTable.onEnterTileIndex-1 do
-        eventsTable.onEnterTile[i](unit,previousTile)
+        eventsTable.onEnterTile[i](unit,previousTile,previousDomainSpec)
+    end
+end
+
+-- onEnterTile priority allows transport movement to 
+-- be resolved before other onEnterTile events
+eventsTable.onEnterTilePriority = {}
+eventsTable.onEnterTilePriorityIndex = 1
+
+function discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDomainSpec)
+    for i = 1,eventsTable.onEnterTilePriorityIndex-1 do
+        eventsTable.onEnterTilePriority[i](unit,previousTile,previousDomainSpec)
     end
 end
 
@@ -327,6 +338,7 @@ discreteEvents.onCanFoundCity
 discreteEvents.onSchism
 discreteEvents.onSave
 discreteEvents.onEnterTile
+discreteEvents.onEnterTilePriority
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -366,6 +378,7 @@ discreteEvents.performOnCanFoundCity
 discreteEvents.performOnSchism
 discreteEvents.performOnSave
 discreteEvents.performOnEnterTile
+discreteEvents.performOnEnterTilePriority
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

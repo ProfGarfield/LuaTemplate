@@ -431,7 +431,11 @@ local function spawnUnit(generatingUnit,specificationTable,onUnitActivateFn)
         end
     end
     local maxMoveSpentAtomic = gen.maxMoves(generatingUnit)-afterGenMinMoveAtomic
-    generatingUnit.moveSpent = math.min(maxMoveSpentAtomic,generatingUnit.moveSpent+atomicMoveCost)
+	local actualMoveSpent = generatingUnit.moveSpent
+	if actualMoveSpent < 0 then
+		actualMoveSpent = actualMoveSpent + 256
+	end
+    generatingUnit.moveSpent = math.min(maxMoveSpentAtomic,actualMoveSpent+atomicMoveCost)
     if specification.payload then
         generatingUnit.homeCity = nil
     end

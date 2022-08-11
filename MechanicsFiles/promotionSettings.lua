@@ -9,7 +9,7 @@ local promotionSettings = {}
 local defaultPromotionChance = 0.5
 local promotionChanceTable = {}
 -- created by the rules module
-promotionChanceTable = rules.promotionChanceTable
+promotionChanceTable = rules.promotionChanceTable or {}
 
 
 --promotionChanceFunction(loser,winner,aggressor,victim,loserVetStatus,winnerVetStatus,loserTile,aggressorVetStatus,victimVetStatus)-->number

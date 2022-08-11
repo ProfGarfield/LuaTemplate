@@ -2200,8 +2200,13 @@ gen.maxMoves = maxMoves
 
 -- gen.moveRemaining(unit)
 -- returns gen.maxMoves-unit.moveSpent
+-- bug fixed by Knighttime
 local function moveRemaining(unit)
-    return maxMoves(unit)-unit.moveSpent
+	local actualMoveSpent = unit.moveSpent
+	if actualMoveSpent < 0 then
+		actualMoveSpent = actualMoveSpent + 256
+	end
+    return maxMoves(unit)-actualMoveSpent
 end
 gen.moveRemaining = moveRemaining
 
