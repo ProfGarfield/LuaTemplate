@@ -422,6 +422,13 @@ end
 -- gen.setScenarioDirectory(directoryPath) --> void
 -- gen.getScenarioDirectory() --> string
 -- gen.isStateSavable(item) --> boolean
+-- gen.placeMarker(tile,tribe,markerOption)
+-- gen.removeMarker(tile,tribe,markerOption) --> void
+-- gen.maintainTileMarkerTable() --> void
+-- gen.removeAllMarkers(tribeOrNil,markerTypeOrNil) --> void
+-- gen.showMarker(tile,topMarkerTypeOrNil) --> void
+-- gen.showAllMarkers(topMarkerTypeOrNil) --> void
+-- gen.hasMarker(tile,tribe,markerType)
 --
 --
 --
@@ -2686,6 +2693,8 @@ function gen.getTileID (tileORX,y,z)
 	return mapOffset + tileOffset
 end
 gen.getTileId = gen.getTileID
+local getTileId = gen.getTileId
+local getTileID = gen.getTileId
 
 -- gen.getTileFromID(tileID) --> tileObject
 function gen.getTileFromID(ID)
@@ -2702,6 +2711,8 @@ function gen.getTileFromID(ID)
     return civ.getTile(x,y,z)
 end
 gen.getTileFromId = gen.getTileFromID
+local getTileFromId = gen.getTileFromId
+local getTileFromID = gen.getTileFromId
 
 
 
@@ -4981,17 +4992,21 @@ end
 
 
 
---[[
+--
+-- These are the options for markers, and the relevant charting functions
+-- entries 4 and 5 are conflicting markers
 local markerOptions = {}
-markerOptions["irrigation"]=true
-markerOptions["mine"]=true
-markerOptions["farmland"]=true
-markerOptions["road"]=true
-markerOptions["railroad"]=true
-markerOptions["fortress"]=true
-markerOptions["airbase"]=true
-markerOptions["pollution"]=true
-markerOptions["transporter"]=true
+markerOptions["irrigation"]={gen.isIrrigationCharted, gen.chartIrrigation,gen.unchartIrrigation, "mine","farmland"}
+markerOptions["mine"]={gen.isMineCharted, gen.chartMine,gen.unchartMine,"irrigation","farmland"}
+markerOptions["farmland"]={gen.isFarmlandCharted, gen.chartFarmland,gen.unchartFarmland,"irrigation","mine"}
+markerOptions["road"]={gen.isRoadCharted, gen.chartRoad,gen.unchartRoad}
+markerOptions["railroad"]={gen.isRailroadCharted, gen.chartRailroad,gen.unchartRailroad}
+markerOptions["fortress"]={gen.isFortressCharted, gen.chartFortress,gen.unchartFortress,"airbase"}
+markerOptions["airbase"]={gen.isAirbaseCharted, gen.chartAirbase,gen.unchartAirbase,"fortress"}
+markerOptions["pollution"]={gen.isPollutionCharted, gen.chartPollution,gen.unchartPollution,"transporter"}
+markerOptions["transporter"]={gen.isTransporterCharted, gen.chartTransporter,gen.unchartTransporter,"pollution"}
+
+local validMarkerOptionsList = 'Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".'
 
 -- tileMarkerInfo = {[tribe.id] = {"originalChart"=bitmask, "markerOption"=trueNil}}
 -- if tileMarkerInfo[tribe.id]["markerOption"] is true, then a marker has been placed on that
@@ -5002,18 +5017,219 @@ markerOptions["transporter"]=true
 -- genStateTable.tileMarkerTable is initialized in gen.linkGeneralLibraryState
 local function updateTileMarkerTable(tileMarkerInfo,tile)
     for tribeID, tribeMarkerInfo in pairs(tileMarkerInfo) do
+        local tribe = civ.getTribe(tribeID)
+        for key,val in pairs(tribeMarkerInfo) do
+            if key ~= "originalChart" then
+                -- 1st entry in markerOptions[key] is the isImprovementCharted function,
+                -- so, if it is not, the tile must have been observed by the relevant player
+                -- (since the key is nil if the tile is not marked by the relevant key)
+                -- or there is a conflicting marker
+                if not markerOptions[key][1](tile,tribe) then
+                    local conflictKey1 = markerOptions[key][4]
+                    local conflictKey2 = markerOptions[key][5]
+                    if (conflictKey1 and tribeMarkerInfo[conflictKey1] and 
+                        markerOptions[conflictKey1][1](tile,tribe)) then
+                    elseif (conflictKey2 and tribeMarkerInfo[conflictKey2] and 
+                        markerOptions[conflictKey2][1](tile,tribe)) then
+                    else
+                        tribeMarkerInfo["originalChart"] = tile.improvements
+                    end
+                end
+            end
+        end
+    end
+end
+-- markExists(tileMarkerInfo) --> boolean
+-- returns true if a tribe has a mark on this tile, false otherwise
+local function markExists(tileMarkerInfo)
+    for tribeID, tribeMarkerInfo in pairs(tileMarkerInfo) do
+        for key, val in pairs(tribeMarkerInfo) do
+            if key ~= "originalChart" then
+                return true
+            end
+        end
+    end
+    return false
+end
 
+-- gen.placeMarker(tile,tribe,markerOption)
+function gen.placeMarker(tile,tribe,markerOption)
+    markerOption = string.lower(markerOption)
+    local tileID = gen.getTileId(tile)
+    genStateTable.tileMarkerTable[tileID] = genStateTable.tileMarkerTable[tileID] or {}
+    local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
+    tileMarkerInfo[tribe.id] = tileMarkerInfo[tribe.id] or {["originalChart"]=tile.visibleImprovements[tribe]}
+    --civ.ui.text(markerOption.." placed, originalChart: "..tileMarkerInfo[tribe.id]["originalChart"])
+    -- markerOptions[key] are the charting functions (to chart, we want number 2)
+    local chartingFunctions= markerOptions[markerOption]
+    if not chartingFunctions then
+        error("gen.placeMarker: the markerOption \""..markerOption.."\" is invalid.  Attempting to place marker on tile: "..tostring(tile).." for tribe "..tostring(tribe)..".  "..validMarkerOptionsList)
+    end
+    tileMarkerInfo[tribe.id][markerOption] = true
+    chartingFunctions[2](tile,tribe)
+end
+
+
+-- removes the markerOption marker for tribe from tile, if it exists
+-- gen.removeMarker(tile,tribe,markerOption) --> void
+function gen.removeMarker(tile,tribe,markerOption)
+    markerOption = string.lower(markerOption)
+    local tileID = getTileId(tile)
+    local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
+    if not tileMarkerInfo then
+        return
+    end
+    updateTileMarkerTable(tileMarkerInfo,tile)
+    -- markerOptions[key] are the charting functions
+    local chartingFunctions= markerOptions[markerOption]
+    if not chartingFunctions then
+        error("gen.removeMarker: the markerOption \""..markerOption.."\" is invalid.  Attempting to remove marker on tile: "..tostring(tile).." for tribe "..tostring(tribe)..".  "..validMarkerOptionsList)
+    end
+    if not tileMarkerInfo[tribe.id] then
+        return
+    end
+    tileMarkerInfo[tribe.id][markerOption] = nil
+    -- show the original chart, then add back any other markers
+    tile.visibleImprovements[tribe] = tileMarkerInfo[tribe.id]["originalChart"]
+    for key,val in pairs(tileMarkerInfo[tribe.id]) do
+        if key ~= "originalChart" then
+            markerOptions[key][2](tile,tribe)
+        end
+    end
+    --civ.ui.text(markerOption.." removed, originalChart: "..tileMarkerInfo[tribe.id]["originalChart"])
+    -- if removing this eliminates all marks, then clear the data
+    if not markExists(tileMarkerInfo) then
+        genStateTable.tileMarkerTable[tileID] = nil
+        return
     end
 end
 
---function gen.placeMarker(tile,tribe,markerOption)
---    markerOption = string.lower(markerOption)
---    local tileID = gen.getTileId(tile)
---    genStateTable.tileMarkerTable[tileID] = genStateTable.tileMarkerTable[tileID] or {}
---    tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
---    tileMarkerInfo[tribe.id] = tileMarkerInfo[tribe.id] or {"originalChart"=tile.visibleImprovements[tribe]}
---
---end
+-- gen.maintainTileMarkerTable() --> void
+-- check the marker table for any marker data that can be removed
+-- and remove it
+function gen.maintainTileMarkerTable()
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
+        updateTileMarkerTable(tileMarkerInfo,getTileFromId(tileID))
+        if not markExists(tileMarkerInfo) then
+            genStateTable.tileMarkerTable[tileID] = nil
+        end
+    end
+end
+
+-- gen.removeMarkersFromTile(tile,tribeOrNil) --> void
+--      removes all markers on tile for the tribe
+--      if tribe is omitted, removes markers for all tribes
+function gen.removeMarkersFromTile(tile,tribe)
+    local tileID = getTileId(tile)
+    local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
+    for tribeID, tribeMarkerInfo in pairs(tileMarkerInfo) do
+        if (tribe and tribe.id == tribeID) or not tribe then
+            tile.visibleImprovements[civ.getTribe(tribeID)] = tribeMarkerInfo["originalChart"]
+            tileMarkerInfo[tribeID] = nil
+        end
+    end
+    if not markExists(tileMarkerInfo) then
+        genStateTable.tileMarkerTable[tileID] = nil
+    end
+end
+
+-- gen.removeAllMarkers(tribeOrNil,markerTypeOrNil) --> void
+-- removes all markers of markerType for tribe
+-- if tribe not specified, removes all markerType markers for all tribes
+-- if markerType not specified, removes all markers for tribe
+-- if neither specified, removes all markers for all tribes
+function gen.removeAllMarkers(tribe,markerType)
+    markerType = markerType and string.lower(markerType)
+    local tileMarkerTable = genStateTable.tileMarkerTable
+    if not markerType then
+        for tileID, tileMarkerInfo in pairs(tileMarkerTable) do
+            gen.removeMarkersFromTile(getTileFromId(tileID),tribe)
+        end
+        return
+    end
+    if not markerOptions[markerType] then
+        error("gen.removeAllMarkers: the markerType \""..markerType.."\" is invalid.  Attempting to remove markers  for tribe "..tostring(tribe)..".  "..validMarkerOptionsList)
+    end
+    if tribe then
+        for tileID, tileMarkerInfo in pairs(tileMarkerTable) do
+            gen.removeMarker(getTileFromId(tileID),tribe,markerType)
+        end
+        return
+    end
+    for tileID, tileMarkerInfo in pairs(tileMarkerTable) do
+        for i=0,7 do
+            local t = civ.getTribe(i)
+            if t then
+                gen.removeMarker(getTileFromId(tileID),t,markerType)
+            end
+        end
+    end
+    return
+end
+
+
+local function displayMarks(tile,tileMarkerInfo,topMarkerType)
+    if not tileMarkerInfo then
+        return
+    end
+    for tribeID, tribeMarkerInfo in pairs(tileMarkerInfo) do
+        local tribe = civ.getTribe(tribeID)
+        for key,val in pairs(tribeMarkerInfo) do
+            if key ~= "originalChart" then
+                markerOptions[key][2](tile,tribe)
+            end
+        end
+        if topMarkerType and tribeMarkerInfo[topMarkerType] then
+            markerOptions[topMarkerType][2](tile,tribe)
+        end
+    end
+end
+
+
+
+-- gen.showMarker(tile,topMarkerTypeOrNil) --> void
+-- reapplies the charting functions for all markers
+-- on the tile for all players.  If topMarkerType isnt
+-- nil, that marker type is applied again last, in case
+-- there are conflicting markers
+function gen.showMarker(tile,topMarkerType)
+    topMarkerType = topMarkerType and string.lower(topMarkerType)
+    local tileID = getTileID(tile)
+    local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
+    if topMarkerType and (not markerOptions[topMarkerType]) then
+        error("gen.showMaker: the topMarkerType \""..tostring(topMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
+    end
+    displayMarks(tile,tileMarkerInfo,topMarkerType)
+end
+
+-- gen.showAllMarkers(topMarkerTypeOrNil) --> void
+-- reapplies the charting functions for all markers
+-- on all tiles for all players.  If topMarkerType isn't nil,
+-- that marker type is applied last again, in case there
+-- are conflicting markers
+function gen.showAllMarkers(topMarkerType)
+    topMarkerType = topMarkerType and string.lower(topMarkerType)
+    if topMarkerType and (not markerOptions[topMarkerType]) then
+        error("gen.showAllMarkers: the topMarkerType \""..tostring(topMarkerType).."\" id invalid.  "..validMarkerOptionsList)
+    end
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
+        local tile = getTileFromId(tileID)
+        displayMarks(tile,tileMarkerInfo,topMarkerType)
+    end
+end
+
+-- gen.hasMarker(tile,tribe,markerType)
+-- returns true if tile has a marker of markerType for tribe
+function gen.hasMarker(tile,tribe,markerType)
+    markerType = string.lower(markerType)
+    if not markerOptions[markerType] then
+        error("gen.hasMarker: the markerType \""..markerType.."\" is invalid.  Attempting to check for a marker at "..tostring(tile).." for tribe "..tostring(tribe)..".  "..validMarkerOptionsList)
+    end
+    local tileID = gen.getTileId(tile)
+    local tileMarkerInfo = genStateTable.tileMarkerTable[tileID] or {}
+    return not not (tileMarkerInfo[tribe.id] and tileMarkerInfo[tribe.id][markerType])
+end
+
 --]]
 
 

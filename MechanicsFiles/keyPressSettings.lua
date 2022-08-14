@@ -105,5 +105,30 @@ if simpleSettings then
     end
 end
 
-        
+--[[some testing code, can be removed
+local keyboardToMarkerType = {}
 
+keyboardToMarkerType[keyboard.one]="irrigation"
+keyboardToMarkerType[keyboard.two]="mine"
+keyboardToMarkerType[keyboard.three]="farmland"
+keyboardToMarkerType[keyboard.four]="road"
+keyboardToMarkerType[keyboard.five]="railroad"
+keyboardToMarkerType[keyboard.six]="fortress"
+keyboardToMarkerType[keyboard.seven]="airbase"
+keyboardToMarkerType[keyboard.eight]="pollution"
+keyboardToMarkerType[keyboard.nine]="transporter"
+keyboardToMarkerType[keyboard.zero]="testNotMarker"
+        
+function discreteEvents.onKeyPress(keyCode)
+    local markerType = keyboardToMarkerType[keyCode]
+    if not markerType then
+        return
+    end
+    if gen.hasMarker(civ.getCurrentTile(),civ.getCurrentTribe(),markerType) then
+        gen.removeMarker(civ.getCurrentTile(),civ.getCurrentTribe(),markerType)
+    else
+        gen.placeMarker(civ.getCurrentTile(),civ.getCurrentTribe(),markerType)
+    end
+end
+
+--]]
