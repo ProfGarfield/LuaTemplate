@@ -1189,7 +1189,7 @@ end
 -- gen.placePollutionForce(tile)-->void
 -- places pollution, unless the tile has a city, 
 -- transporters and airbases are removed
-function gen.placePollution(tile) 
+function gen.placePollutionForce(tile) 
     tile = toTile(tile)
     if tile.city then
         return
@@ -4377,6 +4377,43 @@ function gen.coverTile(tile,tribe)
     tile.visibility = gen.setBit0(tile.visibility,tribe.id+1)
 end
 
+-- gen.isUnitStackVisible(unitOrTile,tribe) --> boolean
+--
+
+-- gen.revealUnitStack(unitOrTile,tribe) --> void
+-- if unit provided, reveals that unit and all other units on the tile
+-- to the tribe
+-- if tile, reveals all units on the tile (if any are present)
+function gen.revealUnitStack(unitOrTile,tribe)
+    local tile = nil
+    if civ.isUnit(unitOrTile) then
+        tile = unitOrTile.location
+    else
+        tile = toTile(unitOrTile)
+    end
+    for unit in tile.units do
+        unit.visibility = setBit1(unit.visibility,tribe.id+1)
+    end
+end
+
+-- gen.hideUnitStack(unitOrTile,tribe) --> void
+-- if unit provided, hides the unit and all other units on the tile from tribe
+-- if tile provided, hides all units on the tile (if any are present)
+function gen.hideUnitStack(unitOrTile,tribe)
+    local tile = nil
+    if civ.isUnit(unitOrTile) then
+        tile = unitOrTile.location
+    else
+        tile = toTile(unitOrTile)
+    end
+    for unit in tile.units do
+        unit.visibility = setBit0(unit.visibility,tribe.id+1)
+    end
+end
+--
+--
+--
+--
 -- gen.isCityCharted(city,tribe) --> bool
 -- returns true if city is "knownTo" tribe (that is,
 -- will appear on the map if the tile is visible), false otherwise
@@ -4403,6 +4440,9 @@ end
 function gen.unchartCity(city,tribe) 
     city.knownTo = setBit0(city.knownTo,tribe.id+1)
 end
+
+
+
 
 
 local function buildChartingFunctions(name,bitString)
@@ -5006,7 +5046,10 @@ markerOptions["airbase"]={gen.isAirbaseCharted, gen.chartAirbase,gen.unchartAirb
 markerOptions["pollution"]={gen.isPollutionCharted, gen.chartPollution,gen.unchartPollution,"transporter"}
 markerOptions["transporter"]={gen.isTransporterCharted, gen.chartTransporter,gen.unchartTransporter,"pollution"}
 
+gen.markerOptions = markerOptions
+
 local validMarkerOptionsList = 'Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".'
+gen.validMarkerOptionsList = validMarkerOptionsList
 
 -- tileMarkerInfo = {[tribe.id] = {"originalChart"=bitmask, "markerOption"=trueNil}}
 -- if tileMarkerInfo[tribe.id]["markerOption"] is true, then a marker has been placed on that
@@ -5168,7 +5211,7 @@ function gen.removeAllMarkers(tribe,markerType)
 end
 
 
-local function displayMarks(tile,tileMarkerInfo,topMarkerType)
+local function displayMarks(tile,tileMarkerInfo,topMarkerType,secondMarkerType)
     if not tileMarkerInfo then
         return
     end
@@ -5179,6 +5222,9 @@ local function displayMarks(tile,tileMarkerInfo,topMarkerType)
                 markerOptions[key][2](tile,tribe)
             end
         end
+        if secondMarkerType and tribeMarkerInfo[secondMarkerType] then
+            markerOptions[secondMarkerType][2](tile,tribe)
+        end
         if topMarkerType and tribeMarkerInfo[topMarkerType] then
             markerOptions[topMarkerType][2](tile,tribe)
         end
@@ -5187,34 +5233,44 @@ end
 
 
 
--- gen.showMarker(tile,topMarkerTypeOrNil) --> void
+-- gen.showMarker(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
 -- reapplies the charting functions for all markers
 -- on the tile for all players.  If topMarkerType isnt
 -- nil, that marker type is applied again last, in case
 -- there are conflicting markers
-function gen.showMarker(tile,topMarkerType)
+-- the secondMarkerType is applied just before the top marker type
+function gen.showMarker(tile,topMarkerType,secondMarkerType)
     topMarkerType = topMarkerType and string.lower(topMarkerType)
+    secondMarkerType = secondMarkerType and string.lower(topMarkerType)
     local tileID = getTileID(tile)
     local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
     if topMarkerType and (not markerOptions[topMarkerType]) then
         error("gen.showMaker: the topMarkerType \""..tostring(topMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
     end
-    displayMarks(tile,tileMarkerInfo,topMarkerType)
+    if secondMarkerType and (not markerOptions[secondMarkerType]) then
+        error("gen.showMaker: the secondMarkerType \""..tostring(secondMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
+    end
+    displayMarks(tile,tileMarkerInfo,topMarkerType,secondMarkerType)
 end
 
--- gen.showAllMarkers(topMarkerTypeOrNil) --> void
+-- gen.showAllMarkers(topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
 -- reapplies the charting functions for all markers
 -- on all tiles for all players.  If topMarkerType isn't nil,
 -- that marker type is applied last again, in case there
 -- are conflicting markers
-function gen.showAllMarkers(topMarkerType)
+-- the secondMarkerType is applied just before the top marker type
+function gen.showAllMarkers(topMarkerType,secondMarkerType)
     topMarkerType = topMarkerType and string.lower(topMarkerType)
+    secondMarkerType = secondMarkerType and string.lower(secondMarkerType)
     if topMarkerType and (not markerOptions[topMarkerType]) then
         error("gen.showAllMarkers: the topMarkerType \""..tostring(topMarkerType).."\" id invalid.  "..validMarkerOptionsList)
     end
+    if secondMarkerType and (not markerOptions[secondMarkerType]) then
+        error("gen.showAllMarkers: the secondMarkerType \""..tostring(secondMarkerType).."\" id invalid.  "..validMarkerOptionsList)
+    end
     for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
         local tile = getTileFromId(tileID)
-        displayMarks(tile,tileMarkerInfo,topMarkerType)
+        displayMarks(tile,tileMarkerInfo,topMarkerType,secondMarkerType)
     end
 end
 

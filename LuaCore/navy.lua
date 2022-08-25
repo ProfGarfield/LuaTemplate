@@ -557,6 +557,7 @@ function navy.unitActivationSetCarrierStatus(unit,source,repeatedMove)
 end
 
 function navy.onEnterTile(unit,previousTile,previousDomainSpec)
+    local unitTypeID = unit.type.id
     if not (unit.owner.isHuman or applyToAI) then
         return
     end
