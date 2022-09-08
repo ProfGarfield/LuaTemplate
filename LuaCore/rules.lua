@@ -790,12 +790,15 @@ local function generateRulesLST()
     io.close(file)
     civ.ui.text("A Lua Scenario Template Rules File has been generated at "..fileLocation)
 end
+rules.generateRulesLST = generateRulesLST
 
-
+--[[
+-- moved to LuaCore\scriptIntegrator.lua
 function discreteEvents.onKeyPress(keyID)
     if keyID == keyboard.ctrl.shift.F4 then
         generateRulesLST()
     end
 end
+--]]
 
 return rules

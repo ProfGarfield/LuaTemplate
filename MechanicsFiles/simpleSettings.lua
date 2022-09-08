@@ -4,6 +4,7 @@
 
 local param = require("parameters")
 local object = require("object")
+local gen = require("generalLibrary")
 
 local simpleSettings = {}
 
@@ -60,9 +61,25 @@ simpleSettings.doNotDeleteAITextArchives = nil
 
 -- makes aircraft defend first when units with the
 -- fighter ability attack air protected stacks
-simpleSettings.fightersAttackAirFirst = true
+simpleSettings.fightersAttackAirFirst =  nil
 
 
+-- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
+-- restoreRangeFn(unit) --> bool governs when a unit's range is restored
+-- and is checked when entering the tile and also after the unit has been
+-- given its last order for the turn (i.e. when the unit has all movement
+-- expended and the next unit is activated, or at the end of the turn if it
+-- still has movement points e.g. if sleeping).  
+-- If true, range is restored, if false it is not
+-- By default, range is restored in city squares and on airbases
+-- If you want to clear movement points (like for air units) do it in this function
+-- Land and Sea units must now abide by range limitations set in rules.txt (if they are not 0)
+-- if applyToAI is true, the AI will lose units when it violates these limits
+
+simpleSettings.rangeForLandAndSea = true
+if simpleSettings.rangeForLandAndSea then
+    gen.activateRangeForLandAndSea(nil,false)
+end
 
 
 

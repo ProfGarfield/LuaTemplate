@@ -197,6 +197,7 @@ const testObject = false;
 io.write(fileOutput)
 io.close(file)
 print("object.js file written to "..fileLocation)
+civ.ui.text("object.js file written to "..fileLocation)
 
 
 

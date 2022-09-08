@@ -65,6 +65,20 @@ function discreteEvents.onScenarioLoaded()
 end
 
 
+-- use this function to set a unit out of range message for
+-- units that run out of range due to events.
+-- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
+-- if textOrFunction is a string, the text is shown when a unit is 
+-- lost due to being out of range, and title is the box title
+-- (if this is governed by events and not standard movement)
+-- %STRING1 substitutes for the unit type's name
+--
+-- if textOrFunction is a function(unit) --> void
+-- the function is trusted to generate the loss of fuel message
+-- The default message is the standard out of range message
+
+
+
 local param = {}
 
 

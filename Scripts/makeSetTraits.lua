@@ -1,16 +1,28 @@
 
 local object = require("object")
 
+local consoleWarnings = false
 
 local terrainTypesPerMap={[0]=11,[1]=11,[2]=11,[3]=11}
 local width,height,n_maps = civ.getAtlasDimensions()
+--for i=0,n_maps-1 do
+--    local question = civ.ui.createDialog()
+--    question:addText("How many terrain types does map "..tostring(i).." have?")
+--    for j=16,11,-1 do
+--        question:addOption(tostring(j),j)
+--    end
+--    terrainTypesPerMap[i]=question:show()
+--end
 for i=0,n_maps-1 do
     local question = civ.ui.createDialog()
     question:addText("How many terrain types does map "..tostring(i).." have?")
     for j=16,11,-1 do
-        question:addOption(tostring(j),j)
+        local exists, ter = pcall(civ.getTerrain,i,j,0)
+        if exists then
+            terrainTypesPerMap[i] = j
+            break
+        end
     end
-    terrainTypesPerMap[i]=question:show()
 end
 
 local function findObjectKey(compareStr,arg1,arg2,arg3)
@@ -62,6 +74,7 @@ for i=0,(civ.cosmic.numberOfUnitTypes-1) do
         fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
     else
         print("Warning: could not find entry in object table for unit type "..tostring(i))
+        consoleWarnings = true
     end
 end
 
@@ -78,6 +91,7 @@ for i=0,7 do
         fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
     else
         print("Warning: could not find entry in object table for tribe "..tostring(i))
+        consoleWarnings = true
     end
 end
 
@@ -98,6 +112,7 @@ for i=0,255 do
             fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
         else
             print("Warning: could not find entry in object table for tech "..tostring(i))
+        consoleWarnings = true
         end
     end
 end
@@ -115,6 +130,7 @@ for i=0,39 do
         fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
     else
         print("Warning: could not find entry in object table for improvement "..tostring(i))
+        consoleWarnings = true
     end
 end
 
@@ -131,6 +147,7 @@ for i=0,27 do
         fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
     else
         print("Warning: could not find entry in object table for wonder "..tostring(i))
+        consoleWarnings = true
     end
 end
 io.write(fileOutput)
@@ -147,6 +164,7 @@ for mp =0,(n_maps-1) do
             fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
         else
             print("Warning: could not find entry in object table for BaseTerrain map "..tostring(mp)..", terrain "..tostring(terrainIndex))
+        consoleWarnings = true
         end
     end
 end
@@ -168,6 +186,7 @@ for mp =0,(n_maps-1) do
                     fileOutput = fileOutput.."traits.assign(object."..key..",\"sample trait 1\")\n"
                 else
                     print("Warning: could not find entry in object table for Terrain map "..tostring(mp)..", terrain "..tostring(terrainIndex)..", resource "..tostring(resource))
+                    consoleWarnings = true
                 end
             end
         end
@@ -186,4 +205,9 @@ civ.sleep(1000)
 print("")
 print("Basic setTraits file written to "..fileLocation)
 print("")
+if consoleWarnings then
+    civ.ui.text("Basic setTraits file written to "..fileLocation.. ".  Warnings were generated, use CTRL+SHIFT+F3 to open the console.")
+else
+    civ.ui.text("Basic setTraits file written to "..fileLocation)
+end
 

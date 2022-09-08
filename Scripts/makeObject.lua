@@ -343,6 +343,7 @@ io.close(file)
 
 
 print("Basic object file written to "..fileLocation)
+civ.ui.text("Basic object file written to "..fileLocation)
 
 
 

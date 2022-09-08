@@ -310,6 +310,16 @@ function discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDom
     end
 end
 
+
+eventsTable.onFinalOrderGiven = {}
+eventsTable.onFinalOrderGivenIndex = 1
+
+function discreteEvents.performOnFinalOrderGiven(unit)
+    for i = 1,eventsTable.onFinalOrderGivenIndex-1 do
+        eventsTable.onFinalOrderGiven[i](unit)
+    end
+end
+
 local registeredEventTypes =
 [[
 discreteEvents.onActivateUnit 
@@ -339,6 +349,7 @@ discreteEvents.onSchism
 discreteEvents.onSave
 discreteEvents.onEnterTile
 discreteEvents.onEnterTilePriority
+discreteEvents.onFinalOrderGiven
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -379,6 +390,7 @@ discreteEvents.performOnSchism
 discreteEvents.performOnSave
 discreteEvents.performOnEnterTile
 discreteEvents.performOnEnterTilePriority
+discreteEvents.performOnFinalOrderGiven
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then

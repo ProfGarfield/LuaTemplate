@@ -25,6 +25,7 @@ local gen = require("generalLibrary")
 
 
 local dialog = civ.ui.createDialog()
+dialog:addText("PolygonScript will clear your existing key press events until you reload the game.  Choose Cancel if you don't want this to happen yet.")
 dialog:addOption("Start doing Polygon Stuff.",1)
 dialog:addOption("Tell me about PolygonScript.",2)
 dialog:addOption("Cancel.",3)

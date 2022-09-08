@@ -1108,7 +1108,7 @@ text.simpleTabulation=simpleTabulation
 
 local function simpleTabTableToText(tabulationData,borderWidth1,borderWidth2)
     
-    borderWidth = 4
+    local borderWidth = 4
     if type(borderWidth1) == "number" then
         borderWidth = borderWidth1
     end

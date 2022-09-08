@@ -426,9 +426,18 @@ end
 -- gen.removeMarker(tile,tribe,markerOption) --> void
 -- gen.maintainTileMarkerTable() --> void
 -- gen.removeAllMarkers(tribeOrNil,markerTypeOrNil) --> void
--- gen.showMarker(tile,topMarkerTypeOrNil) --> void
+-- gen.showAllMarkersOnTile(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
 -- gen.showAllMarkers(topMarkerTypeOrNil) --> void
 -- gen.hasMarker(tile,tribe,markerType)
+-- gen.isMarkerVisible(tile,tribe,markerType)
+-- gen.hideMarker(tile,tribe,markerType)
+-- gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
+-- gen.showMarker(tile,tribe,markerType)
+-- gen.showMarkerOnAllTiles(tribe,markerType)
+-- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
+-- gen.outOfRangeMessage(unit) --> void
+-- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
+-- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate) -> void
 --
 --
 --
@@ -3127,6 +3136,12 @@ function gen.getTilesInRadius(centre,radius,minRadius,maps)
     centre = toTile(centre)
     local cX,cY,cZ = centre.x,centre.y,centre.z
     minRadius = minRadius or 0
+    if type(radius) ~= "number" or math.floor(radius) ~= radius then
+        error("gen.getTilesInRadius: radius (argument 2) must be an integer.  Received: "..tostring(radius))
+    end
+    if type(minRadius) ~= "number" or math.floor(minRadius) ~= minRadius then
+        error("gen.getTilesInminRadius: minRadius (argument 2) must be an integer.  Received: "..tostring(minRadius))
+    end
     local doMap = {}
     if type(maps) == "number" then
         doMap[maps] = true
@@ -4377,8 +4392,27 @@ function gen.coverTile(tile,tribe)
     tile.visibility = gen.setBit0(tile.visibility,tribe.id+1)
 end
 
--- gen.isUnitStackVisible(unitOrTile,tribe) --> boolean
---
+-- gen.isUnitStackVisible(unitOrTile,tribe,emptyTileReturnValue=nil) --> boolean or emptySquareReturnValue
+-- if unit provided, returns true if that unit is visible to tribe, and false if not
+-- a tribe's units are visible to it (even though unit.visibility doesn't show this)
+-- if tile provided, returns true if there are units on the tile and the tribe can see them,
+-- false if units are on the tile and the tribe can't see them, and
+-- returns emptyTileReturnValue (default nil) if there are no units on the tile
+-- 
+function gen.isUnitStackVisible(unitOrTile,tribe,emptyTileReturnValue)
+    if civ.isUnit(unitOrTile) then
+        return (unitOrTile.owner == tribe) or isBit1(unitOrTile.visibility,tribe.id+1)
+    end
+    if civ.isTile(unitOrTile) then
+        if not unitOrTile.defender then
+            return emptyTileReturnValue
+        end
+        local unit = unitOrTile.units()
+        return (unit.owner == tribe) or isBit1(unit.visibility,tribe.id+1)
+    end
+    error("gen.isUnitStackVisibile: first argument must be a unit or a tile.  Received: "..tostring(unitOrTile))
+end
+
 
 -- gen.revealUnitStack(unitOrTile,tribe) --> void
 -- if unit provided, reveals that unit and all other units on the tile
@@ -5233,22 +5267,22 @@ end
 
 
 
--- gen.showMarker(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
+-- gen.showAllMarkersOnTile(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
 -- reapplies the charting functions for all markers
 -- on the tile for all players.  If topMarkerType isnt
 -- nil, that marker type is applied again last, in case
 -- there are conflicting markers
 -- the secondMarkerType is applied just before the top marker type
-function gen.showMarker(tile,topMarkerType,secondMarkerType)
+function gen.showAllMarkersOnTile(tile,topMarkerType,secondMarkerType)
     topMarkerType = topMarkerType and string.lower(topMarkerType)
     secondMarkerType = secondMarkerType and string.lower(topMarkerType)
     local tileID = getTileID(tile)
     local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
     if topMarkerType and (not markerOptions[topMarkerType]) then
-        error("gen.showMaker: the topMarkerType \""..tostring(topMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
+        error("gen.showAllMarkersOnTile: the topMarkerType \""..tostring(topMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
     end
     if secondMarkerType and (not markerOptions[secondMarkerType]) then
-        error("gen.showMaker: the secondMarkerType \""..tostring(secondMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
+        error("gen.showAllMarkersOnTile: the secondMarkerType \""..tostring(secondMarkerType).."\" id invalid.  Attempting to show markers for tile "..tostring(tile)..".  "..validMarkerOptionsList)
     end
     displayMarks(tile,tileMarkerInfo,topMarkerType,secondMarkerType)
 end
@@ -5286,7 +5320,294 @@ function gen.hasMarker(tile,tribe,markerType)
     return not not (tileMarkerInfo[tribe.id] and tileMarkerInfo[tribe.id][markerType])
 end
 
---]]
+-- gen.isMarkerVisible(tile,tribe,markerType)
+-- returns true if the tile has the markerType and the markerType is charted, false otherwise
+function gen.isMarkerVisible(tile,tribe,markerType)
+    markerType = string.lower(markerType)
+    if not markerOptions[markerType] then
+        error("gen.hasMarker: the markerType \""..markerType.."\" is invalid.  Attempting to check for a marker at "..tostring(tile).." for tribe "..tostring(tribe)..".  "..validMarkerOptionsList)
+    end
+    return gen.hasMarker(tile,tribe,markerType) and markerOptions[markerType][1](tile,tribe)
+end
+
+-- gen.hideMarker(tile,tribe,markerType)
+-- uncharts the marker for the tribe, but does not remove the marker
+-- does nothing if the tribe doesn't have that marker
+-- or if the marker is already hidden
+function gen.hideMarker(tile,tribe,markerType)
+    markerType = string.lower(markerType)
+    if not markerOptions[markerType] then
+        error("gen.hasMarker: the markerType \""..markerType.."\" is invalid.  Attempting to check for a marker at "..tostring(tile).." for tribe "..tostring(tribe)..".  "..validMarkerOptionsList)
+    end
+    -- (gen.isMarkerVisible checks if the marker is actually there)
+    if not gen.isMarkerVisible(tile,tribe,markerType) then 
+        return
+    end
+    -- show the original chart, then add back any other markers
+    local tileID = gen.getTileId(tile)
+    local tileMarkerInfo = genStateTable.tileMarkerTable[tileID] or {}
+    tile.visibleImprovements[tribe] = tileMarkerInfo[tribe.id]["originalChart"]
+    for key,val in pairs(tileMarkerInfo[tribe.id]) do
+        if key ~= "originalChart" and key ~= markerType then
+            markerOptions[key][2](tile,tribe)
+        end
+    end
+end
+
+-- gen.hideAllMarkersOnTile(tile,tribe)
+-- hides all markers on a given tile for the given tribe
+function gen.hideAllMarkersOnTile(tile,tribe)
+    for key,_ in pairs(markerOptions) do
+        gen.hideMarker(tile,tribe,key)
+    end
+end
+
+
+-- gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
+-- hides all markers of the given type for that tribe
+-- if tribe not specified, hides all markers of given type for
+-- all tribes
+-- if markerType not specified, hides markers of all types
+
+function gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
+        if tribeOrNil then
+            if markerTypeOrNil then
+                gen.hideMarker(getTileFromID(tileID),tribeOrNil,markerTypeOrNil)
+            else
+                gen.hideAllMarkersOnTile(getTileFromID(tileID),tribeOrNil)
+            end
+        else
+            for i=0,7 do
+                local tribe = civ.getTribe(i)
+                if tribe then
+                    if markerTypeOrNil then
+                        gen.hideMarker(getTileFromID(tileID),tribe,markerTypeOrNil)
+                    else
+                        gen.hideAllMarkersOnTile(getTileFromID(tileID),tribe)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- gen.showMarker(tile,tribe,markerType)
+-- shows the markerType for the tribe on the tile, if the marker is on the tile
+function gen.showMarker(tile,tribe,markerType)
+    if gen.hasMarker(tile,tribe,markerType) then
+        markerOptions[markerType][2](tile,tribe)
+    end
+end
+-- gen.showMarkerOnAllTiles(tribe,markerType)
+function gen.showMarkerOnAllTiles(tribe,markerType)
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
+        gen.showMarker(getTileFromID(tileID),tribe,markerType)
+    end
+end
+
+
+
+
+local outOfRangeMessageFn = function(unit)
+    local message =  "Your aircraft has run out of fuel.  Fighter and Missile units must return to a city or Carrier at the end of each turn.  Bomber units must return at the end of their second turn."
+    local dialog = civ.ui.createDialog()
+    dialog.title = "Civ Rules: Fuel"
+    dialog:addText(message)
+    dialog:show()
+    return
+end
+
+-- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
+-- if textOrFunction is a string, the text is shown when a unit is 
+-- lost due to being out of range, and title is the box title
+-- (if this is governed by events and not standard movement)
+-- %STRING1 substitutes for the unit type's name
+--
+-- if textOrFunction is a function(unit) --> void
+-- the function is trusted to generate the loss of fuel message
+function gen.setOutOfRangeMessage(textOrFunction,title)
+    if type(textOrFunction) == "string" then
+        local function fuelMessage(unit)
+            if type(title) ~= "string" and type(title) ~= "nil" then
+                error("gen.setOutOfRangeMessage: second argument should be a string or nil.  Received: "..tostring(title))
+            end
+            local message = string.gsub(textOrFunction,"%%STRING1",unit.type.name)
+            local dialog = civ.ui.createDialog()
+            dialog.title = title
+            dialog:addText(message)
+            dialog:show()
+            return
+        end
+        outOfRangeMessageFn = fuelMessage
+        return
+    end
+    if type(textOrFunction) == "function" then
+        outOfRangeMessageFn = textOrFunction
+    end
+    error("gen.setOutOfRangeMessage: First argument should be a string or a function(unit)-->void.  Received: "..tostring(textOrFunction))
+end
+
+-- gen.outOfRangeMessage(unit) --> void
+-- shows the out of range message for a unit
+function gen.outOfRangeMessage(unit)
+    outOfRangeMessageFn(unit)
+end
+
+local rangeLimitsForLandAndSea = false
+local rangeLimitsForLandAndSeaAI = false
+local restoreRangeFunction = function(unit)
+    return unit.location.city or gen.hasAirbase(unit.location)
+end
+
+-- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
+-- restoreRangeFn(unit) --> bool governs when a unit's range is restored
+-- and is checked when entering the tile and also after the unit has been
+-- given its last order for the turn (i.e. when the unit has all movement
+-- expended and the next unit is activated, or at the end of the turn if it
+-- still has movement points e.g. if sleeping).  
+-- If true, range is restored, if false it is not
+-- By default, range is restored in city squares and on airbases
+-- If you want to clear movement points (like for air units) do it in this function
+-- Land and Sea units must now abide by range limitations set in rules.txt (if they are not 0)
+-- if applyToAI is true, the AI will lose units when it violates these limits
+function gen.activateRangeForLandAndSea(restoreRangeFn,applyToAI)
+    if rangeLimitsForLandAndSea then
+        print("WARNING gen.activateRangeForLandAndSea: this function appears to have been run more than once, so nothing further was done.  If you don't have range for land and sea, seek help from Prof. Garfield.")
+        return
+    end
+    if not fileFound then
+        print("WARNING gen.activateRangeForLandAndSea: discreteEventsRegistrar.lua was not found, so range for land and sea was not activated.")
+        return
+    end
+    for i=0, civ.cosmic.numberOfUnitTypes-1 do
+        local unitType = civ.getUnitType(i)
+        if unitType.range > 0 and unitType.domain ~= 1 and (unitType.role == 5 or unitType.role == 7) then
+            error("gen.activateRangeForLandAndSea: The unit type "..unitType.name.." ("..tostring(i)..") has been assigned a range of "..tostring(unitType.range).." along with a role of "..tostring(unitType.role)..".  However, settler and trade units (roles 5 and 7) can't be given these limitations (since they use domainSpec for their special roles.")
+        end
+    end
+    rangeLimitsForLandAndSea = true
+    rangeLimitsForLandAndSeaAI = applyToAI or false
+    if restoreRangeFn then
+        restoreRangeFunction = restoreRangeFn
+        if type(restoreRangeFn) ~= "function" then
+            error("gen.activateRangeForLandAndSea: the first argument must be either nil or a function(unit)-->bool.  Received "..tostring(restoreRangeFn))
+        end
+    end
+    function discreteEvents.onFinalOrderGiven(unit)
+        local unitType = unit.type
+        if not (unit.owner.isHuman or rangeLimitsForLandAndSeaAI) then
+            return
+        end
+        if unitType.domain == 1 or unitType.range == 0 then
+            return
+        end
+        unit.domainSpec = unit.domainSpec+1
+        if restoreRangeFunction(unit) then
+            unit.domainSpec = 0
+        end
+        if unit.domainSpec >= unitType.range then
+            outOfRangeMessageFn(unit)
+            for possibleCargo in unit.location.units do
+                if possibleCargo.carriedBy == unit then
+                    gen.killUnit(possibleCargo)
+                end
+            end
+            gen.killUnit(unit)
+        end
+    end
+    function discreteEvents.onEnterTile(unit,previousTile)
+        local unitType = unit.type
+        if not (unit.owner.isHuman or rangeLimitsForLandAndSeaAI) then
+            return
+        end
+        if unitType.domain == 1 or unitType.range == 0 then
+            return
+        end
+        if restoreRangeFunction(unit) then
+            unit.domainSpec = 0
+        end
+    end
+    function discreteEvents.onTribeTurnEnd(turn,tribe)
+        if not(tribe.isHuman or rangeLimitsForLandAndSeaAI) then
+            return
+        end
+        for unit in civ.iterateUnits() do
+            local unitType = unit.type
+            if unit.owner == tribe and unitType.domain ~= 1 and unitType.range ~= 0
+                and moveRemaining(unit) > 0 then
+                unit.moveSpent = moveRemaining(unit)
+                unit.domainSpec = unit.domainSpec + 1
+                if restoreRangeFunction(unit) then
+                    unit.domainSpec = 0
+                end
+                if unit.domainSpec >= unitType.range then
+                    outOfRangeMessageFn(unit)
+                    for possibleCargo in unit.location.units do
+                        if possibleCargo.carriedBy == unit then
+                            gen.killUnit(possibleCargo)
+                        end
+                    end
+                    gen.killUnit(unit)
+                end
+            end
+        end
+    end
+end
+
+-- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate) -> void
+-- increases the expended movement points of the unit
+-- by default, full unit movement points are used, but a different multiplier can be specified
+-- e.g. 1 if you want to spend atomic movement points
+-- If the unit has a range (either natural or through the land and sea extension) and
+-- uses up all its movement for the current turn, its domainSpec is incremented by 1
+-- and the unit is killed if it is out of range.
+-- (exceptions: if the unit is the currently active unit and is a land or sea unit
+-- with range, it won't increment domainSpec, since that is caught immediately
+-- afterward with onFinalOrderGiven; a unit that has already spent its full movement
+-- allowance before the modifier is applied also won't increment)
+-- if points is negative, movement is restored to the unit
+-- if points is a fraction, math.floor(points*multiplier) is used
+-- final move spent is bound between 0 and 255
+function gen.spendMovementPoints(unit,points,multiplier)
+    multiplier = multiplier or totpp.movementMultipliers.aggregate
+	local actualMoveSpent = unit.moveSpent
+	if actualMoveSpent < 0 then
+		actualMoveSpent = actualMoveSpent + 256
+	end
+    local doNotIncrement = false
+    local unitType = unit.type
+    if actualMoveSpent >= unitType.move then
+        doNotIncrement = true
+    end
+    actualMoveSpent = actualMoveSpent + math.floor(points*multiplier)
+    actualMoveSpent = math.min(math.max(actualMoveSpent,0),255)
+    unit.moveSpent = actualMoveSpent
+    if actualMoveSpent < unitType.move or unitType.range == 0 or 
+        (unitType.domain ~= 1 and not(unit.owner.isHuman or rangeLimitsForLandAndSeaAI)) then
+        return
+    end
+    if unitType.domain ~= 1 and unit == civ.getActiveUnit() then
+        doNotIncrement = true
+    end
+    if not doNotIncrement then
+        unit.domainSpec = unit.domainSpec + 1
+    end
+    if restoreRangeFunction(unit) then
+        unit.domainSpec = 0
+    end
+    if unit.domainSpec >= unitType.range then
+        outOfRangeMessageFn(unit)
+        for possibleCargo in unit.location.units do
+            if possibleCargo.carriedBy == unit then
+                gen.killUnit(possibleCargo)
+            end
+        end
+        gen.killUnit(unit)
+    end
+end
+
+
 
 
 

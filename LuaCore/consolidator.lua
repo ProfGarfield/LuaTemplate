@@ -183,6 +183,14 @@ function events.onEnterTile(unit,previousTile)
 
 end
 
+-- onFinalOrderGiven(unit)
+-- executes when a unit has been given its final order for the turn.
+-- that is, when a new unit is active and the previous unit has spent
+-- all its movement points
+function events.onFinalOrderGiven(unit)
+
+end
+
 
 -- ===============================================================================
 --

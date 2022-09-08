@@ -181,6 +181,7 @@ local consolidated = require("consolidatedEvents")
 
 attemptToRun('targetSettings',"WARNING: targetSettings.lua not found.  You will not have strategic targets.")
 attemptToRun('navySettings', "WARNING: navySettings.lua not found.  You will not have the navy settings from that file.")
+attemptToRun('radarSettings',"WARNING: radarSettings.lua not found.  You will not have any radar tools defined in that file.")
 
 
 
@@ -333,6 +334,7 @@ eventsFiles.onCityProcessed = attemptRequireWithKey(individualFileDirectory.."on
 eventsFiles.onTribeTurnEnd = attemptRequireWithKey(individualFileDirectory.."onTribeTurnEnd","onTribeTurnEnd")
 eventsFiles.onCanFoundCity = attemptRequireWithKey(individualFileDirectory.."onCanFoundCity","onCanFoundCity",true)
 eventsFiles.onEnterTile = attemptRequireWithKey(individualFileDirectory.."onEnterTile","onEnterTile")
+eventsFiles.onFinalOrderGiven = attemptRequireWithKey(individualFileDirectory.."onFinalOrderGiven","onFinalOrderGiven")
 
 local function doOnChooseSeason()
     discreteEvents.performOnChooseSeason()
@@ -391,6 +393,17 @@ local function onEnterTile(unit,previousTile,previousDomainSpec)
     eventsFiles.onEnterTile(unit,previousTile)
 end
 
+registeredInThisFile["onEnterTile"] = true
+-- onFinalOrderGiven(unit)
+-- executes when a unit has been given its last order for the turn
+-- that is, when a new unit is active, and the previous unit has spent
+-- all its movement points
+local function onFinalOrderGiven(unit)
+    discreteEvents.performOnFinalOrderGiven(unit)
+    consolidated.onFinalOrderGiven(unit)
+    eventsFiles.onFinalOrderGiven(unit)
+end
+registeredInThisFile["onFinalOrderGiven"] = true
 
 local previousUnitActivated = nil
 local locationOfPreviousUnitActivated = nil
@@ -402,6 +415,10 @@ local function executeOnEnterTile(currentActiveUnit)
     if previousUnitActivated and previousUnitActivated.location ~= locationOfPreviousUnitActivated
         and previousUnitActivated.location.x < 60000 then
         onEnterTile(previousUnitActivated,locationOfPreviousUnitActivated,previousDomainSpec)
+    end
+    if previousUnitActivated and gen.moveRemaining(previousUnitActivated) <= 0 and
+        previousUnitActivated.location.x < 60000 then
+        onFinalOrderGiven(previousUnitActivated)
     end
     previousUnitActivated = currentActiveUnit
     if previousUnitActivated then
@@ -1007,3 +1024,9 @@ for registerName,registerFunction in pairs(civ.scen) do
         end
     end
 end
+
+local scriptIntegratorFound,prefix = requireIfAvailable("Scripts\\scriptIntegrator")
+if not scriptIntegratorFound then
+    print("WARNING: Did not find Scripts\\scriptIntegrator.lua.  CTRL+SHIFT+F4 script menu not available.")
+end
+

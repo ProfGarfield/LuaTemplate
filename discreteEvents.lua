@@ -218,6 +218,16 @@ function discreteEvents.onEnterTile(unit,previousTile)
 
 end
 
+-- onFinalOrderGiven(unit)
+-- executes when a unit has been given its final order for the turn.
+-- that is, when a new unit is active and the previous unit has spent
+-- all its movement points
+function discreteEvents.onFinalOrderGiven(unit)
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onFinalOrderGiven: "..unit.type.name.." has been given its order.")
+    end
+end
+
 -- ===============================================================================
 --
 --          End of File
