@@ -4,6 +4,13 @@ local munitionSettings = {}
 local object = require("object")
 local gen = require("generalLibrary")
 
+-- This disables the workaround where air units
+-- are left with 1 movement point, so they expend their range unit of range
+-- (which wouldn't happen if their moveSpent was changed by event so they have
+-- no more movement for the turn)
+-- This is now corrected, but the option is enabled by default for backward compatibility
+munitions.airCanHaveZeroMovement()
+
 --specificationTable[unitType.id]={
 --
 -- goldCost = integer or nil
@@ -45,7 +52,7 @@ local gen = require("generalLibrary")
 -- postGenMinMoveAtomic = integer or nil
 --      a unit will be left with at least this many movement points after
 --      the generation function
---      absent means 0 for land/sea, 1 "atomic" for air units
+--      absent means 0 for land/sea, 1 "atomic" for air units (unless munitions.airCanHaveZeroMovement() is run)
 -- moveCostFraction = number in [0,1] or nil
 --      fraction of unit's total movement points expended generating the unit
 --      round up to nearest "atomic" movement point
@@ -58,7 +65,7 @@ local gen = require("generalLibrary")
 -- postGenMinMoveFraction = number in [0,1] or nil
 --      a unit will be left with at least this many movement points after
 --      the generation function, round up to nearest "atomic" move point
---      absent means 0 for land/sea, 1 "atomic" for air units
+--      absent means 0 for land/sea, 1 "atomic" for air units(unless munitions.airCanHaveZeroMovement() is run)
 -- roundFractionFull = bool or nil
 --      fractional movement cost and minimum are rounded up to full movement point
 --      instead of atomic movement point
@@ -167,12 +174,25 @@ local gen = require("generalLibrary")
 
 -- This is the primary attack specification table
 local primaryAttackTable = {}
+--[[
+primaryAttackTable[gen.original.uBomber.id] = {
+    generatedUnitType = gen.original.uCruiseMsl,
+    moveCost = 4,
+}
+--]]
+
 
 
 
 
 -- This is the secondary attack specification table
 local secondaryAttackTable = {}
+--[[
+secondaryAttackTable[gen.original.uBomber.id] = {
+    generatedUnitType = gen.original.uCruiseMsl,
+    moveCost = 4,
+}
+--]]
 
 
 local function primaryAttack(generatingUnit)

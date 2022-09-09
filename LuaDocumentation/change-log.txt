@@ -1,0 +1,9 @@
+Changes since 9 September 2022
+
+delayedActions now throws an error if the action is "delayed" to a turn/tribe in the past.
+
+eventTools.lua rendered superfluous as the unit upgrade check can work even if there is no next unit activated.  File is still available and references (in promotion.lua, parameters.lua, events.lua) are commented out, just in case a problem arises and they must be restored.
+
+munitions.lua no longer requires air units to be left with 1 movement point after generating the munition.  munitionsSettings.lua runs the function to disable this as part of standard code. (For backwards compatibility of functionality, the function must be run to allow air units to have zero MP)
+
+

@@ -159,7 +159,7 @@ attemptToRun('keyPressSettings',"WARNING: did not find keyPressSettings.lua.  Yo
 
 --local attackBonusSettings = require("attackBonusSettings")
 local delayedAction = require("delayedAction")
-local eventTools = require("eventTools")
+--local eventTools = require("eventTools")
 local promotion = require("promotion")
 local promotionSettings = require("promotionSettings")
 local simpleSettings = require("simpleSettings")
@@ -504,7 +504,7 @@ civ.scen.onActivateUnit(function(unit,source,repeatMove)
     promotionSettings.performPendingUpgrades()
     diplomacy.checkTreaties()
     doOnUnitActivation(unit,source,repeatMove)
-    eventTools.unitActivation(unit,source)
+    --eventTools.unitActivation(unit,source)
     suppressActivateUnitBackstop = false
 end)
 
@@ -520,7 +520,7 @@ local function doAfterProduction(turn,tribe)
     eventsFiles.onAfterProduction(turn,tribe)
     eventsFiles.onCityProcessingComplete(turn,tribe)
     delayedAction.doAfterProduction(turn,tribe)
-    eventTools.maintainUnitActivationTable()
+    --eventTools.maintainUnitActivationTable()
     suppressActivateUnitBackstop = false
 end
 civ.scen.onCityProcessingComplete(doAfterProduction)
@@ -569,7 +569,7 @@ end
 -- if the unit is not being 'replaced', replacingUnit will be nil
 local function doOnUnitDeletion(deletedUnit,replacingUnit)
     eventsFiles.onUnitDeleted(deletedUnit,replacingUnit)
-    eventTools.unitDeletion(deletedUnit)
+    --eventTools.unitDeletion(deletedUnit)
 end
 registeredInThisFile["onUnitDeath"] = true
 
@@ -773,7 +773,7 @@ civ.scen.onScenarioLoaded(function ()
         doOnUnitActivation(civ.getActiveUnit(),false)
         --executeOnEnterTile(civ.getActiveUnit())
     end
-    eventTools.maintainUnitActivationTable()
+    --eventTools.maintainUnitActivationTable()
     activateUnitBackstopMostRecent = true -- around this time, the backstop runs for some unknown reason, this stops that until unit activation happens again
     suppressActivateUnitBackstop = false
     humanPlayerActive = civ.getCurrentTribe().isHuman

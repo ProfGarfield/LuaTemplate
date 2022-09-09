@@ -7,7 +7,7 @@
 
 local gen = require("generalLibrary")
 local text = require("text")
-local eventTools = require("eventTools")
+--local eventTools = require("eventTools")
 local discreteEvents = require("discreteEventsRegistrar")
 
 text.setMoney("%STRING1 gold")
@@ -28,6 +28,11 @@ text.setVeteranTitle("Veteran")
 text.setShortVeteranTitle("Vet")
 -- sets the string that is returned by text.getShortVeteranTitle()
 
+--[[ This eventTools functionality has been replaced by the activateUnitBackstop
+--      in events.lua that was made available by onGetFormatted date
+--      and by the civ.scen.onCityProcessingComplete
+--      This code hasn't been removed yet, just in case something breaks and 
+--      eventTools still needed
 
 -- The event tools have functionality to guarantee that a tribe
 -- will have an active unit.  This ensures that after production
@@ -58,6 +63,9 @@ local function activationLocationFunction(tribe)
     return activationLocations[tribe.id]
 end
 eventTools.setGuaranteeActivationUnitLocationFunction(activationLocationFunction)
+
+-- This is the end of the eventTools code for this file
+--]]
 
 
 function discreteEvents.onScenarioLoaded()

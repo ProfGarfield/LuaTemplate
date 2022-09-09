@@ -96,7 +96,17 @@ end
 
 
 
+local leaveAirWithOneMovementPoint = true 
+-- this is the workaround where air units
+-- are left with 1 movement point, so they expend their range unit of range
+-- (which wouldn't happen if their moveSpent was changed by event so they have
+-- no more movement for the turn)
+-- This is now corrected, but the option is enabled by default for backward compatibility
 
+-- disables the above workaround
+local function airCanHaveZeroMovement()
+    leaveAirWithOneMovementPoint = false
+end
 
 
 
@@ -413,7 +423,7 @@ local function spawnUnit(generatingUnit,specificationTable,onUnitActivateFn)
         end
     end
     local afterGenMinMoveAtomic = 0
-    if generatingUnit.type.domain == 1 then
+    if generatingUnit.type.domain == 1 and leaveAirWithOneMovementPoint then
         afterGenMinMoveAtomic = 1
     end
     if specification.postGenMinMove then
@@ -431,11 +441,14 @@ local function spawnUnit(generatingUnit,specificationTable,onUnitActivateFn)
         end
     end
     local maxMoveSpentAtomic = gen.maxMoves(generatingUnit)-afterGenMinMoveAtomic
+    --[[
 	local actualMoveSpent = generatingUnit.moveSpent
 	if actualMoveSpent < 0 then
 		actualMoveSpent = actualMoveSpent + 256
 	end
     generatingUnit.moveSpent = math.min(maxMoveSpentAtomic,actualMoveSpent+atomicMoveCost)
+    --]]
+    gen.spendMovementPoints(generatingUnit,atomicMoveCost,1,maxMoveSpentAtomic,0)
     if specification.payload then
         generatingUnit.homeCity = nil
     end
@@ -565,6 +578,7 @@ return {
     onProdPayloadRestrictionCheck = onProdPayloadRestrictionCheck,
     afterProductionReArm = afterProductionReArm,
     activationReArm = activationReArm,
+    airCanHaveZeroMovement = airCanHaveZeroMovement,
 
 }
 

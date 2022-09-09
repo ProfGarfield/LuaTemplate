@@ -12,7 +12,7 @@ local text = require("text")
 local munition = require("munitions")
 local gamePromotionChance = 0.5 -- Don't change this, it is here so there are not a lot of 'magic' 0.5 floating around
 local civlua = require("civluaModified")
-local eventTools = require("eventTools")
+--local eventTools = require("eventTools")
 
 local promotion = {}
 local promotionState = "promotionStateNotLinked"
@@ -329,7 +329,8 @@ local function checkForUpgrade(winner,loser,upgradeChanceFn,loserTile,loserVetSt
     end
     if math.random()<upgradeChance and civ.isUnitType(upgradeUnitType) and winnerUpgradeNotPending(winner) then
         promotionState.pendingPromotions[#promotionState.pendingPromotions+1] = {unitID = winner.id,replacementTypeID = upgradeUnitType.id, promotionInfoTable = promotionInfoTable}
-        eventTools.guaranteeUnitActivation(winner.owner)
+        --eventTools.guaranteeUnitActivation(winner.owner)
+        -- activateUnitBackstop made available by onGetFormattedDate renders guaranteeUnitActivation unnecessary
     end
 end
 promotion.checkForUpgrade = checkForUpgrade

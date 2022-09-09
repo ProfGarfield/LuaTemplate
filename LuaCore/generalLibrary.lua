@@ -437,7 +437,7 @@ end
 -- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
 -- gen.outOfRangeMessage(unit) --> void
 -- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
--- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate) -> void
+-- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
 --
 --
 --
@@ -5555,7 +5555,7 @@ function gen.activateRangeForLandAndSea(restoreRangeFn,applyToAI)
     end
 end
 
--- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate) -> void
+-- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
 -- increases the expended movement points of the unit
 -- by default, full unit movement points are used, but a different multiplier can be specified
 -- e.g. 1 if you want to spend atomic movement points
@@ -5568,8 +5568,11 @@ end
 -- allowance before the modifier is applied also won't increment)
 -- if points is negative, movement is restored to the unit
 -- if points is a fraction, math.floor(points*multiplier) is used
--- final move spent is bound between 0 and 255
-function gen.spendMovementPoints(unit,points,multiplier)
+-- final move spent is bound between maxSpent and minSpent, which are by default
+-- 255 and 0 respectively
+function gen.spendMovementPoints(unit,points,multiplier,maxSpent,minSpent)
+    maxSpent = maxSpent or 255
+    minSpent = minSpent or 0
     multiplier = multiplier or totpp.movementMultipliers.aggregate
 	local actualMoveSpent = unit.moveSpent
 	if actualMoveSpent < 0 then
@@ -5581,7 +5584,7 @@ function gen.spendMovementPoints(unit,points,multiplier)
         doNotIncrement = true
     end
     actualMoveSpent = actualMoveSpent + math.floor(points*multiplier)
-    actualMoveSpent = math.min(math.max(actualMoveSpent,0),255)
+    actualMoveSpent = math.min(math.max(actualMoveSpent,minSpent),maxSpent)
     unit.moveSpent = actualMoveSpent
     if actualMoveSpent < unitType.move or unitType.range == 0 or 
         (unitType.domain ~= 1 and not(unit.owner.isHuman or rangeLimitsForLandAndSeaAI)) then

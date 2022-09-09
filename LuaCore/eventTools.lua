@@ -1,3 +1,5 @@
+--  At the moment, this is believed to be unnecessary
+--
 -- This is a module that contains stuff to make other events work,
 -- so as not to clutter the general library
 local eventTools = {version=1}
