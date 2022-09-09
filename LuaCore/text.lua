@@ -64,6 +64,15 @@
 -- text.makeReverseListNoGaps(tableOfStrings,listLength=nil)-->string
 -- text.niceList(table)-->string
 -- text.coordinates(tile)-->string
+-- text.lpad(str,length,character) --> string | By Pablostuka
+-- text.rpad(str,length,character) --> string | By Pablostuka
+-- text.pad(str,length,character) --> string | By Pablostuka
+-- text.international(string) --> string | inspired by Pablostuka
+-- text.i(string) --> string (alias for text.international)
+-- text.upper(string) --> string
+-- text.lower(string) --> string
+-- text.iUpper(string) --> string
+-- text.iLower(string) --> string
 --
 -- Control Sequences:
 -- "%PAGEBREAK"
@@ -1541,9 +1550,269 @@ local function coordinates(tile)
 end
 text.coordinates = coordinates
 
+-- String manipulation
+
+-- text.lpad(str,length,character) --> string | By Pablostuka
+-- pad "character" to the left of string "str" to max of "lenght" by Pablostuka
+local function lpad(str,length,character)
+    return string.rep(character,length-#str)..str
+end
+text.lpad = lpad
+
+-- text.rpad(str,length,character) --> string | By Pablostuka
+-- pad "character" to the right of string "str" to max of "lenght"
+local function rpad(str,length,character)
+    return str..string.rep(character, length-#str)
+end
+text.rpad = rpad
+
+-- text.pad(str,length,character) --> string | By Pablostuka
+-- pad "character" on both sides of string "str" to max of "lenght"
+local function pad(str,length,character)
+    -- I use half of both length and str to ensure it's all properly centered
+    local half = rpad(str,(length/2)+math.ceil(#str/2),character)
+    -- rpad the already lpadded string to the full length
+    local full = lpad(half,length,character)
+    -- Ensure it doesn't exceed the max of lenght
+    return string.sub(full, 1, length)
+end
+text.pad = pad
+
+
+
+local extendedASCII = {
+[128] = "€",
+--[129] = "",
+[130] = "‚",
+[131] = "ƒ",
+[132] = "„",
+[133] = "…",
+[134] = "†",
+[135] = "‡",
+[136] = "ˆ",
+[137] = "‰",
+[138] = "Š",
+[139] = "‹",
+[140] = "Œ",
+--[141] = "",
+[142] = "Ž",
+--[143] = "",
+--[144] = "",
+[145] = "‘",
+[146] = "’",
+[147] = "“",
+[148] = "”",
+[149] = "•",
+[150] = "–",
+[151] = "—",
+[152] = "˜",
+[153] = "™",
+[154] = "š",
+[155] = "›",
+[156] = "œ",
+--[157] = "",
+[158] = "ž",
+[159] = "Ÿ",
+--[160] = " ",
+[161] = "¡",
+[162] = "¢",
+[163] = "£",
+[164] = "¤",
+[165] = "¥",
+[166] = "¦",
+[167] = "§",
+[168] = "¨",
+[169] = "©",
+[170] = "ª",
+[171] = "«",
+[172] = "¬",
+[173] = "­",
+[174] = "®",
+[175] = "¯",
+[176] = "°",
+[177] = "±",
+[178] = "²",
+[179] = "³",
+[180] = "´",
+[181] = "µ",
+[182] = "¶",
+[183] = "·",
+[184] = "¸",
+[185] = "¹",
+[186] = "º",
+[187] = "»",
+[188] = "¼",
+[189] = "½",
+[190] = "¾",
+[191] = "¿",
+[192] = "À",
+[193] = "Á",
+[194] = "Â",
+[195] = "Ã",
+[196] = "Ä",
+[197] = "Å",
+[198] = "Æ",
+[199] = "Ç",
+[200] = "È",
+[201] = "É",
+[202] = "Ê",
+[203] = "Ë",
+[204] = "Ì",
+[205] = "Í",
+[206] = "Î",
+[207] = "Ï",
+[208] = "Ð",
+[209] = "Ñ",
+[210] = "Ò",
+[211] = "Ó",
+[212] = "Ô",
+[213] = "Õ",
+[214] = "Ö",
+[215] = "×",
+[216] = "Ø",
+[217] = "Ù",
+[218] = "Ú",
+[219] = "Û",
+[220] = "Ü",
+[221] = "Ý",
+[222] = "Þ",
+[223] = "ß",
+[224] = "à",
+[225] = "á",
+[226] = "â",
+[227] = "ã",
+[228] = "ä",
+[229] = "å",
+[230] = "æ",
+[231] = "ç",
+[232] = "è",
+[233] = "é",
+[234] = "ê",
+[235] = "ë",
+[236] = "ì",
+[237] = "í",
+[238] = "î",
+[239] = "ï",
+[240] = "ð",
+[241] = "ñ",
+[242] = "ò",
+[243] = "ó",
+[244] = "ô",
+[245] = "õ",
+[246] = "ö",
+[247] = "÷",
+[248] = "ø",
+[249] = "ù",
+[250] = "ú",
+[251] = "û",
+[252] = "ü",
+[253] = "ý",
+[254] = "þ",
+[255] = "ÿ",
+}
+
+
+-- text.international(string) --> string | inspired by Pablostuka, 
+-- text.i(string) --> string (alias for text.international)
+-- substitutes extended ascii characters for the correct character
+-- (I'm pretty sure this is a formatting issue, where the text editor
+-- shows an extended ascii character, but records it as 2 characters,
+-- so a formatting change might also be effective, but this is still
+-- likely to be a quick fix in many circumstances)
+local function international(str)
+    for charCode,charRepresentation in pairs(extendedASCII) do
+        str = string.gsub(str,charRepresentation,string.char(charCode))
+    end
+    return str
+end
+text.international = international
+text.i = international
+
+-- lowerToUpper[lowerCaseChar] = upperCaseChar
+local lowerToUpper = {}
+for charCode = 224,254 do
+    if charCode ~= 247 then -- exclude division symbol/multiplication symbol
+        lowerToUpper[string.char(charCode)] = string.char(charCode-32)
+    end
+end
+-- some extra lower/upper pairs
+lowerToUpper[string.char(156)] = string.char(140)
+lowerToUpper[string.char(154)] = string.char(138)
+lowerToUpper[string.char(158)] = string.char(142)
+
+-- text.upper(string) --> string
+-- Makes string uppercase, including uppercasing the international characters
+-- from the extended ASCII table
+-- if you don't use international characters, string.upper is fine
+local function upper(str)
+    str = string.upper(str)
+    for lowercase,uppercase in pairs(lowerToUpper) do
+        str = string.gsub(str,lowercase, uppercase)
+    end
+    return str
+end
+text.upper = upper
+
+-- text.lower(string) --> string
+-- Makes string lowercase, including lowercasing the international characters
+-- from the extended ASCII table
+-- if you don't use international characters, string.lower is fine
+local function lower(str)
+    str = string.lower(str)
+    for lowercase,uppercase in pairs(lowerToUpper) do
+        str = string.gsub(str,uppercase,lowercase)
+    end
+    return str
+end
+text.lower = lower
+
+-- text.iUpper(string) --> string
+-- fixes international characters and makes string upper case
+local function iUpper(str)
+    str = international(str)
+    str = upper(str)
+    return str
+end
+text.iUpper = iUpper
+
+-- text.iLower(string) --> string
+-- fixes international characters and makes string lower case
+local function iLower(str)
+    str = international(str)
+    str = lower(str)
+    return str
+end
+text.iLower = iLower
+
+
+--[=[
+-- text.initCap(string) --> string | By Pablostuka
+-- returns the first letter of each word in uppercase, all other letters in lowercase
+-- p.g. I changed function/variable names to mesh with this module
+-- I also changed lowercase match to match international lower case characters
+local lowerIntChar = {}
+local index = 1
+for charCode = 224,254 do
+    if charCode ~= 247 then
+        lowerIntChar[index] = string.char(charCode)
+        index = index+1
+    end
+end
+local internationalLowerCase = table.concat(lowerIntChar,"")
+local function initCap(str)
+    -- 1) Convert entire text to lowercase
+    str = iLower(str)
+    -- 2) Convert first character to uppercase   
+    -- Patterns (https://www.lua.org/pil/20.2.html)
+    -- If a pattern begins with a `^´, it will match only at the beginning of the subject string
+    -- %l    lower case letters
+    return string.gsub(str,"%s%l"--[["^[%l"..internationalLowerCase.."]"--]],upper)
+end
+text.initCap = initCap
+
+--]=]
+
 return text
-
-
 
 
 
