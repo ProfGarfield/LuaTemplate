@@ -157,6 +157,9 @@ local function doInFuture(functionKey,argTable,turn,tribeID)
     if not delayableFunctionsTable[functionKey] then
         error("doInFuture: "..functionKey.." is not a registered key in the delayable functions table.")
     end
+    if turn < civ.getTurn() or turn == civ.getTurn() and tribeID <= civ.getCurrentTribe().id then
+        error("doInFuture: attempt to set the delayed function in the past. specified turn: "..turn..", specified tribeID: "..tribeID..", current turn: "..civ.getTurn()..", current tribeID:"..civ.getCurrentTribe().id)
+    end
     validateArgumentTable(argTable)
     local actionInfo = {func = functionKey,arguments = argTable, turn = turn, tribeID = tribeID }
     savedActions[#savedActions+1] = actionInfo
