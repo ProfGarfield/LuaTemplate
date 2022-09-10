@@ -73,6 +73,7 @@
 -- text.lower(string) --> string
 -- text.iUpper(string) --> string
 -- text.iLower(string) --> string
+-- text.initCap(string) --> string | By Pablostuka
 --
 -- Control Sequences:
 -- "%PAGEBREAK"
@@ -1785,33 +1786,20 @@ end
 text.iLower = iLower
 
 
---[=[
 -- text.initCap(string) --> string | By Pablostuka
 -- returns the first letter of each word in uppercase, all other letters in lowercase
--- p.g. I changed function/variable names to mesh with this module
--- I also changed lowercase match to match international lower case characters
-local lowerIntChar = {}
-local index = 1
-for charCode = 224,254 do
-    if charCode ~= 247 then
-        lowerIntChar[index] = string.char(charCode)
-        index = index+1
-    end
-end
-local internationalLowerCase = table.concat(lowerIntChar,"")
 local function initCap(str)
     -- 1) Convert entire text to lowercase
     str = iLower(str)
-    -- 2) Convert first character to uppercase   
+    -- 2) Convert to uppercase any character after a space
     -- Patterns (https://www.lua.org/pil/20.2.html)
-    -- If a pattern begins with a `^´, it will match only at the beginning of the subject string
-    -- %l    lower case letters
-    return string.gsub(str,"%s%l"--[["^[%l"..internationalLowerCase.."]"--]],upper)
+    -- Captures (http://www.lua.org/pil/20.3.html)
+    -- Use pattern consisting of %s (space characters) followed by %l (lower case letters)
+    str = string.gsub(str,"(%s%l)",text.iUpper)
+    -- 3) Convert first character to uppercase (if a pattern begins with a `^´, it will match only at the beginning of the subject string)
+    return string.gsub(str,"^%l",text.iUpper)
 end
 text.initCap = initCap
-
---]=]
-
 return text
 
 

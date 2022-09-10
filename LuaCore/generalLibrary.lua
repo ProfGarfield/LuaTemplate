@@ -438,6 +438,7 @@ end
 -- gen.outOfRangeMessage(unit) --> void
 -- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
 -- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
+-- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
 --
 --
 --
@@ -5610,9 +5611,78 @@ function gen.spendMovementPoints(unit,points,multiplier,maxSpent,minSpent)
     end
 end
 
+-- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
+-- Returns one of "N","S","NW","NE","SW","SE" based on the locations
+-- of the compassPoint and compassCentre
+-- e.g. gen.getBearing(Madrid,Paris) --> SW
+--      Madrid is South-West of Paris
+--      We're finding the location of Madrid relative to Paris, hence
+--      Paris is at the compass centre and we're looking for the
+--      bearing of the compass point in the direction of Madrid
+--      gen.getBearing(Paris,Madrid) --> NE
+--      Paris is North-East of Madrid
+-- compassPoint and compassCentre can be units, cities, or tiles
 
-
-
+function gen.getBearing(compassPoint,compassCentre)
+    if type(compassPoint) == "table" then
+        compassPoint = toTile(compassPoint)
+    elseif civ.isTile(compassPoint) then
+        compassPoint = compassPoint
+    elseif civ.isUnit(compassPoint) then
+        compassPoint = compassPoint.location
+    elseif civ.isCity(compassPoint) then
+        compassPoint = compassPoint.location
+    else
+        error("gen.getBearing: first argument must be a tile (or coordinates of a tile) or a unit or a city.  Received: "..tostring(compassPoint))
+    end
+    if type(compassCentre) == "table" then
+        compassCentre = toTile(compassCentre)
+    elseif civ.isTile(compassCentre) then
+        compassCentre = compassCentre
+    elseif civ.isUnit(compassCentre) then
+        compassCentre = compassCentre.location
+    elseif civ.isCity(compassCentre) then
+        compassCentre = compassCentre.location
+    else
+        error("gen.getBearing: second argument must be a tile (or coordinates of a tile) or a unit or a city.  Received: "..tostring(compassPoint))
+    end
+    
+    local compass = ""
+    
+    if compassPoint.y > compassCentre.y then   
+        compass = "S"   
+    elseif compassPoint.y < compassCentre.y then   
+        compass = "N"       
+    end   
+    
+    if civ.game.rules.flatWorld then
+        if compassPoint.x > compassCentre.x then   
+            compass = compass.."E"   
+        elseif compassPoint.x < compassCentre.x then   
+            compass = compass.."W"       
+        end   
+    else
+        local mapWidth,_,_ = civ.getAtlasDimensions()
+        local xDiff = math.abs(compassPoint.x-compassCentre.x)
+        if xDiff <= (mapWidth - xDiff) then
+            -- Shortest distance does not cross date line
+            if compassPoint.x > compassCentre.x then   
+                compass = compass.."E"   
+            elseif compassPoint.x < compassCentre.x then   
+                compass = compass.."W"       
+            end   
+        else
+            -- Shortest distance crosses dateline
+            -- so the larger x is actually to the west
+            if compassPoint.x > compassCentre.x then
+                compass = compass.."W"
+            elseif compassPoint.x < compassCentre.x then   
+                compass = compass.."E"       
+            end   
+        end
+    end
+    return compass
+end
 
 if rawget(_G,"console") then
     _G["console"].gen = gen

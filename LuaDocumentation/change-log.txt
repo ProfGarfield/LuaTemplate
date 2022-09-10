@@ -7,3 +7,8 @@ eventTools.lua rendered superfluous as the unit upgrade check can work even if t
 munitions.lua no longer requires air units to be left with 1 movement point after generating the munition.  munitionsSettings.lua runs the function to disable this as part of standard code. (For backwards compatibility of functionality, the function must be run to allow air units to have zero MP)
 
 
+Added Pablostuka's text.initCap function which capitalizes the first letter of each word in the string.
+
+Modified code provided by Pablostuka for gen.getBearing function.
+
+last update
