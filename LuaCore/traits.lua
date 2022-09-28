@@ -317,7 +317,7 @@ function traits.hasAnyTrait(object,...)
     local arglist = {...}
     for traitString in iterateTraitStrings(arglist,"traits.hasAnyTrait") do
         local tVal = objectTraits[traitString]
-        if not (tVal and (tVal == true or tVal())) then
+        if tVal and (tVal == true or tVal()) then
             return true
         end
     end
