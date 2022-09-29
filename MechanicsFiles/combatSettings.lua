@@ -135,6 +135,17 @@ local function computeCombatStatistics(attacker, defender, isSneakAttack)
     return attackerStrength, attackerFirepower, defenderStrength, defenderFirepower
 end
 
+
+-- this is useful for defenderValueModifier
+local function tileHasCarrierUnit(tile)
+    for unit in tile.units do
+        if gen.isCarryAir(unit.type) then
+            return true
+        end
+    end
+    return false
+end
+local domain = {ground = 0, air = 1, sea = 2}
 -- use this function to add to (or subtract from) the calculated
 -- defender value in order to change onChooseDefender
 -- e.g. if you add 1e8 (100 million) to all air in air protected stacks
@@ -148,9 +159,19 @@ end
 -- This should be less than 10,000 (127*8 = 1016), unless you have defense multipliers 
 -- of 10 or more, and an attacker with 1 attack and facing a 1/8 penalty.
 local function defenderValueModifier(defender,tile,attacker)
+    if simpleSettings.fightersAttackAirFirst and
+        gen.isAttackAir(attacker.type) and defender.type.domain == domain.air 
+        and defender.type.range >= 2 and
+        not gen.hasAirbase(tile) and not tile.city and
+        not tileHasCarrierUnit(tile) then
+        return 1e8
+    end
+    if defender.type.domain == domain.ground and tile.baseTerrain.type == 10 then
+        return -1e8
+    end
     return 0
 end
-
+--[[
 -- a sample function for making fighters attack air protected
 -- stacks first.  Replaces above function if simpleSettings
 -- key is set to true
@@ -175,6 +196,7 @@ if simpleSettings.fightersAttackAirFirst then
 
     end
 end
+--]]
 
 
 -- register.onChooseDefender

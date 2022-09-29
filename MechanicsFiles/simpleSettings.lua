@@ -61,7 +61,7 @@ simpleSettings.doNotDeleteAITextArchives = nil
 
 -- makes aircraft defend first when units with the
 -- fighter ability attack air protected stacks
-simpleSettings.fightersAttackAirFirst =  nil
+simpleSettings.fightersAttackAirFirst =  true
 
 
 -- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
@@ -76,7 +76,7 @@ simpleSettings.fightersAttackAirFirst =  nil
 -- Land and Sea units must now abide by range limitations set in rules.txt (if they are not 0)
 -- if applyToAI is true, the AI will lose units when it violates these limits
 
-simpleSettings.rangeForLandAndSea = true
+simpleSettings.rangeForLandAndSea = false
 if simpleSettings.rangeForLandAndSea then
     gen.activateRangeForLandAndSea(nil,false)
 end

@@ -25,6 +25,7 @@
 --      Note: if you change the function name here, the function
 --      can be copied and pasted if you don't want to require
 --      the general library
+local civlua = require("civlua")
 local gen = {}
 function gen.requireIfAvailable(fileName)
     if package.loaded[fileName] then
@@ -439,6 +440,7 @@ end
 -- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
 -- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
 -- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
+-- gen.tableToString(table)
 --
 --
 --
@@ -5683,6 +5685,215 @@ function gen.getBearing(compassPoint,compassCentre)
     end
     return compass
 end
+
+-- gen.tableToString(table)
+-- returns a string showing values in a table
+function gen.tableToString(table)
+    local str = civlua.serialize(table)
+    str = string.sub(str,8,-1)
+    str = string.gsub(str,"\n\r"," ")
+    str = string.gsub(str,"\n"," ")
+    return str
+end
+
+
+-- Data Validator
+--  validDataInfo = {
+--      ["nil"] = true or nil
+--          if this key is true, the data can be nil
+--      ["boolean"] = true, "true", "false", or nil
+--          if this key is true, the data can be a boolean
+--          if this key is "true", only true is allowed (false is not)
+--          if this key is "false", only false is allowed (true is not)
+--      ["function"] = true, string or nil
+--          if this key is true or string, the data can be a function
+--          the string describes the function e.g. function(unit) --> number
+--          (the function is not tested)
+--      ["number"] = {minVal=numberNil, maxVal = numberNil, integer=trueNil} or true
+--          if this key is true, the data can be a number
+--          the keys in the table specify minimum and maximum values, and whether
+--          the number must be an integer
+--          note: math.huge and -math.huge are considered both numbers and integer here
+--      ["string"] = true or {[validString] = truthy}
+--          if true, the data can be any string
+--          if table, the data must be one of the keys in the table
+--      ["table"] = string or true or {[1]=function(table)-->true or string,[2]=string}
+--          if string, any table is accepted, and the string describes the kind of table needed
+--          if true, any table is accepted, and the description is a table
+--          if table, [1] is a function returns that true if the table is accepted,
+--          and the problem with the table if it is not
+--          [2] is the description of the table required
+--      ["userdata"] = {[dataTypeName]=isDataTypeFn}
+--          this table is a table of each of the allowable data types, with the
+--          key being the name, and the function checking if it is that type
+--          being the value
+--  }
+local vDIKeys = {["nil"]=true,["boolean"]=true,["function"]=true,["number"]=true,
+    ["string"]=true,["table"]=true,["userdata"]=true,}
+function gen.checkValidDataInfo(validDataInfo)
+    for key,val in pairs(validDataInfo) do
+        if not vDIKeys[key] then
+            error("gen.checkValidDataInfo: submitted validDataInfo has a bad key: "..key)
+        end
+    end
+end
+
+--  gen.describeAllowableData(validDataInfo) --> string
+--  takes a validDataInfo, and returns a string describing the validData
+function gen.describeAllowableData(validDataInfo)
+    local desc = ""
+    if validDataInfo["nil"] then
+        desc = desc.."nil, "
+    end
+    if validDataInfo["boolean"] == true then
+        desc = desc.."boolean, "
+    elseif validDataInfo["boolean"] == "true" then
+        desc = desc.."true, "
+    elseif validDataInfo["boolean"] == "false" then
+        desc = desc.."false, "
+    end
+    if type(validDataInfo["function"]) == "string" then
+        desc = desc..validDataInfo["function"]..", "
+    elseif validDataInfo["function"] == true then
+        desc = desc.."function, "
+    end
+    if validDataInfo["number"] == true then
+        desc = desc.."number, "
+    elseif validDataInfo["number"] then
+        local number = "number"
+        if validDataInfo["number"].integer then
+            number = "integer"
+        end
+        if validDataInfo["number"].minVal and validDataInfo["number"].maxVal then
+            desc = desc..number.." between "..tostring(validDataInfo["number"].minValue)
+            .." and "..tostring(validDataInfo["number"].maxValue)..", "
+        elseif validDataInfo["number"].minVal then
+            desc = desc..number.." at least "..tostring(validDataInfo["number"].minValue)..", "
+        elseif validDataInfo["number"].maxVal then
+            desc = desc..number.." at most "..tostring(validDataInfo["number"].maxValue)..", "
+        else
+            desc = desc..number..", "
+        end
+    end
+    if validDataInfo["string"] == true then
+        desc = desc.."string, "
+    elseif type(validDataInfo["string"]) == "table" then
+        for validString,_ in pairs(validDataInfo["string"]) do
+            desc = desc..'"'..validString..'", '
+        end
+    end
+    if validDataInfo["table"] == true then
+        desc = desc.."table, "
+    elseif type(validDataInfo["table"]) == "string" then
+        desc = desc..validDataInfo["table"]..", "
+    elseif type(validDataInfo["table"]) == "table" then
+        desc = desc..validDataInfo["table"][2]..", "
+    end
+    if type(validDataInfo["userdata"]) == "table" then
+        for dataTypeName,_ in pairs(validDataInfo["userdata"]) do
+            desc = desc..dataTypeName..", "
+        end
+    end
+    return desc
+end
+
+-- gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber, argumentName,validDataInfo,extraInfo=nil) --> void or error
+--  This validates a function argument, and provides an error if that is wrong
+--      data is the actual argument
+--      moduleName is the name of the module the function is in
+--      functionName is the name of the function making the error
+--      argumentNumber is the place of the argument in the function call
+--      validDataInfo is the table determining what is a valid argument
+--      extraInfo is any extra information that might be useful for debugging
+function gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber,argumentName,validDataInfo,extraInfo)
+    gen.checkValidDataInfo(validDataInfo)
+    local dataType = type(data)
+    local vDI = validDataInfo[dataType]
+    local function constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName,
+                extraInfo, tableReturnInfo)
+        local tostringResult = tostring(data)
+        if type(data) == "table" then
+            tostringResult = gen.tableToString(data)
+        elseif type(data) == "string" then
+            tostringResult = 'string<"'..data..'">'
+        end
+        local errorMessage = "module: "..moduleName.."; function: "..functionName.."; argument number: "
+            ..tostring(argumentNumber).."; argument name: "..argumentName.."; "
+        if extraInfo then
+            errorMessage = errorMessage.."; extra information: "..extraInfo.."; "
+        end
+        errorMessage = errorMessage.."Expected :"..gen.describeAllowableData(validDataInfo)
+            .."; Received: "..tostringResult
+        if tableReturnInfo then
+            errorMessage = errorMessage.."; Reported table problem: "..tableReturnInfo
+        end
+        return errorMessage
+    end
+    if not vDI then
+        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+    end
+    if dataType == "nil" then
+        -- if nil isn't allowed, it is caught in not vDI
+        return
+    elseif dataType == "boolean" then
+        if (vDI == true or tostring(data) == vDI) then
+            return
+        else
+            error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+        end
+    elseif dataType == "function" then
+        -- The function is not checked beyond the fact that it is a function
+        -- If the function isn't allowed, it is caught in not vDI
+        return
+    elseif dataType == "number" then
+        if vDI == true then
+            return
+        end
+        local minVal = vDI.minVal or -math.huge
+        local maxVal = vDI.maxVal or math.huge
+        local notInteger = not vDI.integer
+        if data >= minVal and data <= maxVal and (notInteger or data == math.floor(data)) then
+            return
+        end
+        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+    elseif dataType == "string" then
+        if vDI == true or vDI[data] then
+            return
+        end
+        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+    elseif dataType == "table" then
+        if vDI == true or type(vDI) == "string" then
+            -- don't check anything specific about the table
+            return 
+        end
+        local errorString = vDI[1](data)
+        if type(errorString) == "string" then
+            error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo,errorString))
+        end
+    elseif dataType == "userdata" then
+        for dataTypeName,isDataTypeFn in pairs(vDI) do
+            if isDataTypeFn(data) then
+                return
+            end
+        end
+        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+    else
+        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+    end
+end
+
+
+
+
+
+    
+
+            
+
+
+
+
+
 
 if rawget(_G,"console") then
     _G["console"].gen = gen

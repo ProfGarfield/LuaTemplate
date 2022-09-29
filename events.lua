@@ -182,6 +182,9 @@ local consolidated = require("consolidatedEvents")
 attemptToRun('targetSettings',"WARNING: targetSettings.lua not found.  You will not have strategic targets.")
 attemptToRun('navySettings', "WARNING: navySettings.lua not found.  You will not have the navy settings from that file.")
 attemptToRun('radarSettings',"WARNING: radarSettings.lua not found.  You will not have any radar tools defined in that file.")
+local supplementalData = require("supplementalData")
+local unitData = require("unitData")
+local cityData = require("cityData")
 
 
 
@@ -355,6 +358,7 @@ local onTurnFn = function(turn)
     --    flag.setTrue("tribe"..tostring(i).."BeforeProductionNotDone","eventMachinery")
     --end
     suppressActivateUnitBackstop = true
+    supplementalData.onTurn(turn)
     doOnChooseSeason()
     discreteEvents.performOnTurn(turn)
     consolidated.onTurn(turn)
@@ -463,6 +467,10 @@ registeredInThisFile["onKeyPress"] = true
 
 civ.scen.onCityProduction(function(city,prod)
     prod = promotionSettings.overrideProdVetStatus(city,prod)
+    if civ.isUnit(prod) then
+        -- since this is a newly produced unit, it should have no data
+        unitData.deleteData(prod)
+    end
     discreteEvents.performOnCityProduction(city,prod)
     consolidated.onCityProduction(city,prod)
     eventsFiles.onCityProduction(city,prod)
@@ -569,6 +577,7 @@ end
 -- if the unit is not being 'replaced', replacingUnit will be nil
 local function doOnUnitDeletion(deletedUnit,replacingUnit)
     eventsFiles.onUnitDeleted(deletedUnit,replacingUnit)
+    unitData.onUnitDeleted(deletedUnit,replacingUnit)
     --eventTools.unitDeletion(deletedUnit)
 end
 registeredInThisFile["onUnitDeath"] = true
@@ -759,6 +768,7 @@ civ.scen.onCityDestroyed(function (city)
     discreteEvents.performOnCityDestroyed(city)
     consolidated.onCityDestroyed(city)
     eventsFiles.onCityDestroyed(city)
+    cityData.onCityDestroyed(city)
     suppressActivateUnitBackstop = false
 end)
 registeredInThisFile["onCityDestroyed"] = true
@@ -865,6 +875,7 @@ registeredInThisFile["onCityFounded"] = true
 
 local function doBeforeProduction(turn,tribe)
     suppressActivateUnitBackstop = true
+    supplementalData.onTribeTurnBegin(turn,tribe)
     consolidated.beforeProduction(turn,tribe)
     consolidated.onTribeTurnBegin(turn,tribe)
     discreteEvents.performOnBeforeProduction(turn,tribe)
@@ -892,6 +903,7 @@ local function doOnTribeTurnEnd(turn,tribe)
     discreteEvents.performOnTribeTurnEnd(turn,tribe)
     consolidated.onTribeTurnEnd(turn,tribe)
     eventsFiles.onTribeTurnEnd(turn,tribe)
+    supplementalData.onTribeTurnEnd(turn,tribe)
     humanPlayerActive = false
 end
 civ.scen.onTribeTurnEnd(doOnTribeTurnEnd)

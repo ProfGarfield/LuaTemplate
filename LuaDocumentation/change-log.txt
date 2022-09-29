@@ -11,4 +11,21 @@ Added Pablostuka's text.initCap function which capitalizes the first letter of e
 
 Modified code provided by Pablostuka for gen.getBearing function.
 
+
+fixed bug in traits.lua
+
 last update
+
+range for land and sea disabled by default
+
+make ships defend first, don't re-define the defender value modifier function
+
+unitData, cityData, tileData created
+
+
+
+todo
+
+kill land units when last transport is killed
+
+
