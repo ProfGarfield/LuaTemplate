@@ -1,3 +1,14 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+
+
+
 -- This file allows for a scenario designer to work with several
 -- "event triggers" or "execution points" in the same file, instead
 -- of spreading the events over several files.
@@ -22,8 +33,8 @@
 -- ===============================================================================
 -- This section is for the 'require' lines for this file, and anything
 -- else that must be at the top of the file.
-local consolidator = require("consolidator")
-local gen = require("generalLibrary")
+local consolidator = require("consolidator"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(1)
 local param = require("parameters")
 local object = require("object")
 local text = require("text")
@@ -285,5 +296,6 @@ end
 --
 -- ===============================================================================
 
+gen.versionFunctions(events,versionNumber,fileModified,"consolidatedEvents.lua")
 return consolidator.maintainEvents(events)
 

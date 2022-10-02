@@ -1,14 +1,23 @@
 
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
+
 -- This file is meant to group scenario parameters, so that there is a single
 -- place where important values are recorded.  It is recommended that you define
 -- a parameter value in one place and always refer to that place, so that if
 -- you decide to make a change, only one value has to be changed instead of
 -- searching for every possible place that value is relevant.
 
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local text = require("text")
 --local eventTools = require("eventTools")
-local discreteEvents = require("discreteEventsRegistrar")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 
 text.setMoney("%STRING1 gold")
 -- text.setMoney("$%STRING1,000")
@@ -89,6 +98,7 @@ end
 
 local param = {}
 
+gen.versionFunctions(param,versionNumber,fileModified,"LuaParameterFiles".."\\".."parameters.lua")
 
 
 return param

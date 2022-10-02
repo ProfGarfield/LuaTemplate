@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- This module deals with units being 'promoted' to other units, 'demoted' (instead of destroyed) to other units, and any other related functionality.
 --
 --
@@ -7,7 +16,7 @@
 --  Promoting Units to a new unit type upon combat victory
 --  Demoting units to a new unit type upon defeat (instead of destroying the unit)
 --
-local gen = require("generalLibrary") 
+local gen = require("generalLibrary"):minVersion(1)
 local text = require("text")
 local munition = require("munitions")
 local gamePromotionChance = 0.5 -- Don't change this, it is here so there are not a lot of 'magic' 0.5 floating around
@@ -15,6 +24,7 @@ local civlua = require("civluaModified")
 --local eventTools = require("eventTools")
 
 local promotion = {}
+gen.versionFunctions(promotion,versionNumber,fileModified,"LuaCore".."\\".."promotion.lua")
 local promotionState = "promotionStateNotLinked"
 
 -- links the state table with this module

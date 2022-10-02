@@ -1,3 +1,11 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
 local gen = require("generalLibrary")
 -- attackBonus = require("attackBonus")
 --
@@ -381,8 +389,12 @@ local function plusFixed(fixedUnitBonusTable,categoryAttackBonusTable)
     end
 end
 
-return {
+local attackBonus = {
     simpleAttackBonus = simpleAttackBonus,
     categoryAttackBonus=categoryAttackBonus,
 	plusFixed = plusFixed,
 }
+
+gen.versionFunctions(attackBonus,versionNumber,fileModified,"LuaCore".."\\".."attackBonus.lua")
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."attackBonus.lua")
+return attackBonus

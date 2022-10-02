@@ -1,4 +1,11 @@
 
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
 -- you can cut and paste these template functions into
 -- consolidatedEvents.lua in order to access the corresponding
 -- functionality.  This file also contains some "behind the scenes"
@@ -202,7 +209,9 @@ end
 -- defined in events will be used instead.  In this way, functions can be omitted
 -- from consolidatedEvents.lua
 
+local gen = require("generalLibrary"):minVersion(1)
 local consolidator = {}
+gen.versionFunctions(consolidator,versionNumber,fileModified,"LuaCore".."\\".."consolidator.lua")
 function consolidator.maintainEvents(eventsTable)
     for key, func in pairs(events) do
         eventsTable[key] = eventsTable[key] or events[key]

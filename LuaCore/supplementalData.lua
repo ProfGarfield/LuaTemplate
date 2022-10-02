@@ -1,3 +1,11 @@
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 -- This module is a module to build other modules.
 -- The tools here build tools to associate extra data with 
 -- game objects (e.g. unit or cities)
@@ -218,8 +226,8 @@
 --
 
 -- 
-local gen = require("generalLibrary")
-local discreteEvents = require("discreteEventsRegistrar")
+local gen = require("generalLibrary"):minVersion(1)
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local civlua = require("civlua")
 
 local function makeModuleKeyName(moduleName,keyName)
@@ -231,6 +239,9 @@ local function makeModuleKeyName(moduleName,keyName)
 end
 
 local supplementalData = {}
+
+gen.versionFunctions(supplementalData,versionNumber,fileModified,"LuaCore".."\\".."supplementalData.lua")
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."supplementalData.lua")
 
 -- linkStateFunctions[moduleName] = linkStateFunction
 local linkStateFunctions = {}

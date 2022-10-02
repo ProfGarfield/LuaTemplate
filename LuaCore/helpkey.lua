@@ -1,3 +1,12 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 local func = require "functions"
 local text = require "text"
 
@@ -95,8 +104,10 @@ local function defaultUnitTextFunction(unit)
 end -- defaultUnitTextFunction
 
 
+local gen = require("generalLibrary"):minVersion(1)
 
-return {helpKey = helpKey,
+local helpRegister = {helpKey = helpKey,
         defaultUnitTextFunction = defaultUnitTextFunction,
-        
 }
+gen.versionFunctions(helpRegister,versionNumber,fileModified,"LuaCore".."\\".."helpkey.lua")
+return helpRegister

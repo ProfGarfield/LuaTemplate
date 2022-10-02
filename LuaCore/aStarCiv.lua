@@ -1,9 +1,18 @@
-local gen = require("generalLibrary")
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+local gen = require("generalLibrary"):minVersion(1)
 
 local getTileId = gen.getTileId
 local getTileFromId = gen.getTileFromId
 
 local aStarCiv = {}
+gen.versionFunctions(aStarCiv,versionNumber,fileModified,"LuaCore".."\\".."aStarCiv.lua")
 -- start is a tile object or table of such objects (if multiple places can act as the 'start')
 -- goal is a tile object or table of such objects (if any one of them is a valid goal)
 -- heuristic(startTile,endTileOrTable) --> number

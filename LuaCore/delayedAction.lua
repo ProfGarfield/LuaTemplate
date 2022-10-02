@@ -1,4 +1,12 @@
-local gen =  require("generalLibrary")
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+local gen =  require("generalLibrary"):minVersion(1)
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."delayedAction.lua")
 
 -- A module for specifying an action which might have to wait until
 -- a different player's turn, (or, a turn at some point in the future)
@@ -31,6 +39,7 @@ local gen =  require("generalLibrary")
 --      if no argumentTable is specified, an empty table is generated
 
 local delayedAction = {}
+gen.versionFunctions(delayedAction,versionNumber,fileModified,"LuaCore".."\\".."delayedAction.lua")
 
 local delayedActionState = "state not linked"
 local savedActions = "state not linked"

@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- This module implements a basic radar system
 -- Each unit has a radar "cross section" which determines
 -- how visible the unit is to radar in general
@@ -87,12 +96,13 @@
 
 
 
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local text = require("text")
-local discreteEvents = require("discreteEventsRegistrar")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local flag = require("flag")
 
 local radar = {}
+gen.versionFunctions(radar,versionNumber,fileModified,"LuaCore".."\\".."radar.lua")
 
 local radarMarkerAir = "radar marker not set.  Use radar.setMarkers"
 local radarMarkerSurface = "radar marker not set.  Use radar.setMarkers"

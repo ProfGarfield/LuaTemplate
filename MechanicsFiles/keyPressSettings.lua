@@ -1,8 +1,17 @@
 
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
 
 
 
-local gen = require("generalLibrary")
+
+
+
+local gen = require("generalLibrary"):minVersion(1)
 local function optionalRequire(fileName)
     local fileFound,prefix = gen.requireIfAvailable(fileName)
     if fileFound then
@@ -28,7 +37,7 @@ local diplomacySettingsFound, diplomacySettings = gen.requireIfAvailable("diplom
 --local diplomacySettings = optionalRequire("diplomacySettings")
 local textFound, text = gen.requireIfAvailable("text")
 --local text = optionalRequire("text")
-local discreteEvents = require("discreteEventsRegistrar")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 
 
 -- key press events can be registered here using the discreteEvents
@@ -132,3 +141,8 @@ function discreteEvents.onKeyPress(keyCode)
 end
 
 --]]
+local versionTable = {}
+
+gen.versionFunctions(versionTable,versionNumber,fileModified,"MechanicsFiles".."\\".."keyPressSettings.lua")
+
+return versionTable

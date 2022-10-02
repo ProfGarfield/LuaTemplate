@@ -1,4 +1,13 @@
-local gen = require('generalLibrary')
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
+local gen = require('generalLibrary'):minVersion(1)
 
 -- Provides a function to read a Civ II ToT rules text file, and saves each value
 -- (text between commas) in a table, for easier reference in game
@@ -117,4 +126,5 @@ else
 end
 readRules.loadedRules = readRules.readRules(loadedRulesPath)
 
+gen.versionFunctions(readRules,versionNumber,fileModified,"LuaCore".."\\".."readRules.lua")
 return readRules

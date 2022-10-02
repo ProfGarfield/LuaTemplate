@@ -1,3 +1,14 @@
+-- Note: this isn't actually the first version of this file.  It is just the first version that
+-- I assigned a version number to.
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+local regressionNumber = 1 -- this number is incremented whenever an update to events.lua
+-- removes some functionality.  This should be rare
+
 -- some code to root out pcalls, that I wanted to replace with something requireIfAvailable
 --temppcall = pcall
 --pcall = function() error("remove pcall") end
@@ -46,6 +57,9 @@ if (totpp.version.major < TOTPPMajor) or
     civ.ui.text(messageBox)
     error(message1..message2)
 end
+_G._discreteEventsRegistrar_events_lua_versionNumber = versionNumber
+_G._discreteEventsRegistrar_events_lua_fileModified = fileModified
+_G._discreteEventsRegistrar_events_lua_regressionNumber = regressionNumber
 
 
 console = {}
@@ -135,7 +149,8 @@ end
         
 
 
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
+gen.registerEventsLuaVersion(versionNumber,fileModified,regressionNumber)
 
 -- noGlobal prevents new global variables from being created
 -- or accessed; this should make typos easier to discover
@@ -158,11 +173,11 @@ attemptToRun('keyPressSettings',"WARNING: did not find keyPressSettings.lua.  Yo
 
 
 --local attackBonusSettings = require("attackBonusSettings")
-local delayedAction = require("delayedAction")
+local delayedAction = require("delayedAction"):minVersion(1)
 --local eventTools = require("eventTools")
 local promotion = require("promotion")
 local promotionSettings = require("promotionSettings")
-local simpleSettings = require("simpleSettings")
+local simpleSettings = require("simpleSettings"):recommendedVersion(1)
 --local unitActivation = require("unitActivation")
 --local negotiationSettings = require("negotiationSettings")
 --local onSchism = require("onSchism")
@@ -175,16 +190,16 @@ local diplomacy = require("diplomacy")
 local cityYield = require("calculateCityYield")
 local combatSettings = require("combatSettings")
 local setTraits = require("setTraits")
-local discreteEvents = require("discreteEventsRegistrar")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 require("discreteEvents")
-local consolidated = require("consolidatedEvents")
+local consolidated = require("consolidatedEvents"):minVersion(1)
 
 attemptToRun('targetSettings',"WARNING: targetSettings.lua not found.  You will not have strategic targets.")
 attemptToRun('navySettings', "WARNING: navySettings.lua not found.  You will not have the navy settings from that file.")
 attemptToRun('radarSettings',"WARNING: radarSettings.lua not found.  You will not have any radar tools defined in that file.")
-local supplementalData = require("supplementalData")
-local unitData = require("unitData")
-local cityData = require("cityData")
+local supplementalData = require("supplementalData"):minVersion(1)
+local unitData = require("unitData"):minVersion(1)
+local cityData = require("cityData"):minVersion(1)
 
 
 

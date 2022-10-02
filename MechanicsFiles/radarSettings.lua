@@ -1,13 +1,24 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 local radar = require("radar")
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local object = require("object")
 local keyboard = require("keyboard")
-local discreteEvents = require("discreteEventsRegistrar")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local text = require("text")
 local flag = require("flag")
+local radarSettings = {}
+gen.versionFunctions(radarSettings,versionNumber,fileModified,"MechanicsFiles".."\\".."radarSettings.lua")
 
 -- comment out this next line to use this radar system
-if true then return end
+if true then return radarSettings end
 
 -- This module implements a basic radar system
 -- Each unit has a radar "cross section" which determines
@@ -560,4 +571,4 @@ end
 function discreteEvents.onTribeTurnEnd(turn,tribe)
     radar.clearAllMarkers(tribe)
 end
-
+return radarSettings

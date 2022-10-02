@@ -1,5 +1,14 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 local helpKey = require("helpkey")
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 
 
 
@@ -61,4 +70,7 @@ local function doHelpKey()
     helpKey.helpKey(212,212,flagText,unitTypeText,unitTextFunction)
 end
 
-return {doHelpKey = doHelpKey}
+local helpKeySettings = {doHelpKey = doHelpKey}
+gen.versionFunctions(helpKeySettings,versionNumber,fileModified,"MechanicsFiles".."\\".."helpKeySettings.lua")
+
+return helpKeySettings

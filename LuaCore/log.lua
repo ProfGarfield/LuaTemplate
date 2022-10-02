@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- Log and Report important events
 -- This module provides functionality for logging important
 -- events in a game, and printing out a log as a text file on
@@ -30,9 +39,10 @@
 
 
 local text = require("text")
-local gen = require("generalLibrary")
 
+local gen = require("generalLibrary"):minVersion(1)
 local log = {}
+gen.versionFunctions(log,versionNumber,fileModified,"LuaCore".."\\".."log.lua")
 
 local geographyTable = {}
 -- the short name tables (indexed by ID numbers)

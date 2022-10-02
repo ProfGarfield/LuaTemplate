@@ -32,6 +32,7 @@ function discreteEvents.onKeyPress(keyID)
     menuTable[5] = "Start the Polygon Script"
     menuTable[6] = "Build describe.txt"
     menuTable[7] = "Build the sample dscribe.txt from samplePedia.lua"
+    menuTable[8] = "Run update helper."
     local menuText = "Choose a script to run."
     local menuTitle = "Scripts"
     local choice = text.menu(menuTable,menuText,menuTitle,true)
@@ -91,6 +92,14 @@ function discreteEvents.onKeyPress(keyID)
             -- nothing needs to be done, since this runs the script
         else
             text.simple("samplePedia.lua not found.  File not generated")
+        end
+        return
+    elseif choice == 8 then
+        local found, _ = dofileIfAvailable("Scripts\\updateInfo")
+        if found then
+
+        else
+            text.simple("updateInfo.lua not found.  No update help.")
         end
         return
     else

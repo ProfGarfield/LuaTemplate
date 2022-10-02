@@ -1,12 +1,24 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
+
 -- This file contains settings that can be defined relatively easily,
 -- perhaps with a couple parameters or a single table
 --
 
 local param = require("parameters")
 local object = require("object")
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 
 local simpleSettings = {}
+gen.versionFunctions(simpleSettings,versionNumber,fileModified,"MechanicsFiles".."\\".."simpleSettings.lua")
+gen.minEventsLuaVersion(1,1,"MechanicsFiles".."\\".."simpleSettings.lua")
 
 -- False or nil settings mean use the behaviour for 'standard' Civ II
 

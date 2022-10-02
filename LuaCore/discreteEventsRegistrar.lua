@@ -1,8 +1,82 @@
-local moduleVersion = 1 -- Module version will be provided as normal, but this module has different construction
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+local suppressEventsLuaWarning = false -- if set to true, this suppresses the warning that
+-- the file couldn't find the events.lua version.  This is probably only useful if
+-- you're using discreteEventsRegistrar outside of the LuaScenarioTemplate
+-- (I wouldn't recommend setting fileModified to true just for this, since you might think
+-- you made important changes)
+
+
 local discreteEvents = {}
 local eventsTable = {}
 
+local minVersion = function(self,minVersion)
+    if versionNumber < minVersion then
+        local message = "The LuaCore\\discreteEventsRegistrar.lua file is out of date.  It is version "..tostring(versionNumber)..
+        ", but one of your other files needs version "..tostring(minVersion).." or later.  "
+        .."You should download the most recent version of the Lua Scenario Template, and replace "
+        .."LuaCore\\discreteEventsRegistrar with the updated version."
+        if fileModified then
+            message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
+            .."  Replacing this file will remove those changes.  You will have to reimplement them in the new version of the file."
 
+        end
+        error(message)
+    end
+    return self
+end
+local recommendedVersion = function(self,recVersion)
+    local moduleFileName = "LuaCore\\discreteEventsRegistrar.lua"
+    local vNum = versionNumber
+    if vNum < recVersion then
+        local message = "WARNING: The "..moduleFileName.." is out of date.  It is version "..tostring(vNum)..
+        ", but one of your files recommends version "..tostring(minVersion).." or later.  "
+        if fileModified then
+            message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
+            .."  Replacing this file will remove those changes.  This is not a mandatory update, so you (probably) don't have to make any changes.  However, you may still wish to bring code in from the new file for extra features."
+        else
+            message = message.." The fileModified variable at the top of the file does not indicate that you have made any changes to this file.  If this is actually the case, you can replace it with the most recent version from the Lua Scenario Template without any problem."
+        end
+        print(message.."\n")
+    end
+    return self
+end
+discreteEvents.minVersion = minVersion
+discreteEvents.recommendedVersion = recommendedVersion
+
+local eventsVersion = {}
+eventsVersion.versionNumber = _G._discreteEventsRegistrar_events_lua_versionNumber
+eventsVersion.fileModified = _G._discreteEventsRegistrar_events_lua_fileModified
+eventsVersion.regressionNumber = _G._discreteEventsRegistrar_events_lua_regressionNumber
+
+local function minEventsLuaVersion(minVersion,regNum)
+    local fileName = "LuaCore\\discreteEventsRegistrar.lua"
+    if eventsVersion.versionNumber == nil then
+            if not suppressEventsLuaWarning then
+            print("WARNING: "..fileName.." expects to use version "..tostring(minVersion).." of the Lua Scenario Template, but no version of events.lua has been registered.  If you are using the Lua Scenario Template, this means your events.lua file is old.  If you are not, you can suppress this warning by changing the 'suppressEventsLuaWarning' variable at the top of discreteEventsRegistrar.lua.")
+            end
+        return
+    end
+    if minVersion > eventsVersion.versionNumber then
+        local message = "The events.lua file is out of date.  It is version "..tostring(eventsVersion.versionNumber)
+        ..", but one of your other files needs version "..tostring(minVersion).." or later.  "
+        .."You should download the most recent version of the Lua Scenario Template, and replace "
+        .."events.lua with the updated version."
+        if eventsVersion.fileModified then
+            message = message.."\nIMPORTANT WARNING: it appears you've changed events.lua for your scenario."
+            .."  Replacing this file will remove those changes.  You will have to reimplement them in the new version of the file."
+        end
+        if regNum > eventsVersion.regressionNumber then
+            message = message.."\nIMPORTANT WARNING: it appears that events.lua has had some sort of functionality removed or changed.  Seek advice before updating."
+        end
+        error(message)
+    end
+end
+minEventsLuaVersion(1,1)
 
 
 eventsTable.onActivateUnit = {}
@@ -403,7 +477,7 @@ end
 
 local superMetatable = {__index = indexFn,__newindex=newIndexFn}
 
-local superTable = {version=moduleVersion, eventsTable=eventsTable}
+local superTable = {version=versionNumber, eventsTable=eventsTable}
 setmetatable(superTable,superMetatable)
 
 return superTable

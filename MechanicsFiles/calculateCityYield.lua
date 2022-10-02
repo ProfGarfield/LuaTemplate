@@ -1,7 +1,17 @@
 
-local gen = require("generalLibrary")
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
+
+local gen = require("generalLibrary"):minVersion(1)
 local object = require("object")
 local cityYield = {}
+gen.versionFunctions(cityYield,versionNumber,fileModified,"MechanicsFiles".."\\".."calculateCityYield.lua")
 local baseProduction = gen.computeBaseProduction
 local strategicTargetsAvailable, strat = gen.requireIfAvailable("strategicTargets")
 

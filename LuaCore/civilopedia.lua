@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- The functions in this file are used to collect information
 -- in order to generate a Describe.txt for the civilopedia
 --
@@ -503,6 +512,42 @@ local function generateDescriptionLine(number, object,description,originalNameTa
     end
 end
 
+local minVersion = function(self,minVersion)
+    if versionNumber < minVersion then
+        local message = "The LuaCore\\civilopedia.lua file is out of date.  It is version "..tostring(versionNumber)..
+        ", but one of your other files needs version "..tostring(minVersion).." or later.  "
+        .."You should download the most recent version of the Lua Scenario Template, and replace "
+        .."LuaCore\\civilopedia with the updated version."
+        if fileModified then
+            message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
+            .."  Replacing this file will remove those changes.  You will have to reimplement them in the new version of the file."
+
+        end
+        error(message)
+    end
+    return self
+end
+local recommendedVersion = function(self,recVersion)
+    local moduleFileName = "LuaCore\\civilopedia.lua"
+    local vNum = versionNumber
+    if vNum < recVersion then
+        local message = "WARNING: The "..moduleFileName.." is out of date.  It is version "..tostring(vNum)..
+        ", but one of your files recommends version "..tostring(minVersion).." or later.  "
+        if fileMod then
+            message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
+            .."  Replacing this file will remove those changes.  This is not a mandatory update, so you (probably) don't have to make any changes.  However, you may still wish to bring code in from the new file for extra features."
+        else
+            message = message.." The fileModified variable at the top of the file does not indicate that you have made any changes to this file.  If this is actually the case, you can replace it with the most recent version from the Lua Scenario Template without any problem."
+        end
+        print(message.."\n")
+    end
+    return self
+end
+pedia.minVersion = minVersion
+pedia.recommendedVersion = recommendedVersion
+
+
+
 function pedia.makeDescribeTxt()
 local output = [==[
 ;
@@ -629,6 +674,7 @@ output = output.."\n\n\n@This must be here to terminate search!!!\n"
 local destinationDirectory = civ.getToTDir()
 local genHere, gen = pcall(require,"generalLibrary")
 if genHere then
+    gen.versionFunctions(pedia,versionNumber,fileModified,"LuaCore".."\\".."civilopedia.lua")
     local directoryFound, scenDir = pcall(gen.getScenarioDirectory)
     if directoryFound then
         destinationDirectory = scenDir

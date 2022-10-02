@@ -1,3 +1,11 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
 -- The unitData module provides functionality to associate data with individual units.
 
 
@@ -321,7 +329,9 @@
 
 
 
-local supplementalData = require("supplementalData")
+local supplementalData = require("supplementalData"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(1)
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."unitData.lua")
 
 local getUnitID = function(unit) return unit.id end
 local getUnitOwner = function(unit) return unit.owner end
@@ -342,6 +352,8 @@ local unitData = supplementalData.buildModuleFunctions("unitData","unit",
 function unitData.onUnitDeleted(deletedUnit,replacingUnit)
     unitData.transferOrDeleteData(deletedUnit,replacingUnit)
 end
+
+gen.versionFunctions(unitData,versionNumber,fileModified,"LuaCore".."\\".."unitData.lua")
 
 
 if rawget(_G,"console") then

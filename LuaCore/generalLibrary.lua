@@ -1,3 +1,11 @@
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 -- The General Lua Library
 -- This set of code is meant to provide basic functionality
 -- in order to facilitate the writing of events and
@@ -3366,6 +3374,7 @@ end
 
 local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
+    discreteEvents:minVersion(1)
     function discreteEvents.linkStateToModules(state,stateTableKeys)
         local keyName = "designerState"
         if stateTableKeys[keyName] then
@@ -5882,6 +5891,88 @@ function gen.validateFunctionArgument(data,moduleName,functionName,argumentNumbe
     end
 end
 
+-- gen.versionFunctions(moduleTable,versionNumber,fileMod,moduleFileName) -->void
+-- provides module with 
+--      module:minVersion(vNumber)
+--          causes an error if the module's versionNumber is below vNumber
+--      module:recommendedVersion(vNumber)
+--          prints a warning to the console if the module's versionNumber is below vNumber
+--  moduleTable: the table that has the module functions 
+--  versionNumber: the module's current version number
+--  fileMod: a boolean telling if the file has been modified by the scenario designer
+--  moduleFileName: the module's file name
+
+function gen.versionFunctions(moduleTable,vNum,fileMod,moduleFileName)
+    local minVersion = function(self,minVersion)
+        if vNum < minVersion then
+            local message = "The "..moduleFileName.." file is out of date.  It is version "..tostring(vNum)..
+            ", but one of your other files needs version "..tostring(minVersion).." or later.  "
+            .."You should download the most recent version of the Lua Scenario Template, and replace "
+            ..moduleFileName.." with the updated version."
+            if fileMod then
+                message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
+                .."  Replacing this file will remove those changes.  You will have to reimplement them in the new version of the file."
+
+            end
+            error(message)
+        end
+        return self
+    end
+    local recommendedVersion = function(self,recVersion)
+        if vNum < recVersion then
+            local message = "WARNING: The "..moduleFileName.." is out of date.  It is version "..tostring(vNum)..
+            ", but one of your files recommends version "..tostring(recVersion).." or later.  "
+            if fileMod then
+                message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
+                .."  Replacing this file will remove those changes.  This is not a mandatory update, so you (probably) don't have to make any changes.  However, you may still wish to bring code in from the new file for extra features."
+            else
+                message = message.." The fileModified variable at the top of the file does not indicate that you have made any changes to this file.  If this is actually the case, you can replace it with the most recent version from the Lua Scenario Template without any problem."
+            end
+            print(message.."\n")
+        end
+        return self
+    end
+    if moduleTable.minVersion or moduleTable.recommendedVersion then
+        error("gen.versionFunctions: this module has already assigned the minVersion or recommendedVersion keys.")
+    end
+    moduleTable.minVersion = minVersion
+    moduleTable.recommendedVersion = recommendedVersion
+end
+
+gen.versionFunctions(gen,versionNumber,fileModified,"LuaCore".."\\".."generalLibrary.lua")
+
+-- gen.registerEventsLuaVersion(versionNumber,fileMod,regressionNumber)
+--  registers version information for the events.lua file
+--  versionNumber is the events.lua verison number
+--  fileMod is a boolean that should be true if events.lua has been modified by the scenario designer
+--  regressionNumber is incremented if events.lua has functionality removed
+local eventsVersion = {}
+function gen.registerEventsLuaVersion(vNum,fileMod,regressionNumber)
+    eventsVersion.versionNumber = vNum
+    eventsVersion.fileModified = fileMod
+    eventsVersion.regressionNumber = regressionNumber
+end
+
+function gen.minEventsLuaVersion(minVersion,regNum,fileName)
+    if gen.isEmpty(eventsVersion) then
+        print("WARNING: "..fileName.." expects to use version "..tostring(minVersion).." of the Lua Scenario Template, but no version of events.lua has been registered.  If you are using the Lua Scenario Template, this means your events.lua file is out of date.  If you are not, you can suppress this warning by adding the following line the first time in your code that you require the general library:\ngen.registerEventsLuaVersion("..minVersion..",false,"..regNum)
+        return
+    end
+    if minVersion > eventsVersion.versionNumber then
+        local message = "The events.lua file is out of date.  It is version "..tostring(eventsVersion.versionNumber)
+        ..", but one of your other files needs version "..tostring(minVersion).." or later.  "
+        .."You should download the most recent version of the Lua Scenario Template, and replace "
+        .."events.lua with the updated version."
+        if eventsVersion.fileModified then
+            message = message.."\nIMPORTANT WARNING: it appears you've changed events.lua for your scenario."
+            .."  Replacing this file will remove those changes.  You will have to reimplement them in the new version of the file."
+        end
+        if regNum > eventsVersion.regressionNumber then
+            message = message.."\nIMPORTANT WARNING: it appears that events.lua has had some sort of functionality removed or changed.  Seek advice before updating."
+        end
+        error(message)
+    end
+end
 
 
 

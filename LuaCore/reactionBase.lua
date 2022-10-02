@@ -1,9 +1,18 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- This file is not intended to be changed by the scenario creator
 
 local text = require("text")
 
 local civlua = require("civlua")
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 
 --[[
 Usage Information
@@ -363,6 +372,7 @@ local function expectedRemainingHitpoints(triggerUnit,hitProbability,damageSched
 end
 reactionBase.expectedRemainingHitpoints = expectedRemainingHitpoints
                 
+gen.versionFunctions(reactionBase,versionNumber,fileModified,"LuaCore".."\\".."reactionBase.lua")
 return reactionBase
 
 

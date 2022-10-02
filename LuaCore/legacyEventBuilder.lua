@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- By default, each flag's 'continuous' status is global.  That is, if flag 1 is set to continuous for
 -- tribe 2, then it is set to continuous for all tribes.  And, if flag 1 is not set to continuous for
 -- tribe 3, then it is no longer continuous for all other tribes as well.
@@ -458,6 +467,10 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     return eventTable
 end
 
-return{
+local builder = {
     buildLegacyEvents=buildLegacyEvents,
 }
+
+local gen = require("generalLibrary"):minVersion(1)
+gen.versionFunctions(builder,versionNumber,fileModified,"LuaCore".."\\".."buildLegacyEvents.lua")
+return builder

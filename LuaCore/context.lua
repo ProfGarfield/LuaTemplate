@@ -1,4 +1,11 @@
-local moduleVersion = 1
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 
 -- The context module is meant to facilitate the introduction
 -- of code that should only be run in certain situations,
@@ -98,7 +105,9 @@ end
 
 
 local superMetatable = {__index= indexFn,--[[ __newindex=newIndexFn]]}
-local superTable = {version = moduleVersion, registerSelectContext = registerSelectContext}
+local superTable = {version = versionNumber, registerSelectContext = registerSelectContext}
+local gen = require("generalLibrary"):minVersion(1)
+gen.versionFunctions(superTable,versionNumber,fileModified,"LuaCore".."\\".."context.lua")
 setmetatable(superTable,superMetatable)
 return superTable
 

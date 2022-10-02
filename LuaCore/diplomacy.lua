@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- Provides Functionality related to diplomacy
 --  diplomacy.warExists(tribe1,tribe2)-->bool
 --  diplomacy.setWar(tribe1,tribe2)
@@ -21,11 +30,12 @@
 --  diplomacy.setVendettaWith(angryTribe,offendingTribe)
 --  diplomacy.clearVendettaWith(angryTribe,offendingTribe)
 
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local text = require("text")
 local civlua = require("civluaModified")
 
-local diplomacy = {version=1}
+local diplomacy = {version=versionNumber}
+gen.versionFunctions(diplomacy,versionNumber,fileModified,"LuaCore".."\\".."diplomacy.lua")
 
 local diplomacyState = "notLinked"
 

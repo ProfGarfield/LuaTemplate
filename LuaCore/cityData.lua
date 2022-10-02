@@ -1,6 +1,11 @@
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
 
-
---  This module is used to associate data with individual citys.  Functions are used to
+--  This module is used to associate data with individual cities.  Functions are used to
 --  get the data and to change it, so you don't have to interact and maintain the underlying
 --  tables directly.  These functions also check the data that you input, so that errors are
 --  caught quickly rather than being saved in tables only to surface later.
@@ -318,8 +323,9 @@
 -- cityData.changeValidationInfo(city)
 --      replaces existing values of the sameItemCheck with new ones
 
-local supplementalData = require("supplementalData")
-local gen = require("generalLibrary")
+local supplementalData = require("supplementalData"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(1)
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."cityData.lua")
 
 local getCityID = function(city) return city.id end
 local getCityOwner = function(city) return city.owner end
@@ -334,6 +340,7 @@ local cityData = supplementalData.buildModuleFunctions("cityData","city",
 function cityData.onCityDestroyed(city)
     cityData.deleteData(city)
 end
+gen.versionFunctions(cityData,versionNumber,fileModified,"LuaCore".."\\".."cityData.lua")
 
 if rawget(_G,"console") then
     _G["console"].cityData = cityData

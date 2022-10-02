@@ -1,3 +1,14 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
+--
+--
 --  This file allows for a scenario designer to organize events
 --  in a manner similar to the legacy system, in that you don't have to
 --  group all events of the same type in the same place.
@@ -28,13 +39,13 @@
 -- This section is for the 'require' lines for this file, and anything
 -- else that must be at the top of the file.
 
-local discreteEvents = require("discreteEventsRegistrar")
-local gen = require("generalLibrary")
-local param = require("parameters")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(1)
+local param = require("parameters"):minVersion(1)
 local object = require("object")
-local text = require("text")
-local diplomacy = require("diplomacy")
-local delayed = require("delayedAction")
+local text = require("text"):minVersion(1)
+local diplomacy = require("diplomacy"):minVersion(1)
+local delayed = require("delayedAction"):minVersion(1)
 local calendar = require("calendar")
 local keyboard = require("keyboard")
 local flag = require("flag")
@@ -239,3 +250,8 @@ end
 --      provided it has the following require line:
 --      
 --      local discreteEvents = require("discreteEventsRegistrar")
+
+local versionTable = {}
+gen.versionFunctions(versionTable,versionNumber,fileModified,"MechanicsFiles".."\\".."discreteEvents.lua")
+return versionTable
+

@@ -1,6 +1,17 @@
+--
 -- not yet integrated into template
 --
-local gen = require("generalLibrary")
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
+--
+local gen = require("generalLibrary"):minVersion(1)
 local param = require("parameters")
 --
 -- If you need to reset all the values for a season
@@ -44,4 +55,5 @@ function seasons.setSeason()
 
 end
 
+gen.versionFunctions(seasons,versionNumber,fileModified,"MechanicsFiles".."\\".."seasonSettings.lua")
 return seasons

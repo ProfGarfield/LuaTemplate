@@ -1,8 +1,17 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- Settings for the navy module
 local object = require("object")
-local gen = require("generalLibrary")
-local navy = require("navy")
-local readRules = require("readRules")
+local gen = require("generalLibrary"):minVersion(1)
+local navy = require("navy"):minVersion(1)
+local readRules = require("readRules"):minVersion(1)
 
 
 -- This module implements features related to ships:
@@ -242,6 +251,8 @@ navy.registerCarrierSettings(carrierSettings)
 -- (it might have difficulty with not being able to load from a beach)
 -- navy.applySettingsToAI()
 
-return {}
+local navySettings = {}
+gen.versionFunctions(navySettings,versionNumber,fileModified,"MechanicsFiles".."\\".."navySettings.lua")
+return navySettings
 
 

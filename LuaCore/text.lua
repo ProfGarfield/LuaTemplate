@@ -1,7 +1,16 @@
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 -- The text.lua library supplies various functions related to displaying text, menus and checkbox option choices.
 --
 -- BY: Prof. Garfield with special thanks to Knighttime for convertTableToColumnText 
--- (and, by extension, all the tabulation functions)
+-- (and, by extension, all the tabulation functions), with some code from Pablostuka
 --
 -- USAGE
 --      In Folder, or in lua folder
@@ -101,9 +110,12 @@ local pageBreakControl = "%%PAGEBREAK" -- note %% has to be used for % in string
 local func = require "functions"
 -- Get the size of each character from the characterTable
 local charSize = require("characterTable")
+local gen = require("generalLibrary"):minVersion(1)
 
 -- The functions this module provides are stored in the text table
 local text={}
+gen.versionFunctions(text,versionNumber,fileModified,"LuaCore".."\\".."text.lua")
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."text.lua")
 
 -- textState allows this module to access the state table
 local textState = "notLinked"

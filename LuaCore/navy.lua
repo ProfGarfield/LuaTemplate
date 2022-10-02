@@ -1,13 +1,22 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- This module implements features related to ships:
 --  When can ships unload onto beaches
 --  What planes can use which carriers
 --
 --
 
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local civlua = require("civlua")
 local diplomacy = require("diplomacy")
-local discreteEvents = require("discreteEventsRegistrar")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local text = require("text")
 
 -- Unloading Units onto beaches
@@ -139,6 +148,7 @@ local shipCapacityList = {}
 
 
 local navy = {}
+gen.versionFunctions(navy,versionNumber,fileModified,"LuaCore".."\\".."navy.lua")
 
 function navy.applySettingsToAI()
     applyToAI = true

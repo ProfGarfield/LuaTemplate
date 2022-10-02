@@ -1,3 +1,12 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- Provides counter functionality to a scenario or other module
 -- When using this counter functionality in other modules
 -- (which is to say when you are not writing scenario specific events),
@@ -55,7 +64,9 @@ local defaultModuleName = "events.lua"
 local initializeCounterList = {}
 
 -- table of counter functions to be returned with the module
+local gen = require("generalLibrary"):minVersion(1)
 local counter = {}
+gen.versionFunctions(counter,versionNumber,fileModified,"LuaCore".."\\".."counter.lua")
 
 local function linkState(tableInStateTable)
     if type(tableInStateTable) == "table" then

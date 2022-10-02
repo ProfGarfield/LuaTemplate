@@ -1,3 +1,13 @@
+
+
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 -- The vast majority of the work for this module was done by Knighttime, and
 -- supplied in this Civfanatics Post:
 -- https://forums.civfanatics.com/threads/civilization-ii-combat-guide-v2-0-updates.673992/#post-16192594
@@ -5,7 +15,7 @@
 -- 
 
 
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local scenarioDirectoryFound, scenarioDirectoryOrError = pcall(gen.getScenarioDirectory)
 -- gen.getScenarioDirectory() returns an error if the directory has not been set
 -- pcall will therefore set scenarioDirectoryFound to false, will print a warning
@@ -579,9 +589,12 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 		   attackerStrengthModifiersApplied, attackerFirepowerModifiersApplied, defenderStrengthModifiersApplied, defenderFirepowerModifiersApplied
 end
 
-return {
+local combatCalculator = {
 	initializeCombatModifiers = initializeCombatModifiers,
 	getCombatModifier = getCombatModifier,
 	setCombatModifier = setCombatModifier,
 	getCombatValues = getCombatValues,
 }
+
+gen.versionFunctions(combatCalculator,versionNumber,fileModified,"LuaCore".."\\".."combatCalculator.lua")
+return combatCalculator

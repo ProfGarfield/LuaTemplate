@@ -1,7 +1,15 @@
+local versionNumber = 2
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
+
 local flag = require("flag")
 local counter = require('counter')
-local gen = require("generalLibrary")
-local canBuildVersion = 2
+local gen = require("generalLibrary"):minVersion(1)
+local canBuildVersion = versionNumber
 
 
 -- canBuildFunctions.registerSupplementalCondition(itemType,function(defaultBuildFunction,city,item) --> bool)
@@ -1416,6 +1424,9 @@ end
 
 
 canBuildFunctions.version = canBuildVersion
+gen.versionFunctions(canBuildFunctions,versionNumber,fileModified,"LuaCore".."\\".."canBuild.lua")
+gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."canBuild.lua")
+
 return canBuildFunctions
 
 

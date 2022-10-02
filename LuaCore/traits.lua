@@ -1,3 +1,10 @@
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+
 -- The traits module associates strings with different
 -- civilization objects, for more convenient coding.
 --
@@ -6,8 +13,9 @@
 -- is relevant, instead of maintaining different tables for
 -- each time you want to check if something is a tank.
 
-local gen = require("generalLibrary")
-local traits = {version=1}
+local gen = require("generalLibrary"):minVersion(1)
+local traits = {version=versionNumber}
+gen.versionFunctions(traits,versionNumber,fileModified,"LuaCore".."\\".."traits.lua")
 
 --      traitTables
 --  a traitTable is a table of tables, with the outer

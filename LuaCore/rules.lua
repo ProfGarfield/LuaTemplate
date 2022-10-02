@@ -1,16 +1,26 @@
+--
+local versionNumber = 1
+local fileModified = false -- set this to true if you change this file for your scenario
+-- if another file requires this file, it checks the version number to ensure that the
+-- version is recent enough to have all the expected functionality
+-- if you set fileModified to true, the error generated if this file is out of date will
+-- warn you that you've modified this file
+--
+--
 -- The Rules module is a module that reads supplementary
 -- @SECTIONS of rules.txt, and translates them to
 -- tables or functions defining Lua events.
-local gen = require("generalLibrary")
+local gen = require("generalLibrary"):minVersion(1)
 local readRules = require("readRules")
 local text = require("text")
-local civilopedia = require("civilopedia")
-local discreteEvents = require("discreteEventsRegistrar")
+local civilopedia = require("civilopedia"):minVersion(1)
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local keyboard = require("keyboard")
 
 local readFromFile = "rules_lst.txt"
 local rulesTable = readRules.readRules(gen.getScenarioDirectory().."\\"..readFromFile,true)
 local rules = {}
+gen.versionFunctions(rules,versionNumber,fileModified,"LuaCore".."\\".."rules.lua")
 local originalRules = readRules.loadedRules
 
 local function paddString(str,characters)
