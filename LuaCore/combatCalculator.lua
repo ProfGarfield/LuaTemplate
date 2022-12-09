@@ -1,6 +1,6 @@
 
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -266,7 +266,7 @@ end
 -- Credit to http://www.civfanatics.com/civ2/strategy/combatguide and especially to TheNamelessOne
 -- combatModifierOverride is an optional argument can have the same keys as the combatModifier table
 --  any supplied keys will override the combatModifier values for the current calculation only
---      the following six modifiers are also available
+--      the following seven modifiers are also available
 --      aCustomAdd -- add this to attack before multipliers are applied (negative number to subtract,
 --                              attack will be set to 1 if this would set it lower)
 --      dCustomAdd -- add this to defense before multipliers are applied (negative number to subract,
@@ -277,6 +277,7 @@ end
 --                          subtract, but min firepower will be 1)
 --      dAddFirepower -- add this to the defender's firepower before any other calculations (negative number to
 --                          subtract, but min firepower will be 1)
+--      dTerrainDefenseValue -- overrides the terrain defense bonus (normally calculated by baseTerrain.defense/2) 
 --
 local function getCombatValues (attacker, defender, isSneakAttack,combatModifierOverride) --> 4 integers, followed by 4 (informational-only) strings:
 		-- attackerStrength, attackerFirepower, defenderStrength, defenderFirepower,
@@ -290,6 +291,12 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
         if combatModifierOverride[key] ~= nil then
             combatModifier[key] = combatModifierOverride[key]
         end
+    end
+    -- I don't remember if there was a reason for the above loop to pair over combatModifier
+    -- instead of combatModifierOverride, so I add this check here
+    -- Standard behaviour happens when dTerrainDefenseValue is nil
+    if combatModifierOverride.dTerrainDefenseValue then
+        combatModifier.dTerrainDefenseValue = combatModifierOverride.dTerrainDefenseValue
     end
     
 	local attackerStrengthModifiersApplied = ""
@@ -518,7 +525,12 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 		local terrainFactor = 1
 		-- 12a. Base Terrain Type:
 		if combatModifier.dBaseTerrainCheck then
-			terrainFactor = defender.location.baseTerrain.defense / 2
+            if combatModifier.dTerrainDefenseValue then
+                terrainFactor = combatModifier.dTerrainDefenseValue
+                -- added this to make it easy to override regular terrain defense values (prof. garfield)
+            else
+			    terrainFactor = defender.location.baseTerrain.defense / 2
+            end
 		end
 		-- 12b. River:
 		if defender.location.river then

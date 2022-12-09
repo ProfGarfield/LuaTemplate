@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -77,11 +77,21 @@ end
 
 
 local allowedTraits = {}
+local allowedTraitsSpecified = false
+
+local function allowedTraitsRun(functionName)
+    if not allowedTraitsSpecified then
+        error(functionName..": the function traits.allowedTraits must be executed before you can use this function.  If traits.allowedTraits isn't in this file, add a require line to this file for the file that traits.allowedTraits is executed in.  In the standard template, this should be\nrequire(\"setTraits\")")
+    end
+end
 
 -- specify all the allowed traits,
 -- arguments can be either strings or 
 -- tables of strings
 function traits.allowedTraits(...)
+    if allowedTraitsSpecified then
+        error("traits.allowedTraits: you can only run this function once during script initialization.")
+    end
     local argList = {...}
     for __,arg in pairs(argList) do
         local argTable = arg
@@ -96,8 +106,13 @@ function traits.allowedTraits(...)
             allowedTraits[traitString]=true
         end
     end
+    allowedTraitsSpecified = true
 end
 
+-- returns a copy of all allowed traits in the form {["trait"]=true}
+function traits.allTraits()
+    return gen.copyTable(allowedTraits)
+end
 
 
 -- returns the appropriate traitTable for a given object
@@ -189,6 +204,18 @@ local function iterateTraitStrings(table,functionName)
         end
     end)
 end
+
+-- returns an error if any of the supplied traits have
+-- not been registered
+function traits.validateTraits(...)
+    allowedTraitsRun("traits.validTraits")
+    local list = {...}
+    for trait in iterateTraitStrings(list,"traits.validateTraits") do
+
+    end
+end
+
+
 -- an arbitrary number of traits can be assigned
 -- at once, i.e.
 -- traits(object,trait1)
@@ -196,6 +223,13 @@ end
 --      each trait can be either a string
 --      or a table of strings
 function traits.assign(object,...)
+    allowedTraitsRun("traits.assign")
+    if type(object) == "table" then
+        for _,val in pairs(object) do
+            traits.assign(val,...)
+        end
+        return
+    end
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
     local arglist = {...}
@@ -212,6 +246,13 @@ end
 -- of items all need the same traits, except one
 -- or two don't need them all
 function traits.unassign(object,...)
+    allowedTraitsRun("traits.unassign")
+    if type(object) == "table" then
+        for _,val in pairs(object) do
+            traits.unassign(val,...)
+        end
+        return
+    end
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
     local arglist = {...}
@@ -226,6 +267,7 @@ end
 -- if the object currently has the trait
 
 function traits.conditionalTrait(object,traitString,func)
+    allowedTraitsRun("traits.conditionalTrait")
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
     if type(traitString)~="string" then
@@ -257,6 +299,7 @@ function traits.hasTrait(object,traitString)
     -- Only reason to do this is to avoid if statements
     return (traitVal and (traitVal == true or traitVal())) or false
 end
+
 
 
 -- returns a table of all the traits the object has
@@ -439,7 +482,7 @@ function traits.cityImprovementTraitsTable(city,ignoreWonderEquivalent)
     end
     if not ignoreWonderEquivalent then
         for wonder,improvement in pairs(improvementEquivalentWonders) do
-            if gen.applyWonderBonus(wonder,city.owner) then
+            if gen.isWonderActiveForTribe(wonder,city.owner) then
                 for trait, boolOrFn in pairs(improvementTraits[improvement.id]) do
                     if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
                         outputTable[trait] = true
@@ -485,20 +528,78 @@ end
 --  return true
 --  return false if none are associated
 
---function traits.anyAssociatedWithTribe(tribeObject,...)
---    if not civ.isTribe(tribeObject) then
---        error("traits.anyAssociatedWithTribe: first argument must be a tribe object.")
---    end
---    local arglist = {...}
---    local newArgs = {}
---    local index = 1
---    for submittedTrait in iterateTraitStrings(arglist,"traits.anyAssociatedWithTribe") do
---        newArgs[index] = submittedTrait
---        index = index+1
---    end
---    
---
---end
+function traits.anyAssociatedWithTribe(tribeObject,...)
+    if not civ.isTribe(tribeObject) then
+        error("traits.anyAssociatedWithTribe: first argument must be a tribe object.  Received: "..tostring(tribeObject))
+    end
+    local arglist = {...}
+    local techTraits = traits.ownedTechTraitsTable(tribeObject)
+    local wonderTraits = traits.ownedWonderTraitsTable(tribeObject)
+    for submittedTrait in iterateTraitStrings(arglist,"traits.anyAssociatedWithTribe") do
+        if traits.hasTrait(tribeObject,submittedTrait) or techTraits[submittedTrait] or wonderTraits[submittedTrait] then
+            return true
+        end
+    end
+    return false
+end
 
+-- considers the list of traits,
+-- if the tile's terrain or baseTerrain has any trait in the list,
+-- or any improvement or wonder in the city on that tile has any trait in the list
+-- (if there is a city)
+-- return true
+-- return false if none of the traits are associated
+
+function traits.anyAssociatedWithTile(tile,...)
+    if not civ.isTile(tile) then
+        error("traits.anyAssociatedWithTile: first argument must be a tile object.  Received: "..tostring(tileObject))
+    end
+    local arglist = {...}
+    local cityImprovementTraits = (tile.city and traits.cityImprovementTraitsTable(tile.city)) or {}
+    local tileTerrain = tile.terrain
+    local tileBaseTerrain = tile.baseTerrain
+    for submittedTrait in iterateTraitStrings(arglist,"traits.anyAssociatedWithTile") do
+        if traits.hasTrait(tileTerrain,submittedTrait) or traits.hasTrait(tileBaseTerrain,submittedTrait) or cityImprovementTraits[submittedTrait] then
+            return true
+        end
+    end
+    return false
+end
+
+--[[
+-- traits.canHaveTrait(object,traitString)-->boolean
+-- traits.canHaveTrait(isObjectTypeFnKey,traitString) --> boolean
+--  object is any kind of object that can have a trait
+--  isObjectTypeFnKey is one of the following strings
+--      "isTerrain" "isBaseTerrain", "isImprovement", "isTribe",
+--      "isTech", "isWonder", "isUnitType",
+--  returns true if the object/class of objects can have a trait
+--  (even if only sometimes)
+--  returns false if it can never have the trait
+function traits.canHaveTrait(objectOrIsKindFnKey,traitString)
+    if type(objectOrIsKindFnKey) == "string" then
+        local traitsTable = nil
+        if "isUnitType" == objectOrIsKindFnKey then
+            traitsTable =  unitTypeTraits
+        elseif "isImprovement" == objectOrIsKindFnKey then
+            traitsTable =  improvementTraits
+        elseif "isWonder" == objectOrIsKindFnKey then
+            traitsTable =  wonderTraits
+        elseif "isTech" == objectOrIsKindFnKey then
+            traitsTable =  techTraits
+        elseif "isBaseTerrain" == objectOrIsKindFnKey then
+            traitsTable =  baseTerrainTraits
+        elseif "isTerrain" == objectOrIsKindFnKey then
+            traitsTable =  terrainTraits
+        elseif "isTribe" == objectOrIsKindFnKey then
+            traitsTable =  tribeTraits
+        end
+
+
+    else
+
+    end
+end
+--]]
 
 return traits

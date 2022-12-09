@@ -1,8 +1,7 @@
 --
--- not yet integrated into template
 --
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -13,6 +12,8 @@ local fileModified = false -- set this to true if you change this file for your 
 --
 local gen = require("generalLibrary"):minVersion(1)
 local param = require("parameters")
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(2)
+gen.minEventsLuaVersion(2,1,"seasonSettings.lua")
 --
 -- If you need to reset all the values for a season
 -- (perhaps terrain was given a special bonus for some
@@ -42,6 +43,7 @@ end
 
 
 
+
 function seasons.setSeason()
     -- by default, setSeason does nothing,
     -- since, by default, there are no special seasons
@@ -53,6 +55,13 @@ function seasons.setSeason()
     --  else
     --      setWinter()
 
+end
+
+-- Events.lua automatically runs onChooseSeason at the very start of the onTurn event
+-- and at the very start of the onScenarioLoaded event.
+
+function discreteEvents.onChooseSeason()
+    seasons.setSeason()
 end
 
 gen.versionFunctions(seasons,versionNumber,fileModified,"MechanicsFiles".."\\".."seasonSettings.lua")

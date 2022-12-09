@@ -2,6 +2,7 @@ local equalsColumn = 32 -- the = will be in this column, unless the table and ke
 
 local width,height,n_maps = civ.getAtlasDimensions()
 
+local text = require("text"):minVersion(2)
 
 
 
@@ -19,6 +20,7 @@ end
 local usedKeys = {}
 
 local function scrubKey(key,prefix)
+    key = text.anglicise(key)
     key = prefix..string.gsub(key,"[^%a%d]","")
     while usedKeys[key] do
         key = key.."_"

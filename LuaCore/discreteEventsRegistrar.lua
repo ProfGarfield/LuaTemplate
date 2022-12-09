@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -47,6 +47,7 @@ local recommendedVersion = function(self,recVersion)
 end
 discreteEvents.minVersion = minVersion
 discreteEvents.recommendedVersion = recommendedVersion
+discreteEvents.getVersion = versionNumber
 
 local eventsVersion = {}
 eventsVersion.versionNumber = _G._discreteEventsRegistrar_events_lua_versionNumber
@@ -323,7 +324,7 @@ eventsTable.onChooseSeasonIndex = 1
 
 function discreteEvents.performOnChooseSeason()
     for i=1, eventsTable.onChooseSeasonIndex-1 do
-        eventsTable.onChooseSeason()
+        eventsTable.onChooseSeason[i]()
     end
 end
 

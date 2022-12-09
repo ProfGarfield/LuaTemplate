@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -31,10 +31,11 @@ local register = {}
 local gen = require("generalLibrary"):minVersion(1)
 gen.versionFunctions(register,versionNumber,fileModified,"MechanicsFiles".."\\".."combatSettings.lua")
 --
-local combatCalculator = require("combatCalculator")
+local combatCalculator = require("combatCalculator"):recommendedVersion(2)
 local rules = require("rules"):minVersion(1)
 local text = require("text")
 local simpleSettings = require("simpleSettings"):recommendedVersion(1)
+local combatModifiers = require("combatModifiers"):minVersion(1)
 
 
 
@@ -116,6 +117,8 @@ Modifiers that can be disabled by setting their value to "0" (the numeric value,
 --                          subtract, but min firepower will be 1)
 --      dAddFirepower -- add this to the defender's firepower before any other calculations (negative number to
 --                          subtract, but min firepower will be 1)
+--      dTerrainDefenseValue -- overrides the terrain defense bonus (normally calculated by baseTerrain.defense/2) 
+--          requires combatCalculator version 2 to have any effect
 
 local function computeCombatStatistics(attacker, defender, isSneakAttack)
     
@@ -124,6 +127,7 @@ local function computeCombatStatistics(attacker, defender, isSneakAttack)
     local aMult, dMult = rules.combatGroupCustomModifiers(attacker,defender)
     combatModifierOverride.aCustomMult = combatModifierOverride.aCustomMult*aMult
     combatModifierOverride.dCustomMult = combatModifierOverride.dCustomMult*dMult
+    combatModifiers.applyRegisteredRules(attacker,defender,combatModifierOverride)
 
 
 
@@ -233,7 +237,7 @@ function register.onChooseDefender(defaultFunction,tile,attacker,isCombat)
         if attackerStrength == 0 then
             defenderValue = 1e7 -- 10 million
         else
-            defenderValue = (defenderStrength/attackerStrength)*possibleDefender.hitpoints//possibleDefender.type.hitpoints
+            defenderValue = (defenderStrength/attackerStrength)*possibleDefender.hitpoints/possibleDefender.type.hitpoints
         end
         defenderValue = defenderValue + defenderValueModifier(possibleDefender,tile,attacker)
         if defenderValue > bestDefenderValue or 
@@ -274,7 +278,8 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
             text.simple("Our "..attacker.type.name.." unit can't fight the defending "..defender.type.name..".  The attack has been cancelled.","Defense Minister")
         end
     end
-    --civ.ui.text("Attacker Strength: "..calculatedAttackerStrength.." Defender Strength: "..calculatedDefenderStrength)
+    -- %Report Combat Strength%
+    --civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
             
     return coroutine.create(function()
         local round = 0
@@ -301,7 +306,7 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
                 local newAttackerFirepower = calculatedAttackerFirepower
                 local newDefenderDie = calculatedDefenderStrength
                 local newDefenderFirepower = calculatedDefenderFirepower
-                local result = coroutine.yield(false,newAttackerDie,newAttackerFirepower,defenderDie,newDefenderFirepower)
+                local result = coroutine.yield(false,newAttackerDie,newAttackerFirepower,newDefenderDie,newDefenderFirepower)
 
                 --In this case the coroutine resumes with the result of the round, 
                 --a table containing four values:

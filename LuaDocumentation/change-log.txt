@@ -14,7 +14,6 @@ Modified code provided by Pablostuka for gen.getBearing function.
 
 fixed bug in traits.lua
 
-last update
 
 range for land and sea disabled by default
 
@@ -22,7 +21,21 @@ make ships defend first, don't re-define the defender value modifier function
 
 unitData, cityData, tileData created
 
+last update
 
+tables with metatables are not "state savable" according to gen.isStateSavable
+
+traits.assign and traits.unassign generate errors if traits.allowedTraits has not been executed yet
+
+non-english characters are anglicised by makeObject.lua instead of deleted.  This function is also in text.lua
+
+fixed bug in radar.lua
+
+integrated seasonSettings.lua into the template.
+
+Traits can now be assigned to all the items in a table.
+
+fixed bugs in combatSettings.lua
 
 todo
 

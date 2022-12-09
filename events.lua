@@ -1,6 +1,6 @@
 -- Note: this isn't actually the first version of this file.  It is just the first version that
 -- I assigned a version number to.
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -200,6 +200,7 @@ attemptToRun('radarSettings',"WARNING: radarSettings.lua not found.  You will no
 local supplementalData = require("supplementalData"):minVersion(1)
 local unitData = require("unitData"):minVersion(1)
 local cityData = require("cityData"):minVersion(1)
+require("registerFiles"):minVersion(1)
 
 
 
@@ -319,7 +320,8 @@ local function attemptRequireWithKey(moduleName,key,defaultReturnValue)
     end
 end
 
-local individualFileDirectory = "EventsFiles\\"
+
+local individualFileDirectory = "" --"EventsFiles\\" was unnecessary and duplicated require calls in requireIfAvailable if the same file was required without the directory name
 
 -- the results of attemptRequireWithKey are placed here
 -- this way, all the requires happen at once, so the warnings can
@@ -1055,5 +1057,10 @@ end
 local scriptIntegratorFound,prefix = requireIfAvailable("Scripts\\scriptIntegrator")
 if not scriptIntegratorFound then
     print("WARNING: Did not find Scripts\\scriptIntegrator.lua.  CTRL+SHIFT+F4 script menu not available.")
+end
+
+local seasonSettingsFound, prefix = requireIfAvailable("seasonSettings")
+if not seasonSettingsFound then
+    print("WARNING: Did not find seasonSettings.lua. If you have registered season information in that file, it is not available.")
 end
 

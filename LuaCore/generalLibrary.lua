@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -431,6 +431,10 @@ end
 -- gen.setScenarioDirectory(directoryPath) --> void
 -- gen.getScenarioDirectory() --> string
 -- gen.isStateSavable(item) --> boolean
+-- gen.calculateWeight(item,weightTable,extraArgument=nil) --> number or false
+-- gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
+-- gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
+-- gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
 -- gen.placeMarker(tile,tribe,markerOption)
 -- gen.removeMarker(tile,tribe,markerOption) --> void
 -- gen.maintainTileMarkerTable() --> void
@@ -448,7 +452,12 @@ end
 -- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
 -- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
 -- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
--- gen.tableToString(table)
+-- gen.tableToString(table) --> string
+--  gen.describeAllowableData(validDataInfo) --> string
+-- gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber, argumentName,validDataInfo,extraInfo=nil) --> void or error
+-- gen.versionFunctions(moduleTable,versionNumber,fileMod,moduleFileName) -->void
+-- gen.registerEventsLuaVersion(versionNumber,fileMod,regressionNumber)
+-- gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable) --> newItemFunction, isDataTypeFunction
 --
 --
 --
@@ -4382,6 +4391,49 @@ gen.original.wUnitedNations           = civ.getWonder(24)
 gen.original.wApolloProgram           = civ.getWonder(25)
 gen.original.wSETIProgram             = civ.getWonder(26)
 gen.original.wCureforCancer           = civ.getWonder(27)
+gen.original.bDesert                  =civ.getBaseTerrain(0,0)  --Drt
+gen.original.bPlains                  =civ.getBaseTerrain(0,1)  --Pln
+gen.original.bGrassland               =civ.getBaseTerrain(0,2)  --Grs
+gen.original.bForest                  =civ.getBaseTerrain(0,3)  --For
+gen.original.bHills                   =civ.getBaseTerrain(0,4)  --Hil
+gen.original.bMountains               =civ.getBaseTerrain(0,5)  --Mou
+gen.original.bTundra                  =civ.getBaseTerrain(0,6)  --Tun
+gen.original.bGlacier                 =civ.getBaseTerrain(0,7)  --Gla
+gen.original.bSwamp                   =civ.getBaseTerrain(0,8)  --Swa
+gen.original.bJungle                  =civ.getBaseTerrain(0,9)  --Jun
+gen.original.bOcean                   =civ.getBaseTerrain(0,10)  --Oce
+gen.original.tDesert                  =civ.getTerrain(0,0,0)
+gen.original.tOasis                   =civ.getTerrain(0,0,1) -- Fish Resource
+gen.original.tDesertOil               =civ.getTerrain(0,0,2) -- Whale Resource
+gen.original.tPlains                  =civ.getTerrain(0,1,0)
+gen.original.tBuffalo                 =civ.getTerrain(0,1,1) -- Fish Resource
+gen.original.tWheat                   =civ.getTerrain(0,1,2) -- Whale Resource
+gen.original.tGrassland               =civ.getTerrain(0,2,0)
+gen.original.tForest                  =civ.getTerrain(0,3,0)
+gen.original.tPheasant                =civ.getTerrain(0,3,1) -- Fish Resource
+gen.original.tSilk                    =civ.getTerrain(0,3,2) -- Whale Resource
+gen.original.tHills                   =civ.getTerrain(0,4,0)
+gen.original.tCoal                    =civ.getTerrain(0,4,1) -- Fish Resource
+gen.original.tWine                    =civ.getTerrain(0,4,2) -- Whale Resource
+gen.original.tMountains               =civ.getTerrain(0,5,0)
+gen.original.tGold                    =civ.getTerrain(0,5,1) -- Fish Resource
+gen.original.tIron                    =civ.getTerrain(0,5,2) -- Whale Resource
+gen.original.tTundra                  =civ.getTerrain(0,6,0)
+gen.original.tGame                    =civ.getTerrain(0,6,1) -- Fish Resource
+gen.original.tFurs                    =civ.getTerrain(0,6,2) -- Whale Resource
+gen.original.tGlacier                 =civ.getTerrain(0,7,0)
+gen.original.tIvory                   =civ.getTerrain(0,7,1) -- Fish Resource
+gen.original.tGlacierOil              =civ.getTerrain(0,7,2) -- Whale Resource
+gen.original.tSwamp                   =civ.getTerrain(0,8,0)
+gen.original.tPeat                    =civ.getTerrain(0,8,1) -- Fish Resource
+gen.original.tSpice                   =civ.getTerrain(0,8,2) -- Whale Resource
+gen.original.tJungle                  =civ.getTerrain(0,9,0)
+gen.original.tGems                    =civ.getTerrain(0,9,1) -- Fish Resource
+gen.original.tFruit                   =civ.getTerrain(0,9,2) -- Whale Resource
+gen.original.tOcean                   =civ.getTerrain(0,10,0)
+gen.original.tFish                    =civ.getTerrain(0,10,1) -- Fish Resource
+gen.original.tWhales                  =civ.getTerrain(0,10,2) -- Whale Resource
+
 
 -- gen.isTileRevealed(tile,tribe) -> boolean
 -- returns true if tile is revealed, false otherwise
@@ -4880,8 +4932,12 @@ end
 --  a boolean
 --  a table with keys that are numbers or strings
 --    and with values that are also state savable
+--  Note: table can't have a metatable
 function gen.isStateSavable(item)
   if type(item) == "table" then
+    if getmetatable(item) then
+        return false
+    end
     for key,value in pairs(item) do
       if type(key) ~= "number" and type(key) ~="string" then
         return false
@@ -5932,11 +5988,12 @@ function gen.versionFunctions(moduleTable,vNum,fileMod,moduleFileName)
         end
         return self
     end
-    if moduleTable.minVersion or moduleTable.recommendedVersion then
-        error("gen.versionFunctions: this module has already assigned the minVersion or recommendedVersion keys.")
+    if moduleTable.minVersion or moduleTable.recommendedVersion or moduleTable.getVersion then
+        error("gen.versionFunctions: this module has already assigned the minVersion, recommendedVersion or version keys.")
     end
     moduleTable.minVersion = minVersion
     moduleTable.recommendedVersion = recommendedVersion
+    moduleTable.getVersion = vNum
 end
 
 gen.versionFunctions(gen,versionNumber,fileModified,"LuaCore".."\\".."generalLibrary.lua")
@@ -5974,8 +6031,300 @@ function gen.minEventsLuaVersion(minVersion,regNum,fileName)
     end
 end
 
+function gen.validateTableValue(tableDescription,key,value,validDataInfo,extraInfo)
+    gen.checkValidDataInfo(validDataInfo)
+    local data = value
+    local dataType = type(data)
+    local vDI = validDataInfo[dataType]
+    local function constructErrorMessage(data,tableDescription,key,extraInfo, tableReturnInfo)
+        local tostringResult = tostring(data)
+        if type(data) == "table" then
+            tostringResult = gen.tableToString(data)
+        elseif type(data) == "string" then
+            tostringResult = 'string<"'..data..'">'
+        end
+        local errorMessage = tableDescription..": key: "..tostring(key).."; "
+        errorMessage = errorMessage.."Expected :"..gen.describeAllowableData(validDataInfo)
+            .."; Received: "..tostringResult
+        if tableReturnInfo then
+            errorMessage = errorMessage.."; Reported table problem: "..tableReturnInfo
+        end
+        if extraInfo then
+            errorMessage = errorMessage.."; extra information: "..extraInfo
+        end
+        return errorMessage
+    end
+    if not vDI then
+        error(constructErrorMessage(data,tableDescription,key, extraInfo))
+    end
+    if dataType == "nil" then
+        -- if nil isn't allowed, it is caught in not vDI
+        return
+    elseif dataType == "boolean" then
+        if (vDI == true or tostring(data) == vDI) then
+            return
+        else
+            error(constructErrorMessage(data,tableDescription,key, extraInfo))
+        end
+    elseif dataType == "function" then
+        -- The function is not checked beyond the fact that it is a function
+        -- If the function isn't allowed, it is caught in not vDI
+        return
+    elseif dataType == "number" then
+        if vDI == true then
+            return
+        end
+        local minVal = vDI.minVal or -math.huge
+        local maxVal = vDI.maxVal or math.huge
+        local notInteger = not vDI.integer
+        if data >= minVal and data <= maxVal and (notInteger or data == math.floor(data)) then
+            return
+        end
+            error(constructErrorMessage(data,tableDescription,key, extraInfo))
+    elseif dataType == "string" then
+        if vDI == true or vDI[data] then
+            return
+        end
+            error(constructErrorMessage(data,tableDescription,key, extraInfo))
+    elseif dataType == "table" then
+        if vDI == true or type(vDI) == "string" then
+            -- don't check anything specific about the table
+            return 
+        end
+        local errorString = vDI[1](data)
+        if type(errorString) == "string" then
+            error(constructErrorMessage(data,tableDescription,key, extraInfo,errorString))
+        end
+    elseif dataType == "userdata" then
+        for dataTypeName,isDataTypeFn in pairs(vDI) do
+            if isDataTypeFn(data) then
+                return
+            end
+        end
+        error(constructErrorMessage(data,tableDescription,key, extraInfo))
+    else
+        error(constructErrorMessage(data,tableDescription,key, extraInfo))
+    end
+end
+
+-- gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable) -->
+--      newItemFunction(table) --> dataType,
+--          creates (and validates) a new instance of the data type
+--      isDataTypeFunction(value) --> boolean,
+--          creates a function that checks if a value is the dataType
+--      dataTypeMetatable
+--          the metatable for the data type
+--
+--  dataName = string
+--      the name of the data type
+--  specificKeyTable={[key] = validDataInfo}
+--      gives allowable keys, and the valid kinds of data they can be
+--
+--  generalKeyTable={[function(possibleKey)-->bool]=validDataInfo}
+--      if a key isn't in the specificKeyTable, the key is checked against
+--      each key function in this table, and, if there is a match, uses
+--      that validDataInfo
+--      if no match here or in specificKeyTable, the key is invalid, generating an error
+--  defaultValueTable = {[key]=value}
+--      when a new dataType is generated, if the key is not specified, use the value in this table
+--  fixedKeyTable = {[key] = true}
+--      if true, the key can't be changed after the data is created
+
+function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable)
+    specificKeyTable = gen.copyTable(specificKeyTable)
+    for key,vDI in pairs(specificKeyTable) do
+        gen.checkValidDataInfo(vDI)
+    end
+    generalKeyTable = gen.copyTable(generalKeyTable)
+    for key,vDI in pairs(generalKeyTable) do
+        gen.checkValidDataInfo(vDI)
+        if not vDI["nil"] then
+            error("gen.createDataType: (creating "..dataName..") keys defined by the generalKeyTable must be allowed to have nil values.")
+        end
+    end
+    defaultValueTable = gen.copyTable(defaultValueTable)
+    fixedKeyTable = gen.copyTable(fixedKeyTable)
+    local function validDataInfoForKey(key)
+        if specificKeyTable[key] then
+            return specificKeyTable[key]
+        end
+        for keyCheckFn,vDI in pairs(generalKeyTable) do
+            if keyCheckFn(key) then
+                return vDI
+            end
+        end
+        return false
+    end
+    for key,value in pairs(defaultValueTable) do
+        local vDI = validDataInfoForKey(key)
+        if not vDI then
+            error("gen.createDataType: (creating "..dataName..") the key "..tostring(key).." in the defaultValueTable is not a valid key for this data type.")
+        end
+        gen.validateTableValue("gen.createDataType (creating "..dataName..")",key,value,vDI)
+    end
+    for key,_ in pairs(fixedKeyTable) do
+        local vDI = validDataInfoForKey(key)
+        if not vDI then
+            error("gen.createDataType: (creating "..dataName.." the key "..tostring(key).." in the fixedKeyTable is not a valid key for this data type.")
+        end
+    end
+    local uniqueTableForDataType = {}
+    local mt = {}
+    mt.trueTableKey = uniqueTableForDataType
+    mt.__index = function(t,key)
+        if validDataInfoForKey(key) then
+            return t[uniqueTableForDataType][key]
+        else
+            error(dataName..".index: the key "..tostring(key).." is not a valid key for "..dataName)
+        end
+    end
+    mt.__newindex = function(t,key,value)
+        local vDI = validDataInfoForKey(key)
+        if not vDI then
+            error(dataName..".index: the key "..tostring(key).." is not a valid key for "..dataName)
+        end
+        if fixedKeyTable[key] then
+            error(dataName..".newIndex: the key "..tostring(key).." can't be changed after the "..dataName.." is created.")
+        end
+        gen.validateTableValue(dataName,key,value,vDI)
+        t[uniqueTableForDataType][key] = value
+    end
+    mt.__pairs = function(t)
+        return pairs(t[uniqueTableForDataType])
+    end
+    mt.__ipairs = function(t)
+        return ipairs(t[uniqueTableForDataType])
+    end
+    local function newItemFunction(table)
+        local newData = {}
+        newData[uniqueTableForDataType] = {}
+        for key,value in pairs(defaultValueTable) do
+            newData[uniqueTableForDataType][key] = value
+        end
+        for key,value in pairs(table) do
+            local vDI = validDataInfoForKey(key)
+            if not vDI then
+                error("new "..dataName..": the key "..tostring(key).." is invalid.")
+            end
+            gen.validateTableValue("new "..dataName,key,value,vDI)
+            newData[uniqueTableForDataType][key] = value
+        end
+        for key,vDI in pairs(specificKeyTable) do
+            local value = newData[uniqueTableForDataType][key]
+            gen.validateTableValue("new "..dataName,key,value,vDI,"(note: the most likely cause of this error is that this key can't be nil, a default value for the key was not provided when designing the constructor, and the key's value was not provided.")
+        end
+        setmetatable(newData,mt)
+        return newData
+    end
+
+    local function isDataTypeFunction(value)
+        return getmetatable(value) == mt
+    end
+    return newItemFunction, isDataTypeFunction, mt
+end
+
+-- gen.valueSatisfiesValidDataInfo(value,validDataInfo)--> boolean
+--  returns true if value satisfies VDI, false otherwise
+function gen.valueSatisfiesValidDataInfo(value,validDataInfo)
+    local data = value
+    local dataType = type(data)
+    local vDI = validDataInfo[dataType]
+    if not vDI then
+        return false
+    end
+    if dataType == "nil" then
+        -- if nil isn't allowed, it is caught in not vDI
+        return true
+    elseif dataType == "boolean" then
+        if (vDI == true or tostring(data) == vDI) then
+            return true
+        else
+            return false
+        end
+    elseif dataType == "function" then
+        -- The function is not checked beyond the fact that it is a function
+        -- If the function isn't allowed, it is caught in not vDI
+        return true
+    elseif dataType == "number" then
+        if vDI == true then
+            return true
+        end
+        local minVal = vDI.minVal or -math.huge
+        local maxVal = vDI.maxVal or math.huge
+        local notInteger = not vDI.integer
+        if data >= minVal and data <= maxVal and (notInteger or data == math.floor(data)) then
+            return true
+        end
+            error(constructErrorMessage(data,tableDescription,key, extraInfo))
+    elseif dataType == "string" then
+        if vDI == true or vDI[data] then
+            return true
+        end
+        return false
+    elseif dataType == "table" then
+        if vDI == true or type(vDI) == "string" then
+            -- don't check anything specific about the table
+            return true
+        end
+        local errorString = vDI[1](data)
+        if type(errorString) == "string" then
+            return false
+        end
+    elseif dataType == "userdata" then
+        for dataTypeName,isDataTypeFn in pairs(vDI) do
+            if isDataTypeFn(data) then
+                return true
+            end
+        end
+        return false
+    else
+        return false
+    end
+end
 
 
+
+-- gen.tableOfVDI(validDataInfo) --> validDataInfo
+--  takes a validDataInfo, and returns a validDataInfo where
+--  the valid data is a table where all values are of the
+--  submitted validDataInfo
+function gen.tableOfVDI(vDI)
+    gen.checkValidDataInfo(validDataInfo)
+    local vDI = gen.copyTable(vDI)
+    local function analysisFn(table)
+        for key,value in pairs(table) do
+            if not gen.valueSatisfiesValidDataInfo(value,vDI) then
+                return "The key "..tostring(key).." has an invalid value of "..tostring(value).."."
+            end
+        end
+        return true
+    end
+    return {["table"]={analysisFn,"A table with these values "..gen.describeAllowableData(vDI)}}
+end
+
+-- gen.vDIOrTableOfVDI(validDataInfo) --> validDataInfo
+--  takes a validDataInfo, and returns a validDataInfo
+--  that also allows a table with the same validDataInfo fore each value
+--  validDataInfo can't include any tables
+--
+function gen.vDIOrTableOfVDI(vDI)
+    gen.checkValidDataInfo(vDI)
+    local vDI = gen.copyTable(vDI)
+    if vDI["table"] then
+        error("gen.vDIOrTableOfVDI: validDataInfo has a table as a kind of valid data.  This is invalid for this function.  You can use gen.tableOfVDI, or write a custom vDI.")
+    end
+    local function analysisFn(table)
+        for key,value in pairs(table) do
+            if not gen.valueSatisfiesValidDataInfo(value,vDI) then
+                return "The key "..tostring(key).." has an invalid value of "..tostring(value).."."
+            end
+        end
+        return true
+    end
+    local vDICopy = gen.copyTable(vDI)
+    vDICopy["table"]={analysisFn,"A table with these values "..gen.describeAllowableData(vDI)}
+    return vDICopy
+end
 
     
 

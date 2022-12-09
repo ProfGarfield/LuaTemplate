@@ -45,7 +45,6 @@ trackList[9] =  "Mars Expedition.mp3"
 trackList[10] = "Jules Verne.mp3"
 trackList[11] = "They're Here.mp3"
 trackList[12] = "The Dome.mp3"
-trackList[13] = "Mary Tudor .mp3"
 
 
 -- A check will be made to make sure all the files are available

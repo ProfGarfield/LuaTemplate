@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -1812,6 +1812,97 @@ local function initCap(str)
     return string.gsub(str,"^%l",text.iUpper)
 end
 text.initCap = initCap
+
+-- English Equivalent
+-- Provides a conversion from extended ascii to English characters
+-- (main reason for function is to remove avoid removing outright
+-- non-english characters when making the object table)
+
+local englishEquivalent = {
+    [string.char(138)] = "S",
+    [string.char(140)] = "OE",
+    [string.char(142)] = "Z",
+    [string.char(154)] = "s",
+    [string.char(156)] = "oe",
+    [string.char(158)] = "z",
+    [string.char(159)] = "Y",
+    [string.char(192)] = "A",
+    [string.char(193)] = "A",
+    [string.char(194)] = "A",
+    [string.char(195)] = "A",
+    [string.char(196)] = "A",
+    [string.char(197)] = "A",
+    [string.char(198)] = "AE",
+    [string.char(199)] = "C",
+    [string.char(200)] = "E",
+    [string.char(201)] = "E",
+    [string.char(202)] = "E",
+    [string.char(203)] = "E",
+    [string.char(204)] = "I",
+    [string.char(205)] = "I",
+    [string.char(206)] = "I",
+    [string.char(207)] = "I",
+    [string.char(208)] = "D",
+    [string.char(209)] = "N",
+    [string.char(210)] = "O",
+    [string.char(211)] = "O",
+    [string.char(212)] = "O",
+    [string.char(213)] = "O",
+    [string.char(214)] = "O",
+    [string.char(216)] = "O",
+    [string.char(217)] = "U",
+    [string.char(218)] = "U",
+    [string.char(219)] = "U",
+    [string.char(220)] = "U",
+    [string.char(221)] = "Y",
+    [string.char(222)] = "TH",
+    [string.char(223)] = "ss",
+    [string.char(224)] = "a",
+    [string.char(225)] = "a",
+    [string.char(226)] = "a",
+    [string.char(227)] = "a",
+    [string.char(228)] = "a",
+    [string.char(229)] = "a",
+    [string.char(230)] = "ae",
+    [string.char(231)] = "c",
+    [string.char(232)] = "e",
+    [string.char(233)] = "e",
+    [string.char(234)] = "e",
+    [string.char(235)] = "e",
+    [string.char(236)] = "i",
+    [string.char(237)] = "i",
+    [string.char(238)] = "i",
+    [string.char(239)] = "i",
+    [string.char(240)] = "o",
+    [string.char(241)] = "n",
+    [string.char(242)] = "o",
+    [string.char(243)] = "o",
+    [string.char(244)] = "o",
+    [string.char(245)] = "o",
+    [string.char(246)] = "o",
+    [string.char(248)] = "o",
+    [string.char(249)] = "u",
+    [string.char(250)] = "u",
+    [string.char(251)] = "u",
+    [string.char(252)] = "u",
+    [string.char(253)] = "y",
+    [string.char(254)] = "th",
+    [string.char(255)] = "y",
+
+}
+
+-- text.anglicise(string) --> string
+--  replaces international characters with English equivalents
+--  Intended for constructing object.lua file, but might have
+--  other uses
+function text.anglicise(str)
+    for char,replacement in pairs(englishEquivalent) do
+        str = string.gsub(str,char,replacement)
+    end
+    return str
+end
+text.englishEquivalent = englishEquivalent
+
 return text
 
 

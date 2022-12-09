@@ -545,6 +545,7 @@ local recommendedVersion = function(self,recVersion)
 end
 pedia.minVersion = minVersion
 pedia.recommendedVersion = recommendedVersion
+pedia.getVersion = versionNumber
 
 
 
