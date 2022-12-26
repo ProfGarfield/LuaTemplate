@@ -1,6 +1,6 @@
--- Note: this isn't actually the first version of this file.  It is just the first version that
+-- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -526,7 +526,7 @@ civ.scen.onActivateUnit(function(unit,source,repeatMove)
     --    doAfterProduction(civ.getTurn(),unit.owner)
     --    eventTools.guaranteeUnitActivationForNextActiveTribe(unit.owner)
     --end
-    promotionSettings.performPendingUpgrades()
+    unit = promotionSettings.performPendingUpgrades(unit)
     diplomacy.checkTreaties()
     doOnUnitActivation(unit,source,repeatMove)
     --eventTools.unitActivation(unit,source)

@@ -21,7 +21,6 @@ make ships defend first, don't re-define the defender value modifier function
 
 unitData, cityData, tileData created
 
-last update
 
 tables with metatables are not "state savable" according to gen.isStateSavable
 
@@ -36,6 +35,15 @@ integrated seasonSettings.lua into the template.
 Traits can now be assigned to all the items in a table.
 
 fixed bugs in combatSettings.lua
+
+created combatModifiers.lua
+
+
+last update
+
+bugfix in munitions.lua and promotions.lua so that munition users get promoted
+
+created changeRules.lua to change ephemeral entries by reading rules.txt type files, and keeps track of defaults for those ephemeral values.
 
 todo
 

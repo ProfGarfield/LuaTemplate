@@ -7,7 +7,7 @@ local fileModified = false -- set this to true if you change this file for your 
 -- warn you that you've modified this file
 
 
-local promotion = require("promotion")
+local promotion = require("promotion"):minVersion(2)
 local object = require("object")
 local rules = require("rules"):minVersion(1)
 local promotionSettings = {}
@@ -165,8 +165,9 @@ upgradeInfoTable = rules.upgradeInfoTable
 --          keys and values should be integers and strings
 --          table can have no values if nothing must be provided
 
--- upgradeFunction(unitToUpgradeID,replacementTypeID,promotionInfoTable)
+-- upgradeFunction(unitToUpgradeID,replacementTypeID,promotionInfoTable) --> unit
 --      actually performs the upgrade, including deleting the original unit
+--      must return the newly created unit
 --      the function gen.replaceUnit(oldUnit,replacementType) might be useful here
 
 local basicUpgradeChanceFunction, basicUpgradeFunction = promotion.buildBasicUpgrade(upgradeInfoTable)
@@ -187,8 +188,11 @@ function promotionSettings.checkForUpgradeDefeat(loser,winner,loserTile,loserVet
     end
 end
 
-function promotionSettings.performPendingUpgrades()
-    promotion.performPendingUpgrades(upgradeFunction)
+-- if active unit is provided, and the active unit is upgraded, 
+-- the replacement for the activeUnit is returned (so that unitActivation
+-- code doesn't cause errors)
+function promotionSettings.performPendingUpgrades(activeUnit)
+    return promotion.performPendingUpgrades(upgradeFunction,activeUnit)
 end
 
 -- Override production veteran status

@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -18,7 +18,7 @@ local fileModified = false -- set this to true if you change this file for your 
 --
 local gen = require("generalLibrary"):minVersion(1)
 local text = require("text")
-local munition = require("munitions")
+local munitions = require("munitions"):minVersion(2)
 local gamePromotionChance = 0.5 -- Don't change this, it is here so there are not a lot of 'magic' 0.5 floating around
 local civlua = require("civluaModified")
 --local eventTools = require("eventTools")
@@ -26,6 +26,7 @@ local civlua = require("civluaModified")
 local promotion = {}
 gen.versionFunctions(promotion,versionNumber,fileModified,"LuaCore".."\\".."promotion.lua")
 local promotionState = "promotionStateNotLinked"
+gen.minEventsLuaVersion(3,1,"promotion.lua")
 
 -- links the state table with this module
 local function linkState(tableInStateTable)
@@ -82,7 +83,6 @@ end
 local function customVetChance(loser,winner,aggressor,victim,loserTile,victimVetStatus,aggressorVetStatus,promotionChanceFn)
     local winnerVetStatus = nil
     local loserVetStatus = nil
-    local loserTile = nil
     if loser == victim then
         loserVetStatus = victimVetStatus
         winnerVetStatus = aggressorVetStatus
@@ -90,6 +90,17 @@ local function customVetChance(loser,winner,aggressor,victim,loserTile,victimVet
         winnerVetStatus = victimVetStatus
         loserVetStatus = aggressorVetStatus
     end
+    local shooter = munitions.getShooter(winner)
+    if shooter then
+        winner = shooter
+        winnerVetStatus = shooter.veteran
+        if loser == victim then
+            aggressor = shooter 
+        else
+            victim = shooter
+        end
+    end
+
 
     -- if no promotion chance function provided, or the winner was veteran before combat,
     -- then no need to do anything else
@@ -97,7 +108,25 @@ local function customVetChance(loser,winner,aggressor,victim,loserTile,victimVet
         return
     end
     local promotionChance = promotionChanceFn(loser,winner,aggressor,victim,loserVetStatus,winnerVetStatus,loserTile,aggressorVetStatus,victimVetStatus)
-    -- if the function returns nil, then regular promotion applies
+    -- handle munition stuff first
+    if shooter then
+        promotionChance = promotionChance or gamePromotionChance -- if promotionChance is nil, it is standard promotion chance
+        if math.random() < promotionChance then
+            winner.veteran = true
+            -- if the player is human, we may want a promotion message
+            if winner.owner.isHuman then
+                if winner.owner == civ.getCurrentTribe() then
+                    -- human is the active player
+                    text.simple(eventPromotionMessageFn(winner,loser),"Defense Minister")
+                elseif gen.isSinglePlayerGame() and winner.owner == civ.game.humanTribe then
+                -- if there is only one human player, show the message even if it is another player's turn
+                    text.simple(eventPromotionMessageFn(winner,loser),"Defense Minister")
+                end
+            end
+        end
+        return -- everything else doesn't apply to a winner via munition
+    end
+    -- if the promotion chance function returns nil, then regular promotion applies
     if not promotionChance then
         return
     end
@@ -328,6 +357,11 @@ promotion.overrideProductionVetStatus = overrideProductionVetStatus
 
 
 local function checkForUpgrade(winner,loser,upgradeChanceFn,loserTile,loserVetStatus,winnerVetStatus)
+    local shooter = munitions.getShooter(winner)
+    if shooter then
+        winner = shooter
+        winnerVetStatus = shooter.veteran
+    end
     local upgradeChance,upgradeUnitType,promotionInfoTable = upgradeChanceFn(winner,loser,loserTile,loserVetStatus,winnerVetStatus)
     local function winnerUpgradeNotPending(winner)
         for key,value in pairs(promotionState.pendingPromotions) do
@@ -353,15 +387,25 @@ local function defaultUpgradeFunction(unitToUpgradeID,replacementTypeID,promotio
         text.simple(text.substitute("Through valour in combat, our %STRING1 unit has become a %STRING2 unit.",{oldUnit.type.name,newUnit.type.name}),"Defense Minister")
     end
     gen.deleteUnit(oldUnit,newUnit)
+    -- newUnit is returned, in case it is needed
+    return newUnit
 end
 
-local function performPendingUpgrades(upgradeFunction)
+local function performPendingUpgrades(upgradeFunction,activeUnit)
     upgradeFunction = upgradeFunction or defaultUpgradeFunction
     for i=1,(#promotionState.pendingPromotions) do
         local promotionInfo = promotionState.pendingPromotions[i]
-        upgradeFunction(promotionInfo.unitID,promotionInfo.replacementTypeID,promotionInfo.promotionInfoTable)
+        if promotionInfo.unitID == activeUnit.id then
+            activeUnit = upgradeFunction(promotionInfo.unitID,promotionInfo.replacementTypeID,promotionInfo.promotionInfoTable)
+            if not activeUnit then
+                error("promotion.peformPendingUpgrades: the active unit was upgraded, but the upgrade function did not return the replacement unit.  Make sure your upgrade function returns the unit that replaces the upgraded unit.")
+            end
+        else
+            upgradeFunction(promotionInfo.unitID,promotionInfo.replacementTypeID,promotionInfo.promotionInfoTable)
+        end
         promotionState.pendingPromotions[i] = nil
     end
+    return activeUnit
 end
 promotion.performPendingUpgrades = performPendingUpgrades
 
@@ -631,6 +675,7 @@ local function buildBasicUpgrade(upgradeInfoTable)
         if uDT.upgradeMessage and upgradedUnit.owner == civ.getCurrentTribe() and upgradedUnit.owner.isHuman then
             text.simple(text.substitute(uDT.upgradeMessage,{civ.getUnitType(promotionInfoTable.winnerTypeID).name,upgradedUnit.type.name}),"Defense Minister")
         end
+        return upgradedUnit
     end
     return upgradeChanceFunction, upgradeFunction
 end

@@ -1,6 +1,6 @@
 
 
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -77,6 +77,8 @@ Modifiers that can be disabled by setting their value to "false" (the boolean va
 	dFirepowerShoreBombardmentCheck
 	dFirepowerCaughtInPortCheck
 	dFirepowerSubmarineFlagCheck
+    dTerrainDefenseForAir -- added by prof garfield
+    dTerrainDefenseForSea -- added by prof garfield
 
 Modifiers that can be disabled by setting their value to "0" (the numeric value, without quotes):
 	dRiverAddition
@@ -208,6 +210,15 @@ local function initializeCombatModifiers () --> void
 	combatModifier.dRiverAddition = 0.5
 	combatModifier.dBarbarianDefenderArchers = 0.5
 	combatModifier.dBarbarianDefenderLegion = 0.5
+    combatModifier.dTerrainDefenseForAir = true -- added by prof. garfield
+    if cosmic2 ~= nil and cosmic2.TerrainDefenseForAir == 0 then
+        combatModifier.dTerrainDefenseForAir = false
+    end
+    combatModifier.dTerrainDefenseForSea = true -- added by prof. garfield
+    if cosmic2 ~= nil and cosmic2.TerrainDefenseForSea == 0 then
+        combatModifier.dTerrainDefenseForSea = false
+    end
+
 	
 -- DEFENDING UNIT FIREPOWER MODIFIERS:
 	combatModifier.dFirepowerHelicopterCheck = true
@@ -520,8 +531,11 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 	end
 	-- 12. Terrain:
 	if defender.type.domain == domain.ground or
-	   (defender.type.domain == domain.air and cosmic2.TerrainDefenseForAir ~= 0) or
-	   (defender.type.domain == domain.sea and cosmic2.TerrainDefenseForSea ~= 0) then
+	   --(defender.type.domain == domain.air and cosmic2.TerrainDefenseForAir ~= 0) or
+	   --(defender.type.domain == domain.sea and cosmic2.TerrainDefenseForSea ~= 0) then
+       --   added dTerrainDefenseForAir/Sea to combatModifer so it could be more easily modified by changeRules.lua
+	   (defender.type.domain == domain.air and combatModifer.dTerrainDefenseForAir) or
+	   (defender.type.domain == domain.sea and combatModifer.dTerrainDefenseForSea) then
 		local terrainFactor = 1
 		-- 12a. Base Terrain Type:
 		if combatModifier.dBaseTerrainCheck then

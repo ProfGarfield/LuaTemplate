@@ -14,6 +14,7 @@ local gen = require("generalLibrary"):minVersion(1)
 local param = require("parameters")
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(2)
 gen.minEventsLuaVersion(2,1,"seasonSettings.lua")
+local changeRules = require("changeRules")
 --
 -- If you need to reset all the values for a season
 -- (perhaps terrain was given a special bonus for some
@@ -21,6 +22,9 @@ gen.minEventsLuaVersion(2,1,"seasonSettings.lua")
 -- (After ensuring there is a line
 -- local seasons=require("seasons")
 -- in the file)
+
+-- you may find the functionality of changeRules.lua to be helpful
+-- in this file
 
 local seasons = {}
 

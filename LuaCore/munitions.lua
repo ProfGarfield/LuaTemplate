@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -87,7 +87,7 @@ local function getShooter(unit)
     local shooterID = munitionState.munitionIDGeneratorID[unit.id]
     local shooterTypeID = munitionState.munitionIDGeneratorTypeID[unit.id]
     if shooterID and civ.getUnit(shooterID) and shooterTypeID and
-        (civ.getUnit(shooterID) == civ.getUnitType(shooterTypeID)) then
+        (civ.getUnit(shooterID).type == civ.getUnitType(shooterTypeID)) then
         return civ.getUnit(shooterID)
     else
         return nil
