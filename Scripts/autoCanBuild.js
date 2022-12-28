@@ -636,6 +636,10 @@ function makeListCreatorForm(listObject) {
         emptyChoiceList.push(emptyChoice);
         selectElement.appendChild(emptyChoice);
         createOptionsFromArray(selectElement,optionsArrays[i],listStorageArray);
+        const addAllChoice = document.createElement('option')
+        addAllChoice.textContent = "Add All"
+        addAllChoice.value = i.toString()
+        selectElement.appendChild(addAllChoice)
         makeListForm.appendChild(selectElement);
     }
     makeListForm.appendChild(document.createElement('br'))
@@ -653,7 +657,13 @@ function makeListCreatorForm(listObject) {
                     emptyChoiceList[i].selected = true;
                 }
             }
-            if (changedNode.value) {
+            if (!isNaN(parseInt(changedNode.value))) {
+                const elementNumber = parseInt(changedNode.value);
+                choiceSpan.textContent = "Add All From "+optionsArraysTitles[elementNumber];
+                addButton.disabled = false;
+                choiceSpan.value = changedNode.value;
+
+            } else if (changedNode.value) {
                 choiceSpan.textContent = fullList[changedNode.value].name;
                 choiceSpan.value = changedNode.value;
                 addButton.disabled = false;
@@ -673,7 +683,22 @@ function makeListCreatorForm(listObject) {
     makeListForm.appendChild(document.createElement('br'));
     makeListForm.appendChild(entryList);
     addButton.addEventListener('click',e => {
-        makeListEntry(entryList,listStorageArray,choiceSpan.value,selectElementList);
+        if (!isNaN(parseInt(choiceSpan.value))){
+            const elementNumber = parseInt(choiceSpan.value);
+            const allOptionsSelectNode = selectElementList[elementNumber]
+            const optionElements = allOptionsSelectNode.children
+            for (let i = 0; i < optionElements.length; i++) {
+                const optionI = optionElements[i]
+                if (optionI.value && isNaN(parseInt(optionI.value))
+                && !listStorageArray.includes(optionI.value)) {
+                    //listStorageArray.push(optionI.value);
+                    makeListEntry(entryList,listStorageArray,optionI.value,selectElementList);
+                }
+                //displayAllEntryLists();
+            }
+        }  else {
+            makeListEntry(entryList,listStorageArray,choiceSpan.value,selectElementList);
+        }
         for (let i = 0; i < emptyChoiceList.length; i++) {
             emptyChoiceList[i].selected = true;
             choiceSpan.value = "";
