@@ -1,6 +1,6 @@
 
 
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -534,8 +534,8 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 	   --(defender.type.domain == domain.air and cosmic2.TerrainDefenseForAir ~= 0) or
 	   --(defender.type.domain == domain.sea and cosmic2.TerrainDefenseForSea ~= 0) then
        --   added dTerrainDefenseForAir/Sea to combatModifer so it could be more easily modified by changeRules.lua
-	   (defender.type.domain == domain.air and combatModifer.dTerrainDefenseForAir) or
-	   (defender.type.domain == domain.sea and combatModifer.dTerrainDefenseForSea) then
+	   (defender.type.domain == domain.air and combatModifier.dTerrainDefenseForAir) or
+	   (defender.type.domain == domain.sea and combatModifier.dTerrainDefenseForSea) then
 		local terrainFactor = 1
 		-- 12a. Base Terrain Type:
 		if combatModifier.dBaseTerrainCheck then
