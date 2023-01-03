@@ -169,9 +169,13 @@ civ.scen.onKeyPress(function(keyID)
         dialog:addOption("Delete Polygon "..tostring(activePolygon)..".",5)
         dialog:addOption("Print constructor for Polygon "..tostring(activePolygon).." to console.",6)
         dialog:addOption("Cancel.",7)
+        dialog:addOption("Place random marker in Polygon.",8)
         local choice = dialog:show()
         if choice == 7 then
             return
+        elseif choice == 8 then
+            local rTile = gen.getRandomTileInPolygon(activePolygonVertexTable,civ.getCurrentTile().z,100)
+            civ.createUnit(tileInPolygonMarkerUnit[activePolygon],civ.getTribe(0),rTile)
         elseif choice ==1 then
             local xMax,yMax,maps = civ.getMapDimensions()
             for z=0,maps-1 do

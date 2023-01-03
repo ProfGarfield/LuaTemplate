@@ -39,13 +39,17 @@ fixed bugs in combatSettings.lua
 created combatModifiers.lua
 
 
-last update
 
 bugfix in munitions.lua and promotions.lua so that munition users get promoted
 
 created changeRules.lua to change ephemeral entries by reading rules.txt type files, and keeps track of defaults for those ephemeral values.
 
+last update
+in gen.calculateWeight, function weights can now return false.
+created gen.getRandomTileInPolygon
+
 todo
+
 
 kill land units when last transport is killed
 
