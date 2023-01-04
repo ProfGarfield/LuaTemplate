@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -675,7 +675,7 @@ output = output.."\n\n\n@This must be here to terminate search!!!\n"
 local destinationDirectory = civ.getToTDir()
 local genHere, gen = pcall(require,"generalLibrary")
 if genHere then
-    gen.versionFunctions(pedia,versionNumber,fileModified,"LuaCore".."\\".."civilopedia.lua")
+    --gen.versionFunctions(pedia,versionNumber,fileModified,"LuaCore".."\\".."civilopedia.lua")
     local directoryFound, scenDir = pcall(gen.getScenarioDirectory)
     if directoryFound then
         destinationDirectory = scenDir
