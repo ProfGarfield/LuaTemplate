@@ -1,7 +1,7 @@
 -- this file can be deleted if it is not necessary
 --
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -15,6 +15,27 @@ local fileModified = false -- set this to true if you change this file for your 
 
 local register = {}
 
+--[[
+local leaderBonus = require("leaderBonus")
+function register.onGetFormattedDate(turn,defaultDateString)
+    if civ.getCurrentTribe().isHuman and civ.getActiveUnit() and not civ.getOpenCity() then
+        local activeUnit = civ.getActiveUnit()
+        local rank = leaderBonus.getRank(activeUnit)
+        if rank then
+            return "Rank: "..rank
+        elseif leaderBonus.getCommanderRank(activeUnit) then
+            return "Ldr: "..leaderBonus.getCommanderRank(activeUnit)
+        else
+            return "No Leader"
+        end
+    else
+        return defaultDateString
+    end
+    return defaultDateString
+end
+--]]
+
+
 function register.onGetFormattedDate(turn,defaultDateString)
     if _global.eventTesting then
         --print(turn,civ.getTurn())
@@ -22,6 +43,7 @@ function register.onGetFormattedDate(turn,defaultDateString)
     end
     return defaultDateString
 end
+--]]
 
 local gen = require("generalLibrary"):minVersion(1)
 gen.versionFunctions(register,versionNumber,fileModified,"MechanicsFiles".."\\".."onGetFormattedDate.lua")

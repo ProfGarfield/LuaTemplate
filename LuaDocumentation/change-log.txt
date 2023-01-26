@@ -44,9 +44,18 @@ bugfix in munitions.lua and promotions.lua so that munition users get promoted
 
 created changeRules.lua to change ephemeral entries by reading rules.txt type files, and keeps track of defaults for those ephemeral values.
 
-last update
 in gen.calculateWeight, function weights can now return false.
 created gen.getRandomTileInPolygon
+
+last update
+
+leader bonus code
+
+added onUnitDeleted to discreteEvents (and events.lua)
+
+
+
+
 
 todo
 

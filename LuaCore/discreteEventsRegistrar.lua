@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -77,7 +77,7 @@ local function minEventsLuaVersion(minVersion,regNum)
         error(message)
     end
 end
-minEventsLuaVersion(1,1)
+minEventsLuaVersion(4,1)
 
 
 eventsTable.onActivateUnit = {}
@@ -192,6 +192,16 @@ eventsTable.onUnitDefeatedIndex = 1
 function discreteEvents.performOnUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     for i = 1,eventsTable.onUnitDefeatedIndex-1 do
         eventsTable.onUnitDefeated[i](loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    end
+end
+
+
+eventsTable.onUnitDeleted = {}
+eventsTable.onUnitDeletedIndex = 1
+
+function discreteEvents.performOnUnitDeleted(deletedUnit,replacingUnit)
+    for i = 1,eventsTable.onUnitDeletedIndex-1 do
+        eventsTable.onUnitDeleted[i](deletedUnit,replacingUnit)
     end
 end
 
@@ -407,6 +417,7 @@ discreteEvents.onScenarioLoaded
 discreteEvents.onTurn 
 discreteEvents.onUnitKilled 
 discreteEvents.onUnitDefeated 
+discreteEvents.onUnitDeleted 
 discreteEvents.onAfterProduction 
 discreteEvents.onBeforeProduction 
 discreteEvents.onCityProcessed
@@ -448,6 +459,7 @@ discreteEvents.performOnScenarioLoaded
 discreteEvents.performOnTurn 
 discreteEvents.performOnUnitKilled 
 discreteEvents.performOnUnitDefeated 
+discreteEvents.performOnUnitDeleted 
 discreteEvents.performOnAfterProduction 
 discreteEvents.performOnBeforeProduction 
 discreteEvents.performOnCityProcessed 

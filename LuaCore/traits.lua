@@ -14,6 +14,7 @@ local fileModified = false -- set this to true if you change this file for your 
 -- each time you want to check if something is a tank.
 
 local gen = require("generalLibrary"):minVersion(1)
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(3)
 local traits = {version=versionNumber}
 gen.versionFunctions(traits,versionNumber,fileModified,"LuaCore".."\\".."traits.lua")
 
@@ -565,6 +566,302 @@ function traits.anyAssociatedWithTile(tile,...)
     end
     return false
 end
+
+--  returns a table of the object's traits
+--  which are permanent (i.e. they are always
+--  true, not just true sometimes) in the form
+--  table[traitString] = true
+function traits.permanentTraitTable(object)
+    local traitTable = selectTraitTable(object)
+    local objectID = getTraitID(object)
+    local objectTraits = traitTable[objectID]
+    local tTable = {}
+    for traitString,traitVal in pairs(objectTraits) do
+        -- see trait.hasTrait for why the below if statement checks for truth
+        if traitVal and traitVal == true  then
+            tTable[traitString]=true
+        end
+    end
+    return tTable
+end
+
+-- returns a table of the object's traits
+-- which are conditional (i.e. they are only true
+-- sometimes, set by traits.conditionalTrait)
+-- in the form
+-- table[traitString] = conditionFn
+function traits.conditionalTraitTable(object)
+    local traitTable = selectTraitTable(object)
+    local objectID = getTraitID(object)
+    local objectTraits = traitTable[objectID]
+    local tTable = {}
+    for traitString,traitVal in pairs(objectTraits) do
+        if traitVal and type(traitVal) == "function"  then
+            tTable[traitString]=traitVal
+        end
+    end
+    return tTable
+
+end
+
+
+
+-- builds functions to associate strings with item types,
+--  checkAssociation(item,string) --> bool
+--      returns true if the string is associated with the item, or any of the item's traits
+--      false otherwise
+--
+--  addAssociation(itemOrTrait,string)
+--      associates the string with either an item, or a trait
+--      if itemOrTrait is true, associate with all items
+function traits.makeItemTraitQuickStringAssociation(isItemTypeFn,getItemID,itemTypeName,getItemIterator)
+    local storageTable = {}
+    local conditionalMemoTable = {}
+    local scenarioLoadedNotRun = true
+    local function checkAssociation(item,str) --> table
+        if not isItemTypeFn(item) then
+            error("checkAssociation: arg#1 expected "..itemTypeName.." received: "..tostring(item))
+        end
+        if type(str) ~= "string" then
+            error("checkAssociation: arg#2 must be a string.  Received: "..tostring(itemOrTrait))
+        end
+        local itemID = getItemID(item)
+        if storageTable[itemID] and storageTable[itemID][str] then
+            return true
+        end
+        if scenarioLoadedNotRun or not conditionalMemoTable[itemID] then
+            conditionalMemoTable[itemID] = traits.conditionalTraitTable(item)
+        end
+        for trait,traitFn in pairs(conditionalMemoTable[itemID]) do
+            if storageTable[trait] and traitFn() and storageTable[trait][str] then
+                return true
+            end
+        end
+        -- at scenarioLoaded, permanent traits info is copied into the itemID section
+        if scenarioLoadedNotRun then
+            if storageTable[true] and storageTable[true][str] then
+                return true
+            end
+            for trait,_ in pairs(traits.permanentTraitTable(item)) do
+                if storageTable[trait] and storageTable[trait][str] then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function addAssociation(itemOrTrait,str)
+        if not isItemTypeFn(itemOrTrait) and type(itemOrTrait) ~= "string" and itemOrTrait ~= true then
+            error("addAssociation: arg#1 must be a string, true, or "..itemTypeName..".  Received: "..tostring(itemOrTrait))
+        end
+        if type(str) ~= "string" then
+            error("addAssociation: arg#2 must be a string.  Received: "..tostring(itemOrTrait))
+        end
+        if isItemTypeFn(itemOrTrait) then
+            itemOrTrait = getItemID(itemOrTrait)
+        end
+        if itemOrTrait == nil then
+            itemOrTrait = true
+        end
+        storageTable[itemOrTrait] = storageTable[itemOrTrait] or {}
+        storageTable[itemOrTrait][str] = true
+    end
+    if getItemIterator then
+        function discreteEvents.onScenarioLoaded()
+            for item in getItemIterator() do
+                local itemID = getItemID(item)
+                storageTable[itemID] = storageTable[itemID] or {}
+                local permTraits = traits.permanentTraitTable(item)
+                for str,__ in pairs(storageTable[true] or {}) do
+                    storageTable[itemID][str] = true
+                end
+                for trait,_ in pairs(permTraits) do
+                    for str,__ in pairs(storageTable[trait] or {}) do
+                        storageTable[itemID][str] = true
+                    end
+                end
+            end
+            scenarioLoadedNotRun = false
+        end
+    end
+    return checkAssociation, addAssociation
+end
+
+
+-- builds functions to associate values with item types
+--  getAssociatedList(item) -> {[value]=true}
+--      returns a table of values as keys that have been associated with the item
+--          or any of its traits
+--
+--  addAssociation(itemOrTrait,value)
+--      associates a value with an item or trait
+
+function traits.makeItemTraitListAssociation(isItemTypeFn, getItemID, itemTypeName, getItemIterator)
+    local storageTable = {}
+    local conditionalMemoTable = {}
+    local scenarioLoadedNotRun = true
+    local function getAssociatedList(item)
+        if not isItemTypeFn(item) then
+            error("getAssociatedList: arg#1 expected "..itemTypeName.." received: "..tostring(item))
+        end
+        local itemID = getItemID(item)
+        local list = {}
+        for value,_ in pairs(storageTable[itemID] or {}) do
+            list[value] = true
+        end
+        if scenarioLoadedNotRun or not conditionalMemoTable[itemID] then
+            conditionalMemoTable[itemID] = traits.conditionalTraitTable(item)
+        end
+        for trait,traitFn in pairs(conditionalMemoTable[itemID]) do
+            if storageTable[trait] and traitFn() then
+                for value,_ in pairs(storageTable[trait]) do
+                    list[value] = true
+                end
+            end
+        end
+        if scenarioLoadedNotRun then
+            for trait,_ in pairs(traits.permanentTraitTable(item)) do
+                if storageTable[trait]  then
+                    for value,__ in pairs(storageTable[trait]) do
+                        list[value] = true
+                    end
+                end
+            end
+        end
+        return list
+    end
+    local function addAssociation(itemOrTrait,value)
+        if not isItemTypeFn(itemOrTrait) and type(itemOrTrait) ~= "string" then
+            error("addAssociation: arg#1 must be a string or "..itemTypeName..".  Received: "..tostring(itemOrTrait))
+        end
+        if isItemTypeFn(itemOrTrait) then
+            itemOrTrait = getItemID(itemOrTrait)
+        end
+        storageTable[itemOrTrait] = storageTable[itemOrTrait] or {}
+        storageTable[itemOrTrait][value] = true
+    end
+    if getItemIterator then
+        function discreteEvents.onScenarioLoaded()
+            for item in getItemIterator() do
+                local itemID = getItemID(item)
+                local permTraits = traits.permanentTraitTable(item)
+                storageTable[itemID] = storageTable[itemID] or {}
+                for trait,_ in pairs(permTraits) do
+                    for val,__ in pairs(storageTable[trait] or {}) do
+                        storageTable[itemID][val] = true
+                    end
+                end
+            end
+            scenarioLoadedNotRun = false
+        end
+    end
+
+
+end
+
+
+-- builds functions to associate values with item types
+--  getComputation(item) -> result
+--      
+--      take a table of values as would be generated by makeItemTraitListAssociation
+--      valTable = {[value]=true}
+--      returns the final result of valueSoFar for the computation
+--      valueSoFar = nil
+--      for value,_ in pairs(valTable) do
+--          valueSoFar = computeFunction(value,valueSoFar)
+--      end
+--      (the computeFunction should be a computation that returns the same value regardless
+--      of the order of computation)
+--      computeFunction(nil,nil) should return the initial valueSoFar, which is also the value
+--      to return if no association is provided
+--
+--
+--  addComputationValue(itemOrTrait,value)
+--      associates a value with an item or trait
+--
+
+function traits.makeItemTraitComputation(isItemTypeFn, getItemID, itemTypeName, getItemIterator,computeFunction)
+    local storageTable = {}
+    local conditionalMemoTable = {}
+    local fixedComputedTable = {}
+    local scenarioLoadedNotRun = true
+    local function getComputation(item)
+        if not isItemTypeFn(item) then
+            error("getComputation: arg#1 expected "..itemTypeName.." received: "..tostring(item))
+        end
+        local itemID = getItemID(item)
+        local fixedComponentComputation = fixedComputedTable[itemID]
+        if fixedComponentComputation == nil then
+            local list = {}
+            for value,_ in pairs(storageTable[itemID] or {}) do
+                list[value] = true
+            end
+            if scenarioLoadedNotRun then
+                for trait,_ in pairs(traits.permanentTraitTable(item)) do
+                    if storageTable[trait]  then
+                        for value,_ in pairs(storageTable[trait]) do
+                            list[value] = true
+                        end
+                    end
+                end
+            end
+            fixedComponentComputation = computeFunction(nil,nil)
+            for v,_ in pairs(list) do
+                fixedComponentComputation = computeFunction(v,fixedComponentComputation)
+            end
+        end
+        if scenarioLoadedNotRun or not conditionalMemoTable[itemID] then
+            conditionalMemoTable[itemID] = traits.conditionalTraitTable(item)
+        end
+        local conditionalValues = {}
+        for trait,traitFn in pairs(conditionalMemoTable[itemID]) do
+            if storageTable[trait] and traitFn() then
+                for _,value in pairs(storageTable[trait]) do
+                    conditionalValues[value] = true
+                end
+            end
+        end
+        local computedValue = fixedComponentComputation
+        for v,_ in pairs(conditionalValues) do
+            computedValue = computeFunction(v,computedValue)
+        end
+        return computedValue
+    end
+    local function addAssociation(itemOrTrait,value)
+        if not isItemTypeFn(itemOrTrait) and type(itemOrTrait) ~= "string" then
+            error("addAssociation: arg#1 must be a string or "..itemTypeName..".  Received: "..tostring(itemOrTrait))
+        end
+        if isItemTypeFn(itemOrTrait) then
+            itemOrTrait = getItemID(itemOrTrait)
+        end
+        storageTable[itemOrTrait] = storageTable[itemOrTrait] or {}
+        storageTable[itemOrTrait][value] = true
+    end
+    if getItemIterator then
+        function discreteEvents.onScenarioLoaded()
+            for item in getItemIterator() do
+                local itemID = getItemID(item)
+                local permTraits = traits.permanentTraitTable(item)
+                storageTable[itemID] = storageTable[itemID] or {}
+                for trait,_ in pairs(permTraits) do
+                    for val,__ in pairs(storageTable[trait] or {}) do
+                        storageTable[itemID][val] = true
+                    end
+                end
+                local fixedComponent = nil
+                fixedComponent = computeFunction(nil,nil)
+                for val,_ in pairs(storageTable[itemID]) do
+                    fixedComponent = computeFunction(val,fixedComponent)
+                end
+            end
+            scenarioLoadedNotRun = false
+        end
+    end
+    return getComputation, addAssociation
+end
+
+
 
 --[[
 -- traits.canHaveTrait(object,traitString)-->boolean

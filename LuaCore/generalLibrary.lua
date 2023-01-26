@@ -1,4 +1,4 @@
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -327,7 +327,7 @@ end
 --#gen.tableWrap(item,needsWrapFn)-->table
 --
 --#gen.copyUnitAttributes(parent,child)-->void
---#gen.nearbyUnits(center,radius) --> iterator providing units
+--#gen.nearbyUnits(center,radius,maps={0,1,2,3}) --> iterator providing units
 --
 --#gen.setDeathFunctions(defeatFunction,deathFunction,deletionFunction) --> void
 --#gen.defeatUnit(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)-->unit or nil
@@ -3570,13 +3570,19 @@ function gen.copyUnitAttributes(parent,child)
     child.domainSpec = parent.domainSpec
 end
 
--- gen.nearbyUnits(center,radius) --> iterator providing units
+-- gen.nearbyUnits(center,radius,maps={0,1,2,3}) --> iterator providing units
 --      provides an iterator over all the units within radius
 --      tiles of the center tile
+--      maps = nil or integer in 0-3 or table of integers
+--          if integer, only get units from tiles from that map
+--          if table of integers, units from all maps listed
+--          e.g. {1,3} means get units from maps 1 and 3
+--          if nil, get units from all maps (this choice is for backwards compatibility)
 
-function gen.nearbyUnits(center,radius)
+function gen.nearbyUnits(center,radius,maps)
+    maps = maps or {0,1,2,3}
     return coroutine.wrap(function ()
-        for __,tile in pairs(gen.getTilesInRadius(center,radius,0,{0,1,2,3,})) do
+        for __,tile in pairs(gen.getTilesInRadius(center,radius,0,maps)) do
             for unit in tile.units do
                 coroutine.yield(unit)
             end

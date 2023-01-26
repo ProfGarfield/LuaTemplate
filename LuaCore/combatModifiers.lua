@@ -595,6 +595,7 @@ end
 local combatModifierTable = {}
 -- Registers a combat modifier 
 
+
 function combatMod.registerCombatModificationRule(combatModifier)
     if not isCombatModifier(combatModifier) then
         combatModifier = newCombatModifier(combatModifier)

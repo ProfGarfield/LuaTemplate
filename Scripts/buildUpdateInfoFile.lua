@@ -75,6 +75,8 @@ local files = {
     ["combatModifiers"] = false,
     ["registerCombatModifiers"] = false,
     ["registerFiles"]=false,
+    ["leaderBonus"] = false,
+    ["leaderBonusSettings"]= false,
 }
 
 local outputString = [==[

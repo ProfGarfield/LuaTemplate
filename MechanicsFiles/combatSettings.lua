@@ -1,5 +1,5 @@
 --
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -36,6 +36,7 @@ local rules = require("rules"):minVersion(1)
 local text = require("text")
 local simpleSettings = require("simpleSettings"):recommendedVersion(1)
 local combatModifiers = require("combatModifiers"):minVersion(1)
+local leaderBonus = require("leaderBonus"):minVersion(1)
 
 
 
@@ -253,6 +254,8 @@ end
 
 function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower,isSneakAttack)
 
+    leaderBonus.updateCommander(attacker)
+    leaderBonus.updateCommander(defender)
     local maxCombatRounds = math.huge -- If you want to limit combat to a specific number of
                                         -- turns, set this variable
 
@@ -279,7 +282,7 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
         end
     end
     -- %Report Combat Strength%
-    --civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
+    civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
             
     return coroutine.create(function()
         local round = 0

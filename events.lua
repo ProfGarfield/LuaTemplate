@@ -1,6 +1,6 @@
 -- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -593,6 +593,7 @@ end
 -- either because of combat, non combat 'death', or some other administrative deletion situation
 -- if the unit is not being 'replaced', replacingUnit will be nil
 local function doOnUnitDeletion(deletedUnit,replacingUnit)
+    discreteEvents.performOnUnitDeleted(deletedUnit,replacingUnit)
     eventsFiles.onUnitDeleted(deletedUnit,replacingUnit)
     unitData.onUnitDeleted(deletedUnit,replacingUnit)
     --eventTools.unitDeletion(deletedUnit)
