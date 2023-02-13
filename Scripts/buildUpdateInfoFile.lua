@@ -77,6 +77,7 @@ local files = {
     ["registerFiles"]=false,
     ["leaderBonus"] = false,
     ["leaderBonusSettings"]= false,
+    ["textSettings"]=true
 }
 
 local outputString = [==[

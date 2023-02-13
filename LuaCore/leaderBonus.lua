@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -528,6 +528,13 @@ end
 -- and searches nearby for a higher ranking commander
 
 function leaderBonus.updateCommander(unit)
+    -- some code might kill/delete the unit before this applies
+    -- if so, the unit.location will not be a valid tile
+    local l = unit.location
+    if not civ.isTile(civ.getTile(l.x,l.y,l.z)) then
+        leaderBonus.removeSubordination(unit)
+        return
+    end
     verifyCommander(unit)
     local searchRadius = getLeaderSearchRadius(unit.type)
     local searchMap = nil -- nil means gen.nearbyUnits will search all maps

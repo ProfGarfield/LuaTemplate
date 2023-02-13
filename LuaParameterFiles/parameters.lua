@@ -21,8 +21,10 @@ local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 
 text.setMoney("%STRING1 gold")
 -- text.setMoney("$%STRING1,000")
+-- text.setMoneu("%STRING1 Pounds", "%STRING1 Pound")
 -- used to determine how text.money(amount)--> string
 -- will work
+-- if second argument is supplied, that is used when the amount is 1
 
 text.setDigitGroupSeparator(",")
 -- text.setDigitGroupSeparator("")

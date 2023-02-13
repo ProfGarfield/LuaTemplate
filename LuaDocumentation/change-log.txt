@@ -47,13 +47,21 @@ created changeRules.lua to change ephemeral entries by reading rules.txt type fi
 in gen.calculateWeight, function weights can now return false.
 created gen.getRandomTileInPolygon
 
-last update
-
 leader bonus code
 
 added onUnitDeleted to discreteEvents (and events.lua)
 
+last update
 
+added extra substitution options to text.substitute
+
+added textSettings.lua, to control text.substitute
+
+added ability to get individual unit images
+
+fixed bug in leaderBonus.lua
+
+added "menuRecords" to text.lua
 
 
 

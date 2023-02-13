@@ -1,4 +1,4 @@
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -459,7 +459,11 @@ end
 -- gen.versionFunctions(moduleTable,versionNumber,fileMod,moduleFileName) -->void
 -- gen.registerEventsLuaVersion(versionNumber,fileMod,regressionNumber)
 -- gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable) --> newItemFunction, isDataTypeFunction
---getRandomTileInPolygon(polygonTableOfCoordinates,map=0,maxAttempts=100)
+-- gen.getRandomTileInPolygon(polygonTableOfCoordinates,map=0,maxAttempts=100)
+-- gen.newEmptyStack() --> stack
+-- gen.newStack(table = {}) --> stack
+-- gen.isStack(item) --> boolean
+-- gen.isInteger(item) --> boolean
 --
 --
 --
@@ -5846,11 +5850,27 @@ end
 -- gen.tableToString(table)
 -- returns a string showing values in a table
 function gen.tableToString(table)
-    local str = civlua.serialize(table)
-    str = string.sub(str,8,-1)
-    str = string.gsub(str,"\n\r"," ")
-    str = string.gsub(str,"\n"," ")
-    return str
+    if type(table) == "table" then
+        local result = "{"
+        for key,val in pairs(table) do
+            if type(key) == "string" then
+                result = result .."['"..key.."'] = "
+            else
+                result = result .."["..tostring(key).."] = "
+            end
+            result = result .. gen.tableToString(val)..","
+        end
+        result = result.."}"
+        return result
+    else
+        return tostring(table)
+    end
+
+    --local str = civlua.serialize(table)
+    --str = string.sub(str,8,-1)
+    --str = string.gsub(str,"\n\r"," ")
+    --str = string.gsub(str,"\n"," ")
+    --return str
 end
 
 
@@ -6310,7 +6330,7 @@ function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultVal
     end
 
     local function isDataTypeFunction(value)
-        return getmetatable(value) == mt
+        return type(value) == "table" and getmetatable(value) == mt
     end
     return newItemFunction, isDataTypeFunction, mt
 end
@@ -6418,7 +6438,111 @@ function gen.vDIOrTableOfVDI(vDI)
     return vDICopy
 end
 
+
+-- stack data type
+--      stack.push(value) --> void
+--          adds value to the 'top' of the stack
+--      stack.pop() --> value
+--          removes value from the 'top' of the stack and returns the value
+--          popping an empty stack returns nil
+--      stack[i] --> value
+--          returns the value of ith item from the 'top' of the stack
+--          (the stack remains unchanged)
+--          stack[1] is the top item of the stack (the same item stack.pop would remove)
+--          if the stack doesn't have an ith item, return nil
+--      stack.size --> integer
+--          returns the number of items in the stack
+
+-- gen.newEmptyStack() --> stack
+--      creates a stack with no values
+local stackDataKey = {}
+local stackUnusedIndexKey = {}
+local stackMT = {
+    __index = function(stack,key)
+        if type(key) == "number" then
+            local topIndex = stack[stackUnusedIndexKey]
+            return stack[stackDataKey][topIndex-key]
+        elseif key == "size" then
+            return stack[stackUnusedIndexKey]-1
+        elseif key == "push" then
+            return function(value)
+                local topIndex = stack[stackUnusedIndexKey]
+                stack[stackDataKey][topIndex] = value
+                stack[stackUnusedIndexKey] = topIndex+1
+            end
+        elseif key == "pop" then
+            return function()
+                stack[stackUnusedIndexKey] = math.max(stack[stackUnusedIndexKey] - 1,1)
+                local topIndex = stack[stackUnusedIndexKey] 
+                local popValue = stack[stackDataKey][topIndex]
+                stack[stackDataKey][topIndex] = nil
+                return popValue
+            end
+        else
+            error("The only valid keys for a stack are numbers, 'size', 'push', and 'pop'.")
+        end
+    end,
+    __newindex = function(stack,key,value)
+        error("stack: you can only add new values to a stack by using the 'push' command:\n"
+        .."myStack.push("..tostring(value)..")..")
+    end,
+    __tostring = function(stack)
+        local output = "stack<"
+        local topIndex = stack[stackUnusedIndexKey]
+        local stackData = stack[stackDataKey]
+        for i=1,topIndex-1 do
+            output = output..tostring(i).."="..tostring(stackData[topIndex-i])..", "
+        end
+        output = output..">"
+        return output
+    end,
+}
+function gen.newEmptyStack()
+    local stack = {[stackDataKey] = {},[stackUnusedIndexKey] = 1}
+    setmetatable(stack,stackMT)
+    return stack
+end
+
+-- gen.newStack(table = {}) --> stack
+--      generates a new stack, with integer
+--      values in the table pushed onto the stack
+--      starting from the smallest integer value
+--      (smallest value will be at the bottom of the stack)
+--      All other keys (including non-integer keys) and values are ignored
+function gen.newStack(table) --> stack
+    local smallestNumber = math.huge
+    local largestNumber = -math.huge
+    table = table or {}
+    for key,_ in pairs(table) do
+        if type(key) == "number" and math.floor(key) == key then
+            smallestNumber = math.min(key,smallestNumber)
+            largestNumber = math.max(key,largestNumber)
+        end
+    end
+    local stack = gen.newEmptyStack()
+    if smallestNumber == math.huge then
+        return stack
+    end
+    for i=smallestNumber,largestNumber do
+        if table[i] then
+            stack.push(table[i])
+        end
+    end
+    return stack
+end
+
+-- gen.isStack(item) --> boolean
+--      returns true if the item is a stack (created by gen.newStack/newEmptyStack)
+--      and false otherwise
+function gen.isStack(item)
+    return type(item) == "table" and getmetatable(item) == stackMT
+end
     
+-- gen.isInteger(item) --> boolean
+--      returns true if the item is an integer, and false otherwise
+function gen.isInteger(item)
+    return type(item) == "number" and math.floor(item) == item
+end
 
             
 

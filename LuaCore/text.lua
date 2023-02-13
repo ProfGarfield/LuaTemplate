@@ -43,6 +43,9 @@ local fileModified = false -- set this to true if you change this file for your 
 --              archiveTitle=nil, broadcast=nil)
 --  text.displayAccumulatedMessages() --> void
 --  text.menu(menuTable,menuText,menuTitle="",canCancel=false,menuPage=1)-->integer,integer
+--  text.menu(menuTable,menuText,menuTitle="",canCancel=false,imageInfo=nil,dimensions={width=nil,height=nil},menuPage=1) --> integer,integer
+--  (last 4 arguments can be in any order or omitted)
+--
 --  text.displayArchivedMessage(archivedMessage,archivePage=1,displayArchiveTable=nil,
 --                              displayArchiveTableIndex=nil,
 --                              archiveTitle = nil,
@@ -83,6 +86,11 @@ local fileModified = false -- set this to true if you change this file for your 
 -- text.iUpper(string) --> string
 -- text.iLower(string) --> string
 -- text.initCap(string) --> string | By Pablostuka
+-- text.registerUnitsImage(filename)
+-- text.unitTypeImage(unitTypeOrID) --> imageObject
+-- text.newMenuRecord(specTable) --> menuRecord
+-- text.isMenuRecord(item) --> bool
+--  text.makeChooseNumberMenu(increments={1,10,50,100,500,1000, -1,-10,-100},extremes={min=0,max=10000},selectionKey="menuChosenNumber",nextMenu=nil,goBackOptions = {},menuName="Choose Number Menu")
 --
 -- Control Sequences:
 -- "%PAGEBREAK"
@@ -110,12 +118,23 @@ local pageBreakControl = "%%PAGEBREAK" -- note %% has to be used for % in string
 local func = require "functions"
 -- Get the size of each character from the characterTable
 local charSize = require("characterTable")
-local gen = require("generalLibrary"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(5)
 
 -- The functions this module provides are stored in the text table
 local text={}
 gen.versionFunctions(text,versionNumber,fileModified,"LuaCore".."\\".."text.lua")
 gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."text.lua")
+
+local textSettingsFound, textSettings = gen.requireIfAvailable("textSettings")
+if not textSettingsFound then
+    print("WARNING: text.lua did not find textSettings.lua.  Some functionality may not work as expected.")
+    textSettings = {}
+else
+    textSettings:minVersion(1)
+end
+local dictionary = textSettings.dictionary or {}
+local importSubstitutiontTags = textSettings.substitutionTags or {}
+local importChoiceTags = textSettings.choiceTags or {}
 
 -- textState allows this module to access the state table
 local textState = "notLinked"
@@ -628,6 +647,8 @@ text.displayAccumulatedMessages = displayAccumulatedMessages
 --  start counting at 1, can skip numbers (incl. 1), but don't have other entries in table
 
 -- text.menu(menuTable,menuText,menuTitle="",canCancel=false,menuPage=1)-->integer,integer
+-- text.menu(menuTable,menuText,menuTitle="",canCancel=false,imageInfo=nil,dimensions={width=nil,height=nil},menuPage=1) --> integer,integer
+--  (last 4 arguments can be in any order or omitted)
 -- returns the key of the menu table of the option chosen, second parameter returns menu page of selection
 -- menuText is displayed above the options
 -- menuTitle is the title of the menu
@@ -636,18 +657,24 @@ text.displayAccumulatedMessages = displayAccumulatedMessages
 -- menuPage is the "page" of the menu that is to be opened
 -- imageInfo a way to get an image, either key for the imageTable, an imageObject,
 --          or a table of arguments for civ.ui.loadImage
---  Arguments 4,5,6 (canCancel,imageInfo,menuPage) can be in any order; the code will
+--  Arguments 4,5,6,7 (canCancel,imageInfo,menuPage,dimensions) can be in any order; the code will
 --  figure out which is which
---local function menu(menuTable,menuText,menuTitle,canCancel, menuPage,imageInfo)
-local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6)
+-- dimensions is a way to specify the size of the menu text box
+--      {width=integerOrNil, height=integerOrNil}
+--      can't have 1 as a key (that will be interpreted as an imageInfo)
+--local function menu(menuTable,menuText,menuTitle,canCancel, menuPage,imageInfo,dimensions)
+local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6,arg7)
     local canCancel = false
     local menuPage = 1
     local image = nil
+    local dimensions = {}
     local function setArgument(arg)
         if type(arg) == "boolean" then
             canCancel = arg
         elseif type(arg) =="number" then
             menuPage = arg
+        elseif type(arg) =="table" and not arg[1] then
+            dimensions = arg
         elseif type(arg) ~= "nil" then
             image = toImage(arg)
         end
@@ -655,6 +682,7 @@ local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6)
     setArgument(arg4)
     setArgument(arg5)
     setArgument(arg6)
+    setArgument(arg7)
 
     local menuTextLines = linesInText(menuText)
     menuTitle = menuTitle or ""
@@ -676,6 +704,12 @@ local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6)
     local numberOfMenuOptions = menuTableEntries
     if numberOfMenuOptions <= optionsPerPage+2 then
         local menuDialog = civ.ui.createDialog()
+        if dimensions.width then
+            menuDialog.width = dimensions.width
+        end
+        if dimensions.height then
+            menuDialog.height = dimensions.height
+        end
         menuDialog.title = menuTitle
         addMultiLineTextToDialog(menuText,menuDialog)
         for i=1,maxMenuIndex do
@@ -694,6 +728,12 @@ local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6)
     -- menu has too many options, so must be split into multiple pages
     local numberOfPages = math.ceil(menuTableEntries/optionsPerPage)
     local menuDialog = civ.ui.createDialog()
+    if dimensions.width then
+        menuDialog.width = dimensions.width
+    end
+    if dimensions.height then
+        menuDialog.height = dimensions.height
+    end
     if menuPage > numberOfPages then
         menuPage = numberOfPages
     elseif menuPage < 1 then
@@ -918,6 +958,8 @@ local function deleteAIArchives()
 end
 text.deleteAIArchives = deleteAIArchives
 
+
+-- Old version of substitute
 -- text.substitute(rawText,substitutionTable)-->string
 -- substitutes %STRING1 with tostring(substitutionTable[1])
 -- substitutes %STRING2 with tostring(substitutionTable[2])
@@ -937,8 +979,259 @@ local function substitute(rawText,substitutionTable)
     end
     return rawText
 end
-text.substitute = substitute
+--  text.substitute = substitute -- now using newSubstitute instead
 
+-- toPlural[word] = pluralVersionOfWord
+local toPlural = {}
+
+-- toSingular[word] = singularVersionOfWord
+local toSingular = {}
+
+-- aOrAn[word] = 'a' or 'an'
+--  depending on whether it is 'a word' or 'an word'
+local aOrAn = {}
+
+-- a 'dictionary' table has information to populate the above tables
+-- which will be used to help text.newSubstitute work
+-- dictionary[anyKey] = {singular=singularVersionOfWord, plural=pluralVersionOfWord, an=boolean}
+--      an = true if it is 'an singularVersionOfWord' and false/nil if it is 'a singularVersionOfWord'
+
+function text.registerDictionary(dictionary)
+    for _,entry in pairs(dictionary) do
+        if type(entry) == "table" then
+            toPlural[entry.singular] = entry.plural
+            toPlural[entry.plural] = entry.plural
+            toSingular[entry.singular] = entry.singular
+            toSingular[entry.plural] = entry.singular
+            if entry.an then
+                aOrAn[entry.singular] = "an"
+                aOrAn[entry.plural] = "an"
+            else
+                aOrAn[entry.singular] = "a"
+                aOrAn[entry.plural] = "a"
+            end
+        end
+    end
+end
+
+text.registerDictionary(dictionary)
+
+
+
+local substitutionTags = {}
+substitutionTags["%%STRING"] = tostring
+substitutionTags["%%MONEY"] = function(val) return text.money(val) end
+substitutionTags["%%NAME"] = function(val) return val.name or val.type.name end
+substitutionTags["%%OWNER"] = function(val) return val.owner.name end
+substitutionTags["%%ADJECTIVE"] = function(val) return val.adjective or val.owner.adjective end
+
+--[[ decided not to use this
+-- text.registerSubstitutionTag(tag,convertFn) --> void
+--  Registers a custom substitution tag, for text.substitute
+--      If you register MYTAG, then substitute will search for
+--      instances of %MYTAG in the rawText, in order to substitute
+--      it for the result of convertFn(subTable[key])
+--      Note: in Lua pattern matching, these characters need to be
+--      'escaped' by %, including those in the tag:
+--      ( ) % . + - * [ ? ^ $
+--      tag is a string
+--      convertFn is a function: convertFn(value) --> string
+function text.registerSubstitutionTag(tag,convertFn)
+    substitutionTags["%%"..tag] = convertFn
+end
+
+text.registerSubstitutionTag("ADJECTIVE",function(val) return val.adjective or val.owner.adjective end)
+--]]
+
+for tag,convertFn in pairs(importSubstitutiontTags) do
+    substitutionTags[tag] = convertFn
+end
+
+local choiceTags = {}
+choiceTags["%%%?TRUTHY"] = function(val) return not not val end
+choiceTags["%%%?PLURAL"] = function(val) return val ~= 1 end
+choiceTags["%%%?ZERO"] = function(val) return val == 0 end
+choiceTags["%%%?ONE"] = function(val) return val == 1 end
+
+for tag,choiceFn in pairs(importChoiceTags) do
+    choiceTags[tag] = choiceFn
+end
+
+
+--  newSubstitute
+--  text.substitute(rawText, substitutionTable)
+--
+--      Substitutes occurrences of %?<TAG><key>{phrase one}{phrase two} with
+--      phrase one      if the function the function registered with tag, evaluated
+--                      on substitutionTable[key] returns true, and
+--      phrase two      if the registered function returns false.
+--      phrase one/two can have substitutions from later sections of this function
+--      (see next phase for more details on <TAG>/<key>)
+--      
+--      Next, substitutes occurrences of %<TAG><key> with appropriate values derived
+--      from the substitution table
+--      <TAG> is a registered character sequence in substitutionTags (including those
+--      registered via text.registerSubstitutionTag)
+--      if <key> is a digit, get the value from the numeric key in the substitution table
+--      e.g. %STRING1 gets replaced with tostring(substitutionTable[1])
+--      Note, a digit key can only have 1 digit, that is, 0-9, so %STRING10 is forbidden.
+--      if <key> is of the form [someKeyName], then get the string key from the substitution table,
+--      e.g. %STRING[someKeyName] -> tostring(substitutionTable["someKeyName"])
+--
+--      After the %<TAG><key> substitutions, plural substitutions are checked for.
+--      These are marked by %#some text#<key>
+--      If substitutionTable[<key>] == 1, then 
+--      %#some text#<key> --> toSingular[some text]
+--      If substitutionTable[<key>] ~= 1, then 
+--      %#some text#<key> --> toPlural[some text]
+--      if toSingular[some text] == nil or toPlural[some text] == nil then
+--      %#some text#<key> --> some text
+--      note: toSingular and toPlural are populated by text.registerDictionary(dictionary),
+--      where dictionary is from dictionary.lua, (or {}, if that file is unavailable)
+--      and toSingular[singularVersionOfWord] = singularVersionOfWord exists, as does
+--      toPlural[pluralVersionOfWord] = pluralVersionOfWord
+--
+--      After the plural substitutions, the indefinite articles a/an are generated
+--      These are based on contents wrapped by %@ and @
+--      '%@someWord@' --> aOrAn[someWord]..' someWord' --> 'a someWord'
+--      or
+--      %@anotherWord@ --> aOrAn[anotherWord]..' anotherWord' --> 'an anotherWord'
+--      aOrAn is populated from dictionary.lua, like toSingular and toPlural
+--      if the key is absent from aOrAn (i.e. dictionary.lua), then a is used, unless
+--      the key starts with a,e,i,o,u, in which case an is used
+--
+
+
+local function substituteChoice(rawText,tag,choiceFn,substitutionTable)
+    local function intSubstitute(int,phraseOne,phraseTwo)
+        int = tonumber(int)
+        if choiceFn(substitutionTable[int]) then
+            return string.sub(phraseOne,2,-2) -- remove { and } from captured phraseOne
+        else
+            return string.sub(phraseTwo,2,-2) -- remove { and } from captured phraseTwo
+        end
+    end
+    local function strSubstitute(key,phraseOne,phraseTwo)
+        key = string.sub(key,2,-2) -- remove [ and ] from captured key
+        if choiceFn(substitutionTable[key]) then
+            return string.sub(phraseOne,2,-2) -- remove { and } from captured phraseOne
+        else
+            return string.sub(phraseTwo,2,-2) -- remove { and } from captured phraseTwo
+        end
+    end
+    rawText = string.gsub(rawText,tag.."(%b[])(%b{})(%b{})",strSubstitute)
+    rawText = string.gsub(rawText,tag.."(%d)(%b{})(%b{})",intSubstitute)
+    return rawText
+end
+
+local function substituteTag(rawText,tag,fn,substitutionTable)
+    local function intSubstitute(keyString)
+        local key = tonumber(keyString)
+        return tostring(fn(substitutionTable[key]))
+    end
+    local function strSubstitute(keyString)
+        local key = string.sub(keyString,2,-2) -- remove [ and ] from captured keyString
+        return tostring(fn(substitutionTable[key]))
+    end
+    rawText = string.gsub(rawText,tag.."(%d)",intSubstitute)
+    rawText = string.gsub(rawText,tag.."(%b[])",strSubstitute)
+    return rawText
+end
+
+local function fixPlural(rawText,substitutionTable)
+    local function intSubstitute(wordString,keyString)
+        local key = tonumber(keyString)
+        wordString = string.sub(wordString,2,-2) -- remove # and # from captured wordString
+        if substitutionTable[key] == 1 then
+            return toSingular[wordString] or wordString
+        else
+            return toPlural[wordString] or wordString
+        end
+    end
+    local function strSubstitute(wordString,keyString)
+        local key = string.sub(keyString,2,-2) -- remove [ and ] from captured keyString
+        wordString = string.sub(wordString,2,-2) -- remove # and # from captured wordString
+        if substitutionTable[key] == 1 then
+            return toSingular[wordString] or wordString
+        else
+            return toPlural[wordString] or wordString
+        end
+    end
+    rawText = string.gsub(rawText,"%%(%b##)(%d)",intSubstitute)
+    rawText = string.gsub(rawText,"%%(%b##)(%b[])",strSubstitute)
+    return rawText
+end
+
+local vowel ={a=true,e=true,i=true,o=true,u=true,
+              A=true,E=true,I=true,O=true,U=true,}
+local function addIndefiniteArticle(rawText)
+    local function affixArticle(word)
+        word = string.sub(word,2,-2) -- remove @ and @ from captured key
+        if aOrAn[word] then
+            return aOrAn[word].." "..word
+        elseif vowel[string.sub(word,1,1)] then
+            return "an "..word
+        else
+            return "a "..word
+        end
+    end
+    rawText = string.gsub(rawText,"%%(%b@@)",affixArticle)
+    return rawText
+end
+
+local function newSubstitute(rawText,substitutionTable)
+    if string.find(rawText,"%%%?") then
+        for tag,choiceFn in pairs(choiceTags) do
+            rawText = substituteChoice(rawText,tag,choiceFn,substitutionTable)
+        end
+    end
+    for tag,convertFn in pairs(substitutionTags) do
+        rawText = substituteTag(rawText,tag,convertFn,substitutionTable)
+    end
+    rawText = fixPlural(rawText,substitutionTable)
+    rawText = addIndefiniteArticle(rawText)
+    return rawText
+end
+text.substitute = newSubstitute
+
+function console.testSubstitution()
+    local function rowsToMoney(type)
+        local rows = type.cost
+        return text.money(25*rows)
+    end
+    text.setMoney("%STRING1 Frying Pans","%STRING1 Frying Pan")
+    substitutionTags["%%ROWSTOMONEY"] = rowsToMoney
+    --text.registerSubstitutionTag("ROWSTOMONEY",rowsToMoney) -- this function commented out
+
+    local rawText = "This unit is type %NAME[type] with cost %ROWSTOMONEY[type] "..
+        "and owner %NAME[owner]."
+    local unit = civ.createUnit(civ.getUnitType(1),civ.getTribe(1),civ.getCity(0).location)
+    print(text.substitute(rawText,unit))
+    local genericText = "The unit is %ADJECTIVE[unit], with cost %ROWSTOMONEY[type], which is less than %MONEY1 and more than %MONEY2. [no substitution here]  We should create %STRING3 %#unit#3, or, maybe, only %STRING[one] %#units#[one]."
+    local subTable = {unit = unit, type = unit.type, [1] = 300, [2] = 1, [3]=5, one=1}
+    print(text.substitute(genericText,subTable))
+    local genericText2 = "The unit is %ADJECTIVE[unit], with cost %ROWSTOMONEY[type], which is less than %MONEY1 and more than %MONEY2. [no substitution here]  We should create %STRING3 %#units#3, or, maybe, only %STRING[one] %#unit#[one].  %#no plural registered#[one] %#no plural registered#3 #a "
+    print(text.substitute(genericText2,subTable))
+    subTable["egypt"] = civ.getTribe(4)
+    local genericText3 = "The unit is %@%ADJECTIVE[unit]@ unit, not %@%ADJECTIVE[egypt]@ unit.  %#That#3 %#is#3 also %?PLURAL3{units}{%@unit@}."
+    print(text.substitute(genericText3,subTable))
+    local genericText4 = "%?PLURAL3{There are %STRING3 %ADJECTIVE[unit] %#%NAME[unit]#3}{There is %@ADJECTIVE[unit] %#%NAME[unit]#3}, and %?PLURAL3{they}{it} %#is#3 white."
+    print(text.substitute(genericText4,subTable))
+    local genericText3 = "The unit is %@%ADJECTIVE[unit]@ unit, not %@%ADJECTIVE[egypt]@ unit.  %#That#[one] %#is#[one] also %?PLURAL[one]{units}{%@unit@}."
+    print(text.substitute(genericText3,subTable))
+    local genericText4 = "%?PLURAL[one]{There are %STRING[one] %ADJECTIVE[unit] %#%NAME[unit]#[one]}{There is %@%ADJECTIVE[unit]@ %#%NAME[unit]#[one]}, and %?PLURAL[one]{they}{it} %#is#[one] white."
+    print(text.substitute(genericText4,subTable))
+    local newSubTable = {count = 0, unit = unit}
+    local genericText5 = "%?ZERO[count]{There are no}{}%?ONE[count]{There is one}{}%?TWOPLUS[count]{There are %STRING[count]}{} %ADJECTIVE[unit] %#%TYPE[unit]#[count] in %CAPITAL[unit]."
+    print(text.substitute(genericText5,{count=0, unit=unit}))
+    print(text.substitute(genericText5,{count=1, unit=unit}))
+    print(text.substitute(genericText5,{count=2, unit=unit}))
+    print(text.substitute(genericText5,{count=3, unit=unit}))
+    local egyptUnit = civ.createUnit(civ.getUnitType(1),civ.getTribe(4),civ.getTile(2,2,0))
+    print(text.substitute(genericText5,{count=3, unit=egyptUnit}))
+    print(text.substitute(genericText5,{count=0, unit=egyptUnit}))
+
+end
 
 -- text.convertTableToColumnText(columnTable,dataTable,borderWidth)-->string
 -- An example of the usage of this function can be found in the file
@@ -1429,12 +1722,18 @@ text.setDigitGroupSeparator = setDigitGroupSeparator
 --
 --
 local moneyConvert = "%STRING1 Gold"
+local singleMoneyConvert = nil
 
 --  text.money(amount) --> string
 --  converts an integer to an appropriate string denoting money
 local function money(amount)
     if type(moneyConvert) == "string" then
-        return text.substitute(moneyConvert,{text.groupDigits(amount)})
+        if amount == 1 and singleMoneyConvert then
+            return string.gsub(singleMoneyConvert,"%%STRING1",text.groupDigits(amount))
+        else
+            return string.gsub(moneyConvert,"%%STRING1",text.groupDigits(amount))
+            --return text.substitute(moneyConvert,{text.groupDigits(amount)})
+        end
     else
         return moneyConvert(amount)
     end
@@ -1442,16 +1741,22 @@ end
 text.money = money
 
 
---  text.setMoney(string)-->void
+--  text.setMoney(convertString,singleMoneyConvertString=nil)-->void
 --  sets the method of conversion of an integer to a money amount
 --  text.money will subsitute %STRING1 for the money amount,
 --  with digit separators added, and return the string
+--  if the money converted is exactly one, and singleMoneyConvert
+--  has been specified, that string will be used instead
 
-local function setMoney(convertString)
+local function setMoney(convertString,convertStringOne)
     if type(convertString) ~= "string" then
-        error("text.setMoney: must be given a string as an argument.")
+        error("text.setMoney: first argument must be a string.")
+    end
+    if type(convertStringOne) ~= "nil" and type(convertStringOne) ~= "string" then
+        error("text.setMoney: second argument must be a string or nil.")
     end
     moneyConvert = convertString
+    singleMoneyConvert = convertStringOne
 end
 
 text.setMoney = setMoney
@@ -1815,7 +2120,7 @@ text.initCap = initCap
 
 -- English Equivalent
 -- Provides a conversion from extended ascii to English characters
--- (main reason for function is to remove avoid removing outright
+-- (main reason for function is to avoid removing outright
 -- non-english characters when making the object table)
 
 local englishEquivalent = {
@@ -1902,6 +2207,1001 @@ function text.anglicise(str)
     return str
 end
 text.englishEquivalent = englishEquivalent
+
+
+-- unitTypeImages[unitTypeID] = imageObject
+local unitTypeImages = {}
+
+-- text.registerUnitsImage(filename)
+--      registers the name of the units image file
+--      to be used for text.unitTypeImage
+--      
+function text.registerUnitsImage(filename)
+    local imageHeight = 64
+    local imageWidth = 64
+    local imagesInRow = 9
+    for i=0,civ.cosmic.numberOfUnitTypes-1 do
+        local row = i//imagesInRow
+        local column = i % imagesInRow
+        local x = 1+(column*(imageWidth+1))
+        local y = 1+(row*(imageHeight+1))
+        unitTypeImages[i] = civ.ui.loadImage(filename,x,y,imageWidth,imageHeight)
+    end
+end
+
+-- text.unitTypeImage(unitTypeOrID) --> imageObject
+--      provides the image of a unit, found in the file provided to
+--      text.registerUnitsImage, or nil if there is no image
+function text.unitTypeImage(unitTypeOrID)
+    if civ.isUnitType(unitTypeOrID) then
+        unitTypeOrID = unitTypeOrID.id
+    end
+    if type(unitTypeOrID) ~= "number" then
+        error("text.unitTypeImage: argument must be a unitType or integer.  Received: "..tostring(unitTypeOrID))
+    end
+    return unitTypeImages[unitTypeOrID]
+end
+
+
+-- menuRecord(callingArgument=nil,history=gen.newEmptyStack(),menuRecordHistory = gen.newEmptyStack()) --> menuChoice, history,menuRecordHistory
+--      A menuRecord either shows a menu to the player, or makes
+--      a choice automatically (usually if the AI must 'use' the menu)
+--      The behaviour of the menu is governed by the keys of the
+--      menuRecord
+--      history is a "stack" (data type) with previous choices recorded
+--      callingArgument can be any value
+--      menuRecordHistory is a "stack" of previous menuRecords called
+--
+--
+--      menuGenerator =
+--          {[integer] = menuOptionTable}
+--              or
+--          function(callingArgument,history) --> {[integer] = menuOptionTable}
+--
+--          where, the menuOptionTable = 
+--              {choice=menuChoice, optionName=string, 
+--              nextMenu = nil or menuRecord or integer>0, noFilter = boolOrNil,
+--              <userDefKey> = <userUsefulValue>}
+--
+--
+--          The menuGenerator is a function that takes the existing history of the
+--          menu, and the callingArgument, and generates a table of menu options,
+--          or it is already a table of menu options (called fullMenuTable below)
+--
+--          When the menuRecord is called, the optionName is shown to the player,
+--          and the choice is the first returned value, unless nextMenu is a menuRecord.
+--          If nextMenu is a menuRecord, then the choice value is pushed onto the history stack,
+--          and the menu returns the result of nextMenuRecord(history,callingArgument)
+--          (if choice needs multiple pieces of information, use a table)
+--          If nextMenu is a number, go back in the history and menuRecordHistory that many
+--          entries and revisit that menu (history and menuRecordHistory have most recent
+--          additions removed). 1 means go to previous menu, 2 to 2nd previous menu, etc.
+--          If number exceeds stack size, go to first menu (and any 'history' fed into the initial menu).
+--  
+--          The designer can also define extra keys (<userDefKey>) and values to facilitate
+--          the other functions in the menuRecord
+--          
+--
+--          default: {[1] = {choice=nil, optionName = "Default Choice", noFilter = true}}
+--
+--      canCancel = boolean
+--          if canCancel is true, the menu has a 'cancel' option, which returns nil
+--
+--          default = false
+--
+--      menuFilter = function(menuOptionTable,callingArgument,history,fullMenuTable) --> bool or number
+--
+--          When the player is shown a menu, this function is applied to all 
+--          entries in the menuTable produced by menuGenerator
+--          (except those with noFilter, which count as returning true)
+--          if false, the choice is excluded from the menu
+--          if true, the item is included in the menu, at the same place
+--          if number, all items with number weights are ordered so that
+--          the biggest weights are first
+--
+--          default: nil (leave the generated menu unchanged)
+--
+--      menuText = string or function(callingArgument,history) --> string
+--          provides the text for the menu
+--          recentHistory = history[1] if history[1] is a table,
+--                          {[1] = history[1]} if history[1] is a value
+--          apply text.substitute to recentHistory 
+--
+--      default: ""
+--
+--      menuTitle = string or function(callingArgument,history) --> string
+--          provides the text for the menu
+--          recentHistory = history[1] if history[1] is a table,
+--                          {[1] = history[1]} if history[1] is a value
+--          apply text.substitute to recentHistory 
+--
+--      default: ""
+--
+--      autoChoice = function(callingArgument,history,fullMenuTable) --> boolean or menuOptionTable
+--
+--          if false, the menu is shown to the player
+--          if true, the choice is made using autoChoiceWeights below
+--          if menuOptionTable, that option is chosen
+--
+--          default: function(a,b,c) return false end
+--              (don't choose anything)
+--
+--      autoChoiceWeights = function(menuOptionTable,callingArgument,history,fullMenuTable) --> bool or number
+--          
+--          generates weights for an automatic choice.  boolean weights (even true) are
+--          never chosen, so the menuFilter choices can be reused.
+--          weights less than 0 are never chosen.
+--
+--          default: nil (show a message to the player explaining this was supposed to be automatic,
+--              and ask if they want a menu or an error)
+--
+--      menuImage = nil or imageObject or function(callingArgument,history) -->nil or imageObject
+--          The image that will be shown in the menu text box
+--
+--          default: nil (no image)
+--
+--      menuName = string
+--          a name for the menu in error messages
+--          default: "Unknown Menu"
+--
+--      postProcessor = function(callingArgument,choice,history,menuRecordHistory) --> choiceValueReturnedByMenu
+--          Allows for some processing of the data before going to the next menu,
+--          or returning the choice (it does not apply if nextMenu has an integer value, since
+--          in that case you're going back to a previous menu state)
+--          This function is performed after the choice has been added to the history,
+--          and after the current menuRecord has been added to the menuRecordHistory
+--          If there is no nextMenu, the result of this function is returned as the choice
+--          (the default function simply returns the choice)
+--          If you wish to change the choice as recorded in the history, you must pop
+--          the recorded choice from the history, and push the modified version.
+--
+--          default: function(callingArgument,choice,history,menuRecordHistory) return choice end
+--
+--
+--
+--
+--      It is important to note that menuRecords work like unitTypeObjects or tmprovementObjects,
+--      that is, changing the value of a key changes how that object works in EVERYWHERE
+--      in your code, including in places where you've already assigned that menuRecord
+--      as a value.
+--
+--      In particular, you can assign  menuRecordTwo as the value for nextMenu in 
+--      a choice (or choices) for menuRecordOne, and fill in the details of  
+--      menuRecordTwo later in your code.
+--
+
+local function isPositiveInt(item)
+    return type(item) == "number" and math.floor(item) == item and item > 0
+end
+
+
+local function menuGeneratorCheck(table)
+    for key,menuOptionTable in pairs(table) do
+        if type(key) ~= "number" or math.floor(key) ~= key then
+            return "menuGenerator Table must have only integer keys.  Received: "..tostring(key)
+        end
+        if type(menuOptionTable) ~= "table" then
+            return "menuGenerator Table must have tables as values.  Received: "..tostring(menuOptionTable)
+        end
+        if type(menuOptionTable.optionName) ~= "string" then
+            return "menuGenerator: table["..key.."].optionName = "..tostring(menuOptionTable.optionName)
+            ..".  However, this value must exist and be a string."
+        end
+        local nextMenu = menuOptionTable.nextMenu
+        if nextMenu ~= nil and (not text.isMenuRecord(nextMenu)) and (not isPositiveInt(nextMenu)) then
+            return "menuGenerator: table["..key.."].nextMenu = "..tostring(nextMenu)..
+            ".  However, this value must be nil, a menuRecord, or a positive integer."
+        end
+    end
+    return true
+end
+
+
+local specificKeyTableMenuRecord = {
+    menuGenerator = {["table"] = {menuGeneratorCheck,"{[int] =  {choice=menuChoice, optionName=string, nextMenu = nil or menuRecord or integer>0, noFilter = boolOrNil, <userDefKey> = <userUsefulValue>}}"}, ["function"] = "function(callingArgument,history) --> {[int] =  {choice=menuChoice, optionName=string, nextMenu = nil or menuRecord or integer>0, noFilter = boolOrNil, <userDefKey> = <userUsefulValue>}}"},
+    menuFilter = {["nil"] = true, ["function"] = "function(menuOptionTable,callingArgument,history,fullMenuTable) --> bool or number",},
+    menuText = {["string"]=true, ["function"] = "function(callingArgument,history) --> string",},
+    menuTitle = {["string"]=true, ["function"] = "function(callingArgument,history) --> string",},
+    autoChoice = {["function"] = "function(history,callingArgument,fullMenuTable) --> boolean or menuOptionTable"},
+    autoChoiceWeights = {["nil"] = true,["function"] = "function(menuOptionTable,callingArgument,history,fullMenuTable) --> bool or number"},
+    menuImage = {["nil"] = true, ["userdata"] = civ.isImage,["function"] = "function(callingArgument,history) --> imageObject"},
+    menuName = {["string"] = true},
+    width = {["nil"]=true, ["number"] = {minVal = 0, integer=true}},
+    height = {["nil"]=true, ["number"] = {minVal = 0, integer=true}},
+    canCancel = {["boolean"] = true},
+    postProcessor = {["function"] = "function(callingArgument,choice,history,menuRecordHistory) --> choiceValueReturnedByMenu"},
+
+}
+
+local generalKeyTableMenuRecord = {}
+local defaultValueTableMenuRecord = {
+    menuGenerator = {[1] = {choice=nil, optionName = "Default Choice", noFilter = true}},
+    menuText = "",
+    menuTitle = "",
+    autoChoice = function(a,b,c) return false end,
+    menuName = "Unknown Menu",
+    canCancel = false,
+    postProcessor = function(c,choice,h,m) return choice end,
+}
+local fixedKeyTableMenuRecord = {}
+
+local baseMakeMenuRecord, baseIsMenuRecord, menuRecordMetatable = 
+    gen.createDataType("menuRecord", specificKeyTableMenuRecord, generalKeyTableMenuRecord,
+        defaultValueTableMenuRecord, fixedKeyTableMenuRecord)
+
+-- text.newMenuRecord(specTable) --> menuRecord
+--      converts a specification table for a menuRecord
+--      into a menuRecord
+function text.newMenuRecord(specTable)
+    specTable = specTable or {}
+    return baseMakeMenuRecord(specTable)
+end
+
+    
+-- text.isMenuRecord(item) --> bool
+--      returns true if item is a menuRecord, and false otherwise
+function text.isMenuRecord(item)
+    return baseIsMenuRecord(item)
+end
+
+
+local function humanMenuChoice(record,callingArgument,history,fullMenuTable)
+    local weightKey = {} -- using a table as a key means no key collisions
+    local canCancel = record.canCancel
+    -- menuTableTranslator[menuChoiceID] = {menuIndex = integer, weight = intOrBool}
+    local menuTableTranslator = {}
+    local translatorIndex = 1
+    local minKey = math.huge
+    local maxKey = -math.huge
+    for key,value in pairs(fullMenuTable) do
+        minKey = math.min(key,minKey)
+        maxKey = math.max(key,maxKey)
+    end
+    local filter = record.menuFilter
+    -- items in the toSortTable will be sorted, then added
+    -- to the menuTableTranslator, items with true weight will be put
+    -- directly into menuTableTranslator, since they should keep the same
+    -- position in the table
+    local toSortTable = {}
+    local toSortTableIndex = 1
+    for i=minKey,maxKey do
+        local menuOptionTable = fullMenuTable[i]
+        if menuOptionTable then
+            if filter then
+                local w = nil
+                if menuOptionTable.noFilter then
+                    w = true
+                else
+                    w = filter(menuOptionTable,callingArgument,history,fullMenuTable)
+                end
+                if w == true then
+                    menuTableTranslator[translatorIndex] = {menuIndex = i, weight = w}
+                    translatorIndex = translatorIndex+1
+                elseif type(w) == "number" then
+                    toSortTable[toSortTableIndex] = {menuIndex = i, weight = w}
+                    toSortTableIndex = toSortTableIndex + 1
+                    translatorIndex = translatorIndex+1
+                elseif w ~= false then
+                    -- if w==false, nothing is done
+                    error("menuRecord: "..record.menuName..": The function assigned to menuFilter should only return numbers and booleans.  Received: "..tostring(w))
+                end
+            else
+                menuTableTranslator[translatorIndex] = {menuIndex = i, weight=true}
+                translatorIndex = translatorIndex +1
+            end
+        end
+    end
+    table.sort(toSortTable,function(a,b) return a.weight > b.weight end)
+    translatorIndex = 1
+    for i=1,toSortTableIndex-1 do
+        while menuTableTranslator[translatorIndex] ~= nil do
+            translatorIndex = translatorIndex+1
+        end
+        menuTableTranslator[translatorIndex] = toSortTable[i]
+        translatorIndex = translatorIndex+1
+    end
+    local menuTable = {}
+
+    for i,translationRecord in pairs(menuTableTranslator) do
+        menuTable[i] = fullMenuTable[translationRecord.menuIndex].optionName
+    end
+    local menuText = ""
+    if type(record.menuText) == "string" then
+        menuText = record.menuText
+    elseif type(record.menuText) == "function" then
+        menuText = record.menuText(callingArgument,history)
+        if type(menuText) ~= "string" then
+            error("menuRecord: "..record.menuName..": The function assigned to menuText should only return strings.  Received: "..tostring(menuText))
+        end
+    end
+    local recentHistory = gen.tableWrap(history[1])
+    menuText = text.substitute(menuText,recentHistory)
+    local menuTitle = ""
+    if type(record.menuTitle) == "string" then
+        menuTitle = record.menuTitle
+    elseif type(record.menuTitle) == "function" then
+        menuTitle = record.menuTitle(callingArgument,history)
+        if type(menuTitle) ~= "string" then
+            error("menuRecord: "..record.menuName..": The function assigned to menuTitle should only return strings.  Received: "..tostring(menuTitle))
+        end
+    end
+    local recentHistory = gen.tableWrap(history[1])
+    menuTitle = text.substitute(menuTitle,recentHistory)
+    local image = record.menuImage
+    if type(image) == "function" then
+        image = image(callingArgument,history)
+    end
+    local choice = text.menu(menuTable,menuText,menuTitle,canCancel,image,{width=record.width, height=record.height})
+    local menuOptionTable = nil
+    if choice == 0 then
+        menuOptionTable = {choice=nil, optionName = "Cancel", nextMenu = nil, noFilter = nil}
+    else
+        menuOptionTable = fullMenuTable[menuTableTranslator[choice].menuIndex]
+    end
+    return menuOptionTable
+end
+
+local function autoChoiceResultCheck(option,record)
+    if type(option) ~= "table" then
+        error(record.menuName..": autoChoice: the function registered to autoChoice should return either a boolean or {choice=menuChoice, optionName=string, nextMenu = nil or menuRecord or integer>0, noFilter = boolOrNil, <userDefKey> = <userUsefulValue>}.  Received "..type(option)..":"..tostring(option))
+    end
+    local nextMenu = option.nextMenu
+    if nextMenu ~= nil and (not text.isMenuRecord(nextMenu)) and (not isPositiveInt(nextMenu)) then
+        error(record.menuName..": autoChoice: the function registered to autoChoice returned a menuOptionTable where the nextMenu key was not nil, a menuRecord, nor a positive integer.  It was a "..type(nextMenu)..".  The menuOptionTable was: "..gen.tableToString(option))
+    end
+end
+
+local function automaticMenuChoice(record,callingArgument,history,fullMenuTable)
+    local autoChoiceWeights = record.autoChoiceWeights
+    local weightsSoFar = 0
+    local choicesTable = {}
+    if autoChoiceWeights == nil then
+        local message = "The menuRecord named "..record.menuName.." has tried to automatically complete a menu choice by relying on the 'autoChoiceWeights', but a weight function was never provided."
+        local menuTable = {[1] = "Generate an error.",[2]="Let me choose manually instead."}
+        local choice = text.menu(menuTable,message)
+        if choice == 1 then
+            error(message)
+        else
+            return humanMenuChoice(record,callingArgument,history,fullMenuTable)
+        end
+    end
+    for key,menuOptionTable in pairs(fullMenuTable) do
+        local weight = nil
+        if menuOptionTable.noFilter then
+            weight = true
+        else
+            weight = autoChoiceWeights(menuOptionTable,callingArgument,history,fullMenuTable)
+        end
+        if type(weight) == "number" and weight > 0 then
+            choicesTable[weightsSoFar] = menuOptionTable
+            weightsSoFar = weightsSoFar+weight
+        elseif type(weight) ~= "number" and type(weight) ~= "boolean" then
+            error("menuRecord: "..record.menuName..": autoChoiceWeights should only return numbers and booleans.  Received: "..tostring(weight))
+        end
+    end
+    local thresholdTable = gen.makeThresholdTable(choicesTable)
+    --for key,val in pairs(thresholdTable) do
+    --    print(key,val.optionName)
+    --end
+    --print(weightsSoFar)
+    local randomNumber = weightsSoFar*math.random()
+    return thresholdTable[randomNumber]
+end
+
+
+
+
+
+local function menuRecordCall(record,callingArgument,history,menuRecordHistory)
+    history = history or gen.newEmptyStack()
+    if not gen.isStack(history) then
+        error("menuRecord: "..record.menuName..": Argument #2 (history) must be nil, or a stack.  Received: "..tostring(history))
+    end
+    menuRecordHistory = menuRecordHistory or gen.newEmptyStack()
+    if not gen.isStack(menuRecordHistory) then
+        error("menuRecord: "..record.menuName..": Argument #3 (menuRecordHistory) must be nil, or a stack.  Received: "..tostring(menuRecordHistory))
+    end
+    local menuSpec = nil
+    if type(record.menuGenerator) == "table" then
+        menuSpec = record.menuGenerator
+    else
+        menuSpec = record.menuGenerator(callingArgument,history)
+    end
+    if not menuGeneratorCheck(menuSpec) then
+        error("menuRecord: "..record.menuName..": the function registered to menuGenerator should return a table of the form {[integer] = menuOptionTable,}, where menuOptionTable = {choice=menuChoice, optionName=string, nextMenu = nil or menuRecord or integer>0, noFilter = boolOrNil, <userDefKey> = <userUsefulValue>}.  Received: "..gen.tableToString(menuSpec))
+    end
+    local choiceResult = record.autoChoice(callingArgument,history,menuSpec)
+    if choiceResult == false then
+        choiceResult = humanMenuChoice(record,callingArgument,history,menuSpec)
+    elseif choiceResult == true then
+        choiceResult = automaticMenuChoice(record,callingArgument,history,menuSpec)
+    else
+        autoChoiceResultCheck(choiceResult,record)
+    end
+    if choiceResult.nextMenu == nil then
+        -- the menu is concluded
+        menuRecordHistory.push(record)
+        history.push(choiceResult.choice)
+        local processedChoice = record.postProcessor(callingArgument,choiceResult.choice,history,menuRecordHistory)
+        return choiceResult.choice, history, menuRecordHistory
+    elseif type(choiceResult.nextMenu) == "number" then
+        -- go to previous menu states
+        -- We don't want to go beyond the first menuRecordHistory item,
+        -- although we can remove it from the stack
+        local newRecord = nil
+        for i=1,math.min(choiceResult.nextMenu,menuRecordHistory.size) do
+            history.pop()
+            newRecord = menuRecordHistory.pop()
+        end
+        -- if no newRecord, the currentRecord and history will work
+        newRecord = newRecord or record
+        return newRecord(callingArgument,history,menuRecordHistory)
+    elseif text.isMenuRecord(choiceResult.nextMenu) then
+        -- go to the next menu
+        menuRecordHistory.push(record)
+        history.push(choiceResult.choice)
+        record.postProcessor(callingArgument,choiceResult.choice,history,menuRecordHistory)
+        return choiceResult.nextMenu(callingArgument,history,menuRecordHistory)
+    else
+        error("menuRecord: "..record.menuName.." the nextMenu key of a menuOptionTable wasn't a menuRecord, integer, or nil.  The menuOptionTable is "..gen.tableToString(choiceResult))
+    end
+end
+
+menuRecordMetatable.__call = menuRecordCall
+menuRecordMetatable.__tostring = function(record) return "menuRecord<menuName="..record.menuName..">" end
+
+-- This is some example menuRecord code
+--  Some units are offered for sale for a given price and quantity
+--  A human player must choose a category of units (domain = 0,1,2)
+--  Then a unit type must be chosen,
+--  Then, a city to create the unit(s) must be chosen, which must
+--  be a port city if the unit type is naval.
+--  Finally, confirmation must be given.
+--  The human can cancel, but the AI will only do the equivalent if
+--  it can't make a valid choice
+--
+--  If an AI is 'choosing', then it has 1/3 chance of choosing
+--  each domain.  If the domain is land, units types are given
+--  a weight equal to their attack value, and chosen at random.
+--
+--  If the domain is air, the AI chooses the cheapest choice.
+--
+--  If the domain is sea, the AI chooses the only among the choices
+--  with the most units offered, and gives higher weight to unitTypes with
+--  higher build cost
+--  the AI does not have to have sufficient funds to make the purchase
+local example = {}
+--  The callingArgument will be the tribe buying the unit
+example.categoryMenuRecord = text.newMenuRecord({menuName = "Category Menu"})
+example.unitMenuRecord = text.newMenuRecord({menuName = "Unit Menu"})
+example.cityMenuRecord = text.newMenuRecord({menuName = "City Menu"})
+example.confirmMenuRecord = text.newMenuRecord({menuName = "Confirm Menu"})
+
+
+--  First Menu: Choose a Unit Type Domain
+--      In this menu, there are 3 choices plus cancel
+--      If the tribe doesn't have a port city,
+--      the sea option is removed
+--
+--      the same menu filter is used both for the human
+--      and for the AI's autoChoiceWeights
+--      the autoChoice just checks if the tribe is human or not
+
+
+example.categoryMenuGenerator = {
+    {choice = 0, optionName = "Land", nextMenu = example.unitMenuRecord},
+    {choice = 1, optionName = "Air", nextMenu = example.unitMenuRecord},
+    {choice = 2, optionName = "Sea", nextMenu = example.unitMenuRecord},
+}
+example.categoryMenuRecord.canCancel= true
+--  This filter will be used both for the human and the autoChoiceWeights
+function example.categoryMenuFilter(menuOptionTable,callingArgument,history,fullMenuTable)
+    local tribe = callingArgument
+    -- for land/air, return a weight of 1 for both
+    if menuOptionTable.choice ~= 2 then
+        return 1
+    end
+    -- here, we're at choice ==2, meaning sea
+    -- we check if the tribe has a port city
+    for city in civ.iterateCities() do
+        if city.owner == tribe and gen.isBuildShips(city) then
+            return 1
+        end
+    end
+    -- if we're here, the tribe has no port city, so we don't want to
+    -- offer them ships
+    return false
+end
+
+function example.categoryAutoChoice(callingArgument,history,fullMenuTable)
+    if callingArgument.isHuman then
+        -- no auto choice, if the tribe is human
+        return false
+    else
+        -- AI, but we want weights to be chosen
+        return true
+    end
+end
+
+example.categoryMenuRecord.menuGenerator = example.categoryMenuGenerator
+example.categoryMenuRecord.menuFilter = example.categoryMenuFilter
+example.categoryMenuRecord.autoChoice = example.categoryAutoChoice
+example.categoryMenuRecord.autoChoiceWeights = example.categoryMenuFilter
+example.categoryMenuRecord.menuText = "What kind of units do you wish to buy?"
+example.categoryMenuRecord.menuTitle = "Procurement Minister"
+-- Make the category menu tall and skinny just to demonstrate it.
+example.categoryMenuRecord.height = 900
+example.categoryMenuRecord.width = 100
+
+-- Second Menu: Choose a Unit Type
+--      A table is constructed for the menuGenerator field from the data in example.unitData
+--      For a human, the filter is unitType domain and cost <= treasury
+--      domain is taken from the first entry in the history stack
+--      For the ai, behaviour is different based on the domain.
+--          If air, choose a cheapest option and immediately return
+--          For land, weight probability based on attack
+--          For Sea, choose from the options that produce the most units,
+--          with filtering help from an extra key in the menuOptionTable
+--      There is also an option for humans to go back to the previous menu
+
+
+-- example.unitData[unitType.id] = {numberToCreate, cost}
+example.unitData = {
+    [gen.original.uWarriors.id] = { 5, 100},
+    [gen.original.uPhalanx.id] = { 4, 200},
+    [gen.original.uMusketeers.id] = { 3, 300},
+    [gen.original.uRiflemen.id] = {2, 400},
+    [gen.original.uArmor.id] = {1, 500},
+    [gen.original.uFighter.id] = {3, 600},
+    [gen.original.uHelicopter.id] = {2,700},
+    [gen.original.uStlthBmbr.id] = {1, 1000},
+    [gen.original.uTrireme.id] = {3,300},
+    [gen.original.uCaravel.id] = {2,300},
+    [gen.original.uTransport.id] = {1,500},
+    [gen.original.uSubmarine.id] = {3,1000},
+}
+
+example.unitMenuGenerator = {
+    -- with noFilter = true, this won't be relevant in the menuFilter or autoChoiceWeights functions
+    [-2] = {choice = nil, optionName = "Choose a different category.", nextMenu = 1, noFilter = true},
+}
+example.unitMenuRecord.canCancel = true
+-- get the max quantity of sea units offered, to help
+-- the autoChoice
+example.maxSeaQuantity = 0
+for key,val in pairs(example.unitData) do
+    if civ.getUnitType(key).domain == 2 and val[1] > example.maxSeaQuantity then
+        example.maxSeaQuantity = val[1]
+    end
+end
+for key,val in pairs(example.unitData) do
+    local choiceName = text.substitute("%STRING2 %NAME1 %#unit#2 for %MONEY3",{civ.getUnitType(key),val[1],val[2]})
+    local seaQuantityValue = nil
+    if val[1] == example.maxSeaQuantity and civ.getUnitType(key).domain == 2 then
+        seaQuantityValue = true
+    end
+    example.unitMenuGenerator[key] = {choice={type = civ.getUnitType(key), quantity = val[1], cost = val[2]},
+        optionName = choiceName, nextMenu = example.cityMenuRecord, seaQuantityExtra = seaQuantityValue,}
+    -- seaQuantityExtra is a key to help a weight function determine if the sea unit type
+    -- will produce the most units.
+    -- (note: this method works because the AI isn't limited by budget in this example)
+end
+example.unitMenuRecord.menuGenerator = example.unitMenuGenerator
+function example.unitMenuFilter(menuOptionTable,callingArgument,history,fullMenuTable)
+    -- callingArgument left as a variable name for clarity
+    local tribe = callingArgument
+    local domain = history[1] -- domain integer was the choice of the previous menu
+    if menuOptionTable.choice.cost > tribe.money then
+        -- don't show choices that are too expensive for the human player
+        return false
+    end
+    if menuOptionTable.choice.type.domain ~= domain then
+        -- don't show choices from the wrong domain
+        return false
+    end
+    -- don't give weights to change the order of the results
+    return true
+end
+example.unitMenuRecord.menuFilter = example.unitMenuFilter
+example.unitMenuRecord.menuText = "Please choose some units to acquire."
+example.unitMenuRecord.menuTitle = "Procurement Minister"
+function example.unitAutoChoice(callingArgument,history,fullMenuTable)
+    local tribe = callingArgument
+    if tribe.isHuman then
+        return false
+    end
+    if history[1] == 1 then
+        -- domain is Air, so choose the cheapest option
+        -- make a generic menuOptionTable to start with
+        local cheapestOption = {choice={type=nil, quantity=0, cost=math.huge}, optionName = ""}
+        for key,menuOptionTable in pairs(fullMenuTable) do
+            -- note, the 'choose a different category' choice appears in the full menu, with choice = nil
+            -- so we must make sure that menuOption.choice exists here
+            if menuOptionTable.choice and  menuOptionTable.choice.type.domain == 1 and 
+                menuOptionTable.choice.cost < cheapestOption.choice.cost then
+                cheapestOption = menuOptionTable
+            end
+        end
+        if not cheapestOption.choice.type then
+            -- no air unit was found, return a choice of nil
+            -- a nil choice with no nextMenu will close the menu as if
+            -- it were cancelled
+            cheapestOption.choice = nil
+        end
+        return cheapestOption
+    end
+    -- 
+    return true
+end
+
+function example.unitAutoChoiceWeights(menuOptionTable,callingArgument,history,fullMenuTable)
+    if history[1] == 0 then
+        -- ground domain chosen
+        if menuOptionTable.choice.type.domain ~= 0 then
+            return false
+        else
+            return menuOptionTable.choice.type.attack
+        end
+    end
+    if history[1] == 1 then
+        error("unitAutoChoiceWeights: it shouldn't be possible to be giving autochoice weights to air units.")
+    end
+    -- sea units
+    if menuOptionTable.seaQuantityExtra then
+        return menuOptionTable.choice.type.cost
+    else
+        return false
+    end
+end
+example.unitMenuRecord.autoChoice = example.unitAutoChoice
+example.unitMenuRecord.autoChoiceWeights = example.unitAutoChoiceWeights
+
+
+-- Third Menu: Choose A City
+--      This time, the menuGenerator is a function, which creates a list
+--      of cities to choose.  The generated choice will also include
+--      all the fields from the previous choice, for ease of use
+--      in the next step, and when the function is returned
+--
+--      The menuGenerator will automatically filter out cities not owned
+--      by the tribe.  Filtering out inland cities for naval units
+--      will be done by the menuFilter function
+--      Eligible cities will be displayed in descending order of population,
+--      and the same function will be used to give the AI weights for cities.
+--
+--      Human tribes will offered a confirmation menu, while the AI result
+--      will immediately return a choice
+
+function example.cityMenuGenerator(callingArgument,history)
+    local previousChoice = history[1]
+    local tribe = callingArgument
+    local generatedMenu = {
+        [-2] = {choice = nil, optionName = "Choose a different unit domain.", nextMenu = 2, noFilter = true},
+        [-1] = {choice = nil, optionName = "Choose a different unit.", nextMenu = 1, noFilter = true},
+    }
+    local nextMenu = nil
+    if tribe.isHuman then
+        nextMenu = example.confirmMenuRecord
+    end
+    for city in civ.iterateCities() do
+        if city.owner == tribe then
+            generatedMenu[city.id] = {choice = {city = city, type = previousChoice.type,
+                    quantity = previousChoice.quantity, cost = previousChoice.cost,},
+                optionName = city.name.." (pop. "..city.size..")", nextMenu = nextMenu,}
+        end
+    end
+    return generatedMenu
+end
+example.cityMenuRecord.menuGenerator = example.cityMenuGenerator
+example.cityMenuRecord.canCancel = true
+
+function example.cityMenuFilter(menuOptionTable, callingArgument, history, fullMenuTable)
+    -- 2 menus ago, the unit's domain was recorded in the history as an integer
+    local domain = history[2]
+    if domain == 2 and not gen.isBuildShips(menuOptionTable.choice.city) then
+        return false
+    else
+        return menuOptionTable.choice.city.size
+    end
+end
+example.cityMenuRecord.menuFilter = example.cityMenuFilter
+
+function example.cityMenuText(callingArgument, history)
+    local previousChoice = history[1]
+    return text.substitute("Where do you wish to receive the %STRING1 %NAME2 %#unit#1?",
+        {previousChoice.quantity, previousChoice.type})
+end
+example.cityMenuRecord.menuText = example.cityMenuText
+
+-- The title for this example probably didn't have to be a function, but
+-- it is here as an example
+function example.cityMenuTitle(callingArgument,history)
+    if history[2] == 0 then
+        return text.substitute("Procuring Land %#Unit#[quantity]",history[1])
+    elseif history[2] == 1 then
+        return text.substitute("Procuring Air %#Unit#[quantity]",history[1])
+    elseif history[2] == 2 then
+        return text.substitute("Procuring Sea %#Unit#[quantity]",history[1])
+    end
+    return "Procuring Unit of Unknown Domain"
+end
+example.cityMenuRecord.menuTitle = example.cityMenuTitle
+
+-- if the tribe is AI, return true to use the weight function for probabilities
+example.cityMenuRecord.autoChoice = function(tribe,b,c) return not tribe.isHuman end
+
+-- use the same weight function as for the menuFilter
+example.cityMenuRecord.autoChoiceWeights = example.cityMenuFilter
+
+-- show an image of the selected unit type
+example.cityMenuRecord.menuImage = function(tribe,history)
+    return text.unitTypeImage(history[1].type)
+end
+
+example.confirmMenuGenerator = function(tribe,history)
+    local menuGenerator = {
+        [-3] = {choice = nil, optionName = "No, choose a different unit domain.", nextMenu = 3, noFilter = true},
+        [-2] = {choice = nil, optionName = "No, choose a different unit.", nextMenu = 2, noFilter = true},
+        [-1] = {choice = nil, optionName = "No, choose a different city.", nextMenu = 1, noFilter = true},
+        [1] = {choice = history[1], optionName = "Yes, that is correct.", noFilter=true} ,
+    }
+    return menuGenerator
+end
+
+
+example.confirmMenuRecord.menuGenerator = example.confirmMenuGenerator
+-- will omit the canCancel option for this menu, just for show.
+-- Don't need to filter this menu
+example.confirmMenuRecord.menuText = "Do you wish to receive %STRING[quantity] %NAME[type] %#unit#[quantity] in %NAME[city] for %MONEY[cost]?"
+example.confirmMenuRecord.menuTitle = "Confirm Procuring %NAME[city]"
+-- don't need an autoChoice, since only humans receive this menu
+-- similarly, don't need autoChoiceWeights
+
+example.confirmMenuRecord.menuImage = function(tribe,history)
+    return text.unitTypeImage(history[1].type)
+end
+
+
+
+
+
+
+
+
+
+
+console.text = text
+--console.showUnitImage = function(unitOrID) text.simple("","",text.unitTypeImage(unitOrID)) end
+--console.text.registerUnitsImage("unitsFile.bmp")
+
+function console.sampleMenu(tribeID)
+    if gen.isEmpty(unitTypeImages) then
+        text.registerUnitsImage("Units.bmp")
+    end
+    local choice = example.categoryMenuRecord(civ.getTribe(tribeID))
+    civ.ui.text(gen.tableToString(choice))
+end
+
+example.chosenCityName = {}
+example.chosenUnitName = {}
+example.domain = {land=0,air=0,sea=0}
+example.domainToStr = {[0] = "land","air","sea"}
+example.nameToDomain = {}
+    for id,_ in pairs(example.unitData) do
+        example.nameToDomain[civ.getUnitType(id).name] = example.domainToStr[civ.getUnitType(id).domain]
+    end
+function console.menuAutoTest(tribeID)
+    example.chosenCityName = {}
+    example.chosenUnitName = {}
+    example.domain = {land=0,air=0,sea=0}
+    local n = 5000
+    if civ.getTribe(tribeID).isHuman then
+        n=1
+    end
+    local function getDomain(choice)
+        local unitType = choice.type
+        if unitType.domain == 0 then
+            return "land"
+        elseif unitType.domain == 1 then
+            return "air"
+        else
+            return "sea"
+        end
+    end
+    local tribe = civ.getTribe(tribeID)
+    for i=1,n do
+        local choice = example.categoryMenuRecord(tribe)
+        if choice and choice.type.domain == 2 and not gen.isBuildShips(choice.city) then
+            error("Inland city chosen for ship")
+        end
+        --[1] is city, [2] is tribe
+        example.chosenCityName[choice.city.name] = example.chosenCityName[choice.city.name] or 0
+        example.chosenCityName[choice.city.name] = example.chosenCityName[choice.city.name] +1
+        example.chosenUnitName[choice.type.name] = example.chosenUnitName[choice.type.name] or 0
+        example.chosenUnitName[choice.type.name] = example.chosenUnitName[choice.type.name] +1
+        example.domain[getDomain(choice)] = example.domain[getDomain(choice)] +1
+    end
+    for key,val in pairs(example.domain) do
+        print(key,val/n)
+    end
+    for key,val in pairs(example.chosenCityName) do
+        print(key,val/n)
+    end
+    for key,val in pairs(example.chosenUnitName) do
+        print(key,val/example.domain[example.nameToDomain[key]])
+    end
+end
+
+
+--  text.makeChooseNumberMenu(increments={1,10,50,100,500,1000, -1,-10,-100},extremes={min=0,max=10000},selectionKey="menuChosenNumber",nextMenu=nil,goBackOptions = {},menuName="Choose Number Menu")
+--      Creates a menu which allows the user to select a positive integer.
+--      This is actually a series of menus, but using post processing,
+--      it will only count as 1 element of history and menuRecordHistory.
+--
+--      The increments specifies the increments you want the user to be
+--      able to select.  This table should have integer keys starting at 1
+--      with no gaps.
+--
+--      This menu expects to receive the previous choice in the history
+--      as a table, and will return a copy of that table with an
+--      extra key, specified by selectionKey, that gives the chosen number.
+--      (if the previous choice has selectionKey already specified, that acts
+--      as a starting point for this menu, instead of 0)
+--
+--      The nextMenu specifies what menuRecord should be called once a final choice
+--      has been made.  If nil, the menuRecord will return the choice.
+--
+--      goBackOptions = {[orderInt]={goBack=positiveInteger, optionName="Go Back Option Name"}}
+--      Gives options to go back to previous menus, along with the name of such options.
+--      orderInt is the order in which these options appear, level is the number of
+--      menus to go back
+--      orderInt should start at 1 and have no gaps
+--
+--      menuName = string
+--          a name for the menuRecord that will appear in some error messages
+--
+--      The menuRecord created will have a menuGenerator and postProcessor created already.
+--      You still have to create the other entries in the menuRecord, like menuText, menuTitle,
+--      and image.   You can use autoChoice to immediately return a choice, but don't 
+--      try to use autoChoiceWeights.  Leave that as nil.
+--
+--
+
+function text.makeChooseNumberMenu(increments,extremes,selectionKey,nextMenu,goBackOptions,menuName)
+    increments = increments or {1,10,50,100,500,1000, -1,-10,-100}
+    extremes = extremes or {min=0,max=10000}
+    selectionKey = selectionKey or "menuChosenNumber"
+    nextMenu = nextMenu or nil
+    goBackOptions = goBackOptions or {}
+    menuName = menuName or "Choose Number Menu"
+    local returnMenu = text.newMenuRecord({menuName=menuName})
+    
+    local function menuGen(callingArgument,history)
+        local lastHistory = history[1] or {}
+        local currentChoice = lastHistory[selectionKey] or 0
+        local menu = {}
+        local menuIndex = 1
+        for i=1,#increments do
+            local c = gen.copyTable(lastHistory)
+            c[selectionKey] = c[selectionKey] or 0
+            local maxBinding = false
+            local minBinding = false
+            if c[selectionKey] == extremes.max then
+                maxBinding = true
+            end
+            if c[selectionKey] == extremes.min then
+                minBinding = true
+            end
+            c[selectionKey] = math.min(extremes.max,math.max(extremes.min,currentChoice+increments[i]))
+            local inc = increments[i]
+            if inc >= 0 and not maxBinding then
+                menu[menuIndex] = {choice = c, nextMenu = returnMenu, optionName = "Add "..tostring(inc)}
+                menuIndex = menuIndex+1
+            elseif inc < 0 and not minBinding then
+                menu[menuIndex] = {choice = c, nextMenu = returnMenu, optionName = "Subtract "..tostring(inc)}
+                menuIndex = menuIndex+1
+            end
+        end
+        local c = gen.copyTable(lastHistory)
+        c[selectionKey] = currentChoice
+        menu[menuIndex] = {choice = c, nextMenu = nextMenu, optionName = "Select "..tostring(currentChoice)}
+        menuIndex = menuIndex+1
+        for i=1,#goBackOptions do
+            menu[menuIndex] = {choice = nil, nextMenu = goBackOptions[i].goBack, 
+                optionName = goBackOptions[i].optionName}
+            menuIndex = menuIndex+1
+        end
+        return menu
+    end
+
+    local function postProcess(callingArgument,choice,history,menuRecordHistory)
+        local recentHistory = history.pop()
+        local recentMenuHistory = menuRecordHistory.pop()
+        -- remove previous history also
+        -- but first, check to make sure you are removing an instance of
+        -- the same menu
+        if menuRecordHistory[1] == returnMenu then
+            history.pop()
+            menuRecordHistory.pop()
+        end
+        -- add back most recent choice
+        history.push(recentHistory)
+        menuRecordHistory.push(recentMenuHistory)
+        return choice
+    end
+    returnMenu.menuGenerator = menuGen
+    returnMenu.postProcessor = postProcess
+    return returnMenu
+end
+
+-- In this menu example, the human will 'hire' some mercenaries
+--  The first menu will choose a mercenary type, the second will choose
+--  a quantity of that unit type, and the third menu will confirm the choice
+--  They will not be able to choose a number of mercenaries they can't afford
+--  The callingArgument is the tribe
+
+example.hireMercMenu = text.newMenuRecord({menuName="Choose Mercenary"})
+example.confirmMenu = text.newMenuRecord({menuName="Confirm Mercenary Choice"})
+example.chooseNumberMenu = text.makeChooseNumberMenu({1,5,10,-1,-10},{min=0,max=25},"quantity",
+    example.confirmMenu, {{goBack=1, optionName="Choose Different Mercenary Type."}},"Choose number Menu")
+        
+-- specifying a quantity in these options initializes the choose number menu to something other than 0.
+-- This is omitted from the archer selection to test the nil case
+
+-- The quantity here
+example.mercenaryList = {
+    [1] = {choice = {type = gen.original.uWarriors, costPer = 10, quantity = 5}, optionName = "Hire "..gen.original.uWarriors.name.." (10 each)",nextMenu = example.chooseNumberMenu},
+    [2] = {choice = {type = gen.original.uPhalanx, costPer = 15, quantity = 3}, optionName = "Hire "..gen.original.uPhalanx.name.." (15 each)",nextMenu = example.chooseNumberMenu},
+    [3] = {choice = {type = gen.original.uArchers, costPer = 20, quantity=nil}, optionName = "Hire "..gen.original.uArchers.name.." (20 each)",nextMenu = example.chooseNumberMenu},
+}
+
+example.hireMercMenu.menuGenerator = example.mercenaryList
+example.hireMercMenu.menuText = "What type of mercenary should we hire?"
+example.hireMercMenu.menuTitle = "Hire Mercenaries"
+
+example.chooseNumberMenu.menuText = function(callingArgument,history)
+    local lastChoice = history[1]
+    local substitutionTable = gen.copyTable(lastChoice)
+    -- the lastChoice might not have a default quantity (due to tests), so use the default quantity of 0
+    substitutionTable.quantity = substitutionTable.quantity or 0
+    substitutionTable.totalCost = substitutionTable.quantity*substitutionTable.costPer
+    local menuText = text.substitute("We are going to hire %STRING[quantity] %#%NAME[type]#[quantity] for %MONEY[totalCost].  Do you wish to make any changes?",substitutionTable)
+    return menuText
+end
+example.chooseNumberMenu.menuTitle = "Hire Mercenaries"
+-- filter out options which are too expensive
+example.chooseNumberMenu.menuFilter = function(optionTable,tribe,history,fullMenuTable)
+    
+    if optionTable.choice and optionTable.choice.quantity*optionTable.choice.costPer > tribe.money then
+        return false
+    end
+    return true
+end
+
+example.confirmMenu.menuGenerator = function(tribe,history)
+    local menu = {}
+    menu[1] = {choice = nil, optionName = "No, the amount to hire is incorrect.", nextMenu = 1}
+    menu[2] = {choice = nil, optionName = "No, we should hire a different type of mercenary.", nextMenu = 2}
+    menu[3] = {choice = history[1], optionName = "Yes, make the arrangements."}
+    return menu
+end
+
+example.confirmMenu.menuText = function(callingArgument,history)
+    local lastChoice = history[1]
+    local substitutionTable = gen.copyTable(lastChoice)
+    substitutionTable.totalCost = lastChoice.quantity*lastChoice.costPer
+    local menuText = text.substitute("We are going to hire %STRING[quantity] %#%NAME[type]#[quantity] for %MONEY[totalCost].  Is this correct?",substitutionTable)
+    return menuText
+end
+
+example.confirmMenu.menuTitle = "Confirm"
+
+function console.hireMercTest()
+    civ.ui.text(gen.tableToString(example.hireMercMenu(civ.getCurrentTribe())))
+end
+    
+
+
 
 return text
 

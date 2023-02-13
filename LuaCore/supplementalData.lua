@@ -302,7 +302,7 @@ local onTribeTurnEndFunctions = {}
 
 
 -- supplementalData.buildModuleFunctions(moduleName,itemName, isItem, getItemID, getItemFromID,
---          itemIteratorGenerator, sameItemCheck)
+--          itemIteratorGenerator,getTribe, sameItemCheck)
 --      Builds a supplemental data type module for <item>s
 --      moduleName = string
 --          the name of the module
