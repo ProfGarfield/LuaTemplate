@@ -1,4 +1,4 @@
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -9,6 +9,7 @@ local suppressEventsLuaWarning = false -- if set to true, this suppresses the wa
 -- you're using discreteEventsRegistrar outside of the LuaScenarioTemplate
 -- (I wouldn't recommend setting fileModified to true just for this, since you might think
 -- you made important changes)
+
 
 
 local discreteEvents = {}
@@ -491,6 +492,396 @@ end
 local superMetatable = {__index = indexFn,__newindex=newIndexFn}
 
 local superTable = {version=versionNumber, eventsTable=eventsTable}
+
+
+---Registers a function to be called every time a unit is activated. The callback takes the unit activated as a parameter, and the source of unit activation. `source` is `true` if activated by keyboard or mouse click, `false` if activated by the game itself. `repeatMove` is `true` if it's a repeat activation caused by moving (see civ.scen.compatibility), `false` otherwise.
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(unit: unitObject, source: boolean, repeatMove: boolean)
+discreteEvents.onActivateUnit = function(code)
+    newIndexFn(nil,"onActivateUnit",code)
+end
+
+
+---Registers a function that is called when a unit is bribed successfully. unit.owner is the new owner at this point, `previousOwner` the old owner.
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(unit: unitObject, previousOwner: tribeObject)
+function discreteEvents.onBribeUnit(code)
+    newIndexFn(nil,"onBribeUnit",code)
+end
+
+
+--[[
+Registers a function that is called to determine if `unit` can found a city at the unit's location. `advancedTribe` is `true` when picking up a hut with `unit` triggers an advanced tribe. Return `true` to allow, `false` to disallow.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---This is combined with the consolidated events, the legacy events, and the separate onCanFoundCity.lua file.  If any of these functions return false, the city can't be built.
+---@param code fun(unit: unitObject, advancedTribe: boolean):boolean
+function discreteEvents.onCanFoundCity(code)
+    newIndexFn(nil,"onCanFoundCity",code)
+end
+
+--[[
+    Registers a function that is called when a tribe's spaceship reaches its target. Just registering this function causes the game to not end at this point ("endgame override").
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(tribe:tribeObject)
+function discreteEvents.onCentauriArrival(code)
+    newIndexFn(nil,"onCentauriArrival",code)
+end
+
+
+
+--[[
+Registers a function that is called when a city is destroyed.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(city:cityObject) 
+function discreteEvents.onCityDestroyed(code)
+    newIndexFn(nil,"onCityDestroyed",code)
+end
+
+
+--[[
+Registers a function to be called every time a city is founded. The callback takes the city as a parameter, and can optionally return a function (since 0.18) that is called to perform cleanup when the user cancels founding the city.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code cityFoundedFunction
+function discreteEvents.onCityFounded(code)
+    newIndexFn(nil,"onCityFounded",code)
+end
+
+
+--[[
+Registers a function that is called when a tribe's cities have been processed for that turn. See `onTurn` for interaction with other "turn" triggers.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(turn: integer, tribe:tribeObject)
+function discreteEvents.onCityProcessingComplete(code)
+    newIndexFn(nil,"onCityProcessingComplete",code)
+end
+
+
+
+
+
+--[[
+Registers a function that is called when a city completes its production order. The produced item `prod` is either a unit, improvement or wonder (this can be checked with the civ.is* functions).
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(city:cityObject, prod:producedItem)
+function discreteEvents.onCityProduction(code)
+    newIndexFn(nil,"onCityProduction",code)
+end
+
+
+--[[
+Registers a function that is called when a city is captured. `city` is the city changing hands, at this point city.owner is the new owner already. `defender` is the old owner.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(city: cityObject, defender: tribeObject)
+function discreteEvents.onCityTaken(code)
+    newIndexFn(nil,"onCityTaken",code)
+end
+
+
+--[[
+<br>Registers a function that is called when the game ends. `reason` is an integer between 1 and 6:
+<br>1 and 2 - Space race victory. This does not trigger if `onCentauriArrival` has a callback registered. 1 means victory by active player.
+<br>3 - Conquest victory
+<br>4 - Defeat
+<br>5 - Retirement
+<br>6 - Macro ENDGAME action
+<br>Return `true` to end the game, `false` to keep playing.
+--]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---This is combined with the consolidated events, the legacy events, and the separate onGameEnds.lua file. If any of these return false, the game end is prevented.
+---@param code fun(reason:gameEndReasons):(gameIsOver:boolean)
+function discreteEvents.onGameEnds(code)
+    newIndexFn(nil,"onGameEnds",code)
+end
+
+
+--[[
+Registers a function to be called every time a key is pressed.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code function (keyCode:integer)
+function discreteEvents.onKeyPress(code)
+    newIndexFn(nil,"onKeyPress",code)
+end
+
+
+
+
+--[[
+Registers a function that is called when two tribes attempt negotiations. `talker` is the tribe initiating the contact, `listener` the receiver. Return `true` to allow the negotiations to commence, `false` to deny.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---This is combined with the consolidated events, the legacy events, and the separate onNegotiation.lua file.  If any of these return false, then negotiation is prevented.
+---@param code fun(talker:tribeObject, listener:tribeObject):(canTalk:boolean)
+function discreteEvents.onNegotiation(code)
+    newIndexFn(nil,"onNegotiation",code)
+end
+
+
+
+
+--[[
+Registers a function that is called when the game is saved.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.  However, you can't add extra data to be saved on the end of the file with this function.
+---@param code fun()
+function discreteEvents.onSave(code)
+    newIndexFn(nil,"onSave",code)
+end
+
+
+--[[
+Registers a function that is called when the scenario is loaded.  (This is whenever a game is loaded, not just when the scenario is started.)
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun()
+function discreteEvents.onScenarioLoaded(code)
+    newIndexFn(nil,"onScenarioLoaded",code)
+end
+
+
+--[[
+Registers a function that is called when a schism is triggered. This happens when the capital of a AI-controlled tribe with more than four cities is captured, and, if the attacker is human-controlled, it is ranked lower in power than the defender. If the attacker is AI-controlled the best human tribe must be ranked lower than the defender for the schism to trigger.
+If the schism is allowed, a new tribe will be created that takes over about half the cities of the old tribe. If no new tribe can be created, the schism does not occur.
+Return `true` to allow the schism to happen, `false` to deny.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---This is combined with the consolidated events, the legacy events, and the separate onSchism.lua file.  If any of these return false, then schism is prevented.
+---@param code fun(tribe:tribeObject):allowSchism:boolean
+function discreteEvents.onSchism(code)
+    newIndexFn(nil,"onSchism",code)
+end
+
+
+
+--[[
+Registers a function that is called at the start of a tribe's turn. See `onTurn` for interaction with other "turn" triggers.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(turn:integer, tribe:tribeObject)
+function discreteEvents.onTribeTurnBegin(code)
+    newIndexFn(nil,"onTribeTurnBegin",code)
+end
+
+
+--[[
+Registers a function that is called at the end of a tribe's turn. See `onTurn` for interaction with other "turn" triggers.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(turn:integer, tribe:tribeObject)
+function discreteEvents.onTribeTurnEnd(code)
+    newIndexFn(nil,"onTribeTurnEnd",code)
+end
+
+
+--[[
+Registers a function that is called at the start of a turn. The basic sequence of this and other "turn" triggers is as follows:
+<br>`onTurn` fires
+<br>Non-tribe-specific updates take place
+<br>`onTribeTurnBegin` fires for tribe 0.
+<br>Tribe 0 cities are processed.
+<br>`onCityProcessingComplete` fires for tribe 0 (this fires even when a tribe has no cities).
+<br>Tribe 0 units move
+<br>`onTribeTurnEnd` fires for tribe 0.
+<br>All active tribes are processed in order according to the sequence for tribe 0
+<br>`onTribeTurnEnd` fires for tribe 7.
+<br>`onTurn` fires for the next turn
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(turn:integer)
+function discreteEvents.onTurn(code)
+    newIndexFn(nil,"onTurn",code)
+end
+
+
+--[[
+Registers a function that is called whenever a unit is killed in standard Civ II combat. `loser` is the unit that is killed, `winner` is the unit responsible for it.  `aggressor` is the unit that initiated the attack, and `victim` is the unit that was attacked.  `loserLocation` is the tile where the unit that lost combat stood (if the loser is the aggressor, loser.location and aggressor.location return a tile off the map).  `winnerVetStatus` and `loserVetStatus` are true if the corresponding unit was a veteran before combat took place.  (winner.veteran is checked after the unit is promoted) 
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(loser:unitObject, winner:unitObject, aggressor: unitObject, victim: unitObject, loserLocation: tileObject, winnerVetStatus: boolean, loserVetStatus:boolean)
+function discreteEvents.onUnitKilled(code)
+    newIndexFn(nil,"onUnitKilled",code)
+end
+
+--[[
+Registers a function that is called whenever a unit is killed, either in standard Civ II combat or by events. `loser` is the unit that is killed, `winner` is the unit responsible for it.  `aggressor` is the unit that initiated the attack, and `victim` is the unit that was attacked.  `loserLocation` is the tile where the unit that lost combat stood (if the loser is the aggressor, loser.location and aggressor.location return a tile off the map).  `winnerVetStatus` and `loserVetStatus` are true if the corresponding unit was a veteran before combat took place.  (winner.veteran is checked after the unit is promoted) 
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(loser:unitObject, winner:unitObject, aggressor: unitObject, victim: unitObject, loserLocation: tileObject, winnerVetStatus: boolean, loserVetStatus:boolean)
+function discreteEvents.onUnitDefeated(code)
+    newIndexFn(nil,"onUnitDefeated",code)
+end
+
+--[[
+Registers a function that is called when a unit is deleted (either through combat death, or by some other even, but not if the unit is disbanded).  `deletedUnit` is the unit being deleted, while `replacing unit` is the unit replacing it (e.g. from promotion/demotion), or _nil_ if there is no such unit.
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(deletedUnit: unitObject, replacingUnit:unitObject|nil)
+function discreteEvents.onUnitDeleted(code)
+    newIndexFn(nil,"onUnitDeleted",code)
+end
+
+--[[
+Registers a function that is called immediately before each city is processed (which happens at the start of a tribe's turn).  (This is achieved through use of civ.scen.onCalculateCityYield.)
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(city: cityObject)
+function discreteEvents.onCityProcessed(code)
+    newIndexFn(nil,"onCityProcessed",code)
+end
+
+--[[Registers a function that will be called during civ.scen.onLoad, with which you can link state tables from inside individual modules.  `stateTable` is the table which is added to the saved game, `stateTableKeys` is a record of keys already used in the stateTable, and by adding keys, you can avoid accidental collision. Example:
+```lua
+local delayedActionState = "state not linked"
+local savedActions = "state not linked"
+local function linkState(tableInStateTable)
+    if type(tableInStateTable) == "table" then
+        delayedActionState = tableInStateTable
+    else
+        error("linkState: linkState takes a table as an argument.")
+    end
+    delayedActionState.savedActions = delayedActionState.savedActions or {}
+    savedActions = delayedActionState.savedActions
+end
+delayedAction.linkState = linkState
+discreteEvents.linkStateToModules(function(state,stateTableKeys)
+    local keyName = "delayedAction"
+    if stateTableKeys[keyName] then
+        error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+    else
+        stateTableKeys[keyName] = true
+    end
+    -- link the state table to the module
+    state[keyName] = state[keyName] or {}
+    linkState(state[keyName])
+end)
+```
+]]
+---@param code fun(stateTable: table, stateTableKeys: table<string,true>)
+function discreteEvents.linkStateToModules(code)
+    newIndexFn(nil,"linkStateToModules",code)
+end
+
+--[[
+Registers code to be executed during civ.scen.onTurn and civ.scen.onScenarioLoaded.  This way, the correct "season" can be chosen when the scenario is loaded, and can be updated for each new turn.
+    ]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun()
+function discreteEvents.onChooseSeason(code)
+    newIndexFn(nil,"onChooseSeason",code)
+end
+
+--[[
+Registers code to be executed when a unit enters a tile.  (Implemented using several civ.scen functions.)  `unit` is the unit which entered the tile, `previousTile` is where the unit was before it moved, and `previousDomainSpec` is the value of unit.domainSpec before it moved into the square (useful for units with range).
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(unit: unitObject, previousTile: tileObject, previousDomainSpec: integer)
+function discreteEvents.onEnterTile(code)
+    newIndexFn(nil,"onEnterTile",code)
+end
+
+--- Registers an onEnterTile event before all other onEnterTile events.  It is used for "transport" events, so that units can "drag" other units into the tile before the regular onEnterTile event.
+---@param code fun(unit: unitObject, previousTile: tileObject, previousDomainSpec: integer)
+function discreteEvents.onEnterTilePriority(code)
+    newIndexFn(nil,"onEnterTilePriority", code)
+end
+
+--[[
+Registers code to be executed when a unit has been given its last order for the turn.  That is, when a new unit is active, and the previous unit has spent all its movement points (or, at the end of the turn)
+]]
+---@param code fun(unit: unitObject)
+function discreteEvents.onFinalOrderGiven(code)
+    newIndexFn(nil,"onFinalOrderGiven",code)
+end
+
+
+
+-- to make these functions appear in the documentation, 
+-- it is necessary to add them to superTable.  However, I want the
+-- metatable to handle them (so that backwards compatibility can
+-- be maintained where discreteEvents.onActivateUnit = someFunction
+-- will also register someFunction as a discrete event).
+-- Therefore, I need to remove these functions from the superTable,
+-- which is done via nillify below (also for LuaLS documentation reasons)
+superTable.onActivateUnit = discreteEvents.onActivateUnit 
+superTable.onBribeUnit = discreteEvents.onBribeUnit 
+superTable.onCityFounded = discreteEvents.onCityFounded 
+superTable.onCityProduction = discreteEvents.onCityProduction 
+superTable.onCityTaken = discreteEvents.onCityTaken 
+superTable.onScenarioLoaded = discreteEvents.onScenarioLoaded 
+superTable.onTurn = discreteEvents.onTurn 
+superTable.onUnitKilled = discreteEvents.onUnitKilled 
+superTable.onUnitDefeated = discreteEvents.onUnitDefeated 
+superTable.onUnitDeleted = discreteEvents.onUnitDeleted 
+-- deprecated functions
+
+---Use discreteEvents.onCityProcessingComplete instead
+---@param code fun(turn: integer, tribe:tribeObject)
+---@deprecated
+function superTable.onAfterProduction(code)
+    discreteEvents.onCityProcessingComplete(code)
+end
+
+--- Use discreteEvents.onTribeTurnBegin instead
+---@param code fun(turn:integer, tribe:tribeObject)
+---@deprecated
+function discreteEvents.onBeforeProduction(code)
+    newIndexFn(nil,"onTribeTurnBegin",code)
+end
+
+superTable.onCityProcessed = discreteEvents.onCityProcessed
+superTable.linkStateToModules = discreteEvents.linkStateToModules
+superTable.onCentauriArrival = discreteEvents.onCentauriArrival
+superTable.onNegotiation = discreteEvents.onNegotiation
+superTable.onGameEnds = discreteEvents.onGameEnds
+superTable.onChooseSeason = discreteEvents.onChooseSeason
+superTable.onKeyPress = discreteEvents.onKeyPress
+superTable.onCityProcessingComplete = discreteEvents.onCityProcessingComplete
+superTable.onTribeTurnBegin = discreteEvents.onTribeTurnBegin
+superTable.onTribeTurnEnd = discreteEvents.onTribeTurnEnd
+superTable.onCanFoundCity = discreteEvents.onCanFoundCity
+superTable.onSchism = discreteEvents.onSchism
+superTable.onSave = discreteEvents.onSave
+superTable.onEnterTile = discreteEvents.onEnterTile
+superTable.onEnterTilePriority = discreteEvents.onEnterTilePriority
+superTable.onFinalOrderGiven = discreteEvents.onFinalOrderGiven
+local function nillify(table)
+    table.onActivateUnit = nil
+    table.onBribeUnit = nil
+    table.onCityFounded = nil
+    table.onCityProduction = nil
+    table.onCityTaken = nil
+    table.onScenarioLoaded = nil
+    table.onTurn = nil
+    table.onUnitKilled = nil
+    table.onUnitDefeated = nil
+    table.onUnitDeleted = nil
+    table.onAfterProduction = nil
+    table.onBeforeProduction = nil
+    table.onCityProcessed = nil
+    table.linkStateToModules = nil
+    table.onCentauriArrival = nil
+    table.onNegotiation = nil
+    table.onGameEnds = nil
+    table.onChooseSeason = nil
+    table.onKeyPress = nil
+    table.onCityProcessingComplete = nil
+    table.onTribeTurnBegin = nil
+    table.onTribeTurnEnd = nil
+    table.onCanFoundCity = nil
+    table.onSchism = nil
+    table.onSave = nil
+    table.onEnterTile = nil
+    table.onEnterTilePriority = nil
+end
+nillify(superTable)
+
 setmetatable(superTable,superMetatable)
 
 return superTable

@@ -71,7 +71,7 @@ gen.versionFunctions(unitCosmic,versionNumber,fileModified,"LuaCore".."\\".."uni
 
 local suppliedUnitCosmic = {}
 
-function unitComsic.registerUnitCosmic(uCosmicTable)
+function unitCosmic.registerUnitCosmic(uCosmicTable)
     if type(uCosmicTable) ~= "table" then
         error("unitCosmic.registerUnitCosmic: argument must be a table.  Received: "..tostring(uCosmicTable))
     end

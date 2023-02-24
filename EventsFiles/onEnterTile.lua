@@ -2,10 +2,10 @@
 local register = {}
 local text = require("text")
 local gen = require("generalLibrary")
--- onEnterTile(unit,previousTile)
+-- onEnterTile(unit,previousTile,previousDomainSpec)
 -- executes when a unit successfully enters a tile (so not when it attacks
 -- a unit or fails to enter a tile because it lacks movement points)
-function register.onEnterTile(unit,previousTile)
+function register.onEnterTile(unit,previousTile,previousDomainSpec)
     if _global.eventTesting then
         civ.ui.text("onEnterTile.onEnterTile: "..unit.type.name.." has entered tile ("..text.coordinates(unit.location)..") from tile ("..text.coordinates(previousTile)..").")
     end

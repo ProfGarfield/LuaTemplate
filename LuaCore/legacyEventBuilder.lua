@@ -62,7 +62,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     --if string.find(package.path, scenarioFolderPath, 1, true) == nil then
     --   package.path = package.path .. ";" .. scenarioFolderPath
     --end
-    console=console or {}
+    _G.console=console or {}
     currentFolder = currentFolder or string.gsub(eventsPath,"legacyEventBuilder.lua","")
     
     local civlua=require("civluaModified")
@@ -459,7 +459,8 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
         local outputString=serialize(eventTable)
         outputString=string.gsub(outputString,"\r","")-- remove the carrage return character, since it was added with the newline
         -- and causes formatting issues in both VIM and notepad++ under WINE
-        file = io.open(currentFolder.."\\"..eventOutputFileName,"a")
+        local file = io.open(currentFolder.."\\"..eventOutputFileName,"a")
+        ---@cast file file*
         io.output(file)
         io.write(outputString)
         io.close(file)

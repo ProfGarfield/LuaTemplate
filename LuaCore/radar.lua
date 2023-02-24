@@ -649,8 +649,10 @@ function radar.makeRadarStats(radarInfo,scanTile,scanTribe)
         local scanMapStr = tostring(scanMap)
         local fromMapStr = tostring(scanTile.z)
         if radarInfo["scanMap"..scanMapStr.."From"..fromMapStr] then
+---@diagnostic disable-next-line: assign-type-mismatch
             radarStats["map"..scanMapStr] = radar.calibrate(radarInfo["scanMap"..scanMapStr.."From"..fromMapStr])
         else
+---@diagnostic disable-next-line: assign-type-mismatch
             radarStats["map"..scanMapStr] = false
         end
     end
@@ -1247,6 +1249,7 @@ function radar.buildKeyPressAndGroupScanFunctions(radarTable,airCrossSectionFn,s
             if unit.owner == scanTribe and groupScanUnit[unit.type.id] then
                 for _,radarData in pairs(groupScanUnit[unit.type.id]) do
                     if radar.stationCanScan(radarData,unit,scanTribe) then
+                        local scanTile = unit.location
                         local newTiles = radar.sweep(scanTile,radar.makeRadarStats(radarData,scanTile,scanTribe),
                             scanTribe,airCrossSectionFn,surfaceCrossSectionFn)
                         trackContactTiles(contactTiles,newTiles)

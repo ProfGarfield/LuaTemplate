@@ -388,7 +388,7 @@ end
 --      case, nothing is done
 function leaderBonus.commissionLeader(unit,rank,noErrorIfFailure)
     if not leaderClassTable[rank] then
-        error("leaderBonus.commissionLeader: the rank "..tostring(newRank).." is not a registered leaderClass.")
+        error("leaderBonus.commissionLeader: the rank "..tostring(rank).." is not a registered leaderClass.")
     end
     if alwaysLeaderUnits[unit.type.id] then
         if alwaysLeaderUnits[unit.type.id] == rank then

@@ -119,7 +119,7 @@ end
 
 local registeredCombatGroupNames = {}
 for i=0,numberOfCombatGroups-1 do
-    registeredCombatGroupNames[i] = (rulesTable[luaCombatGroupNamesSection] and rulesTable[luaCombatGroupNamesSection][i][0]) or "Combat Group "..i
+    registeredCombatGroupNames[i] = (rulesTable[luaCombatGroupNamesSection] and rulesTable[luaCombatGroupNamesSection][i][0]) or ("Combat Group "..i)
 end
 
 
@@ -321,6 +321,7 @@ if rulesTable[demotionsSection] then
     for unitID=0,civ.cosmic.numberOfUnitTypes-1 do
         if type(tonumber(rulesSection[unitID][2])) == "number" then
             local datum = {}
+---@diagnostic disable-next-line: param-type-mismatch
             datum.replacementUnitType = civ.getUnitType(tonumber(rulesSection[unitID][2]))
             datum.destroyIfKilledBy = filterAndMerge(demotionGroups,rulesSection[unitID][3])
             datum.demoteOnlyIfVeteran = string.sub(rulesSection[unitID][4],-2,-2) == "1"
@@ -414,6 +415,7 @@ if rulesTable[promotionSection] then
                 error("Lua Scenario Template Rules "..promotionSection..": Column D should be a number that represents a unit type.  That is, it should be less than "..(civ.cosmic.numberOfUnitTypes-1))
             end
             local datum = {}
+---@diagnostic disable-next-line: param-type-mismatch
             datum.upgradeUnitType = civ.getUnitType(tonumber(rulesSection[unitID][3]))
             datum.upgradeChance = tonumber(rulesSection[unitID][4])//100
             datum.excludedUnitTypes = filterAndMerge(promotionGroups,rulesSection[unitID][5])
@@ -578,7 +580,7 @@ local function maskMap(maskString,conversionTable,allowedCharactersInfo,section,
     local lineTable = rulesTable[section][itemID]
     local maskLength = string.len(maskString)
     if maskLength ~= desiredMaskLength then
-        error("Lua Scenario Template Rules "..section..": Column "..column.." should have "..desiredMaskLength.." of the following characters: "..allowedCharacterInfo..".  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(maskString).." ("..string.len(maskString).." characters)") 
+        error("Lua Scenario Template Rules "..section..": Column "..column.." should have "..desiredMaskLength.." of the following characters: "..allowedCharactersInfo..".  For "..itemTypeString.." with ID "..itemID.." (A column name "..lineTable[0]..") received: "..tostring(maskString).." ("..string.len(maskString).." characters)") 
     end
 
     local output = {}
@@ -795,6 +797,7 @@ local function generateRulesLST()
         ..buildLuaCombatGroupNamesSection().."\n"..buildDemotionSection().."\n"..buildPromotionSection().."\n"
         ..buildProductionVeteranSection().."\n"
     local file =  io.open(fileLocation,"a")
+    ---@cast file file*
     io.output(file)
     io.write(fileText)
     io.close(file)

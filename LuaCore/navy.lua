@@ -647,6 +647,7 @@ end
 
 -- clear the canUnload table each turn
 function navy.onTurnMaintenance(turn)
+---@diagnostic disable-next-line: param-type-mismatch
     for key,value in pairs(canUnload) do
         canUnload[key] = nil
     end

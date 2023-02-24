@@ -374,7 +374,7 @@ local function spawnUnit(generatingUnit,specificationTable,onUnitActivateFn)
     --
     local unitTable = {}
     if specification.generateUnitFunction then
-        unitTable = generateUnitFunction(generatingUnit)
+        unitTable = specification.generateUnitFunction(generatingUnit)
         if unitTable[1] == nil then
             for index,unit in pairs(unitTable) do
                 unitTable[1] = unit

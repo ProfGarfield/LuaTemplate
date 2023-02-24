@@ -25,7 +25,7 @@ end
 -- Returns an iterator yielding all tiles on all maps.
 local function iterateTiles()
   return coroutine.wrap(function ()
-    local w, h, maps = civ.getMapDimensions()
+    local w, h, maps = civ.getAtlasDimensions()
     for z = 0, maps - 1 do
       for y = 0, h - 1 do
         for x = y & 1, w - 1, 2 do

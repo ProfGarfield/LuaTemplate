@@ -651,6 +651,7 @@ local function applyWonderBonus(wonder,tribe)
 	--   But it doesn't actually do so! The wonder continues to function until a
 	--   non-barbarian tribe acquires the tech, so the loop below starts with 1.
     for i=1,7 do
+---@diagnostic disable-next-line: param-type-mismatch
         if civ.getTribe(i) and wonder.expires and civ.hasTech(civ.getTribe(i), wonder.expires) then
             return false
         end
@@ -743,7 +744,7 @@ local function tileDist(locA,locB,zDist)
     if civ.game.rules.flatWorld then
         return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
     else
-        local xMax,yMax,zMax=civ.getMapDimensions()
+        local xMax,yMax,zMax=civ.getAtlasDimensions()
         return math.min((math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2,
             (xMax-math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2)
     end
@@ -780,7 +781,7 @@ local function distance(tileUnitCityA,tileUnitCityB,zDist)
     if civ.game.rules.flatWorld then
         return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
     else
-        local xMax,yMax,zMax=civ.getMapDimensions()
+        local xMax,yMax,zMax=civ.getAtlasDimensions()
         return math.min((math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2,
             (xMax-math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2)
     end
@@ -850,8 +851,10 @@ function gen.placeIrrigation(tile)
         return
     end
     -- Set irrigation bit to 1
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements | 0x04
     -- Set mining bit to 0
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x08
 end
 
@@ -866,6 +869,7 @@ function gen.removeIrrigation(tile)
         return
     end
     -- set irrigation bit to 0
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x04
 end
 
@@ -887,8 +891,10 @@ function gen.placeMine(tile)
         return
     end
     -- set mining bit to 1
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements | 0x08
     -- set irrigation bit to 0
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x04
 end
 
@@ -898,8 +904,10 @@ end
 function gen.placeMineUnderCity(tile)
     tile = toTile(tile)
     -- set mining bit to 1
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements | 0x08
     -- set irrigation bit to 0
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x04
 end
 
@@ -914,6 +922,8 @@ function gen.removeMine(tile)
         return
     end
     -- set irrigation bit to 0
+---@diagnostic disable-next-line: assign-type-mismatch
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x08
 end
 
@@ -926,7 +936,11 @@ function gen.removeMineUnderCity(tile)
     if tile.improvements & 0x0C == 0x0C then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch, assign-type-mismatch
     -- set mining bit to 0
+---@diagnostic disable-next-line: assign-type-mismatch
+---@diagnostic disable-next-line: assign-type-mismatch
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x08
 
 end
@@ -944,6 +958,7 @@ function gen.placeFarmland(tile)
     if tile.city then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements | 0x0C
 end
 
@@ -954,6 +969,7 @@ end
 function gen.removeFarmland(tile) 
     tile = toTile(tile)
     if (not tile.city) and (tile.improvements & 0x0C == 0x0C) then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = tile.improvements & ~0x0C
     end
 end
@@ -1005,6 +1021,7 @@ end
 function gen.removeAgriculture(tile)
     tile = toTile(tile)
     if (not tile.city) and gen.hasAgriculture(tile) then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = tile.improvements & ~0x0C
     end
 end
@@ -1025,6 +1042,7 @@ function gen.placeRoad(tile)
     if tile.city then 
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements | 0x10
 end
 
@@ -1036,6 +1054,7 @@ function gen.removeRoad(tile)
     if tile.city or (tile.improvements & 0x30 == 0x30) then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements & ~0x10
 end
 
@@ -1055,6 +1074,7 @@ function gen.placeRailroad(tile)
     if tile.city then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = tile.improvements | 0x30
 end
 
@@ -1065,6 +1085,7 @@ end
 function gen.removeRailroad(tile) 
     tile = toTile(tile)
     if (tile.improvements & 0x30 == 0x30) and (not tile.city) then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = tile.improvements & ~0x20
     end
 end
@@ -1117,6 +1138,7 @@ function gen.removeTransportation(tile)
     if tile.city then
         return
     else
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = tile.improvements & ~0x30
     end
 end
@@ -1136,6 +1158,7 @@ function gen.placeFortress(tile)
     if tile.city or isBit1(tile.improvements,2) then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = setBits(tile.improvements,"x1xxxx0x")
 end
 
@@ -1147,6 +1170,7 @@ function gen.placeFortressForce(tile)
     if tile.city then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = setBits(tile.improvements,"x1xxxx0x")
     return
 end
@@ -1157,6 +1181,7 @@ end
 function gen.removeFortress(tile) 
     tile = toTile(tile)
     if checkBits(tile.improvements,"x1xxxx0x") then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = setBit0(tile.improvements,7)
     end
 end
@@ -1177,6 +1202,7 @@ function gen.placeAirbase(tile)
     if tile.city or isBit1(tileImprovements,7) or isBit1(tileImprovements,8) then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = setBits(tile.improvements,"x1xxxx1x")
 end
 
@@ -1188,6 +1214,7 @@ function gen.placeAirbaseForce(tile)
     if tile.city then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = setBits(tile.improvements,"01xxxx1x")
 end
 
@@ -1198,6 +1225,7 @@ end
 function gen.removeAirbase(tile) 
     tile = toTile(tile)
     if checkBits(tile.improvements,"x1xxxx1x") and (not tile.city) then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = setBits(tile.improvements,"00xxxx0x")
     end
 end
@@ -1217,6 +1245,7 @@ function gen.placePollution(tile)
     if tile.city or isBit1(tile.improvements,2) then
         return
     end
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.improvements = setBits(tile.improvements,"1xxxxx0x")
 end
 
@@ -1229,8 +1258,10 @@ function gen.placePollutionForce(tile)
         return
     end
     if gen.hasFortress(tile) then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = setBits(tile.improvements,"11xxxx0x")
     else
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = setBits(tile.improvements,"1xxxxx0x")
     end
 end
@@ -1239,6 +1270,7 @@ end
 function gen.removePollution(tile) 
     tile = toTile(tile)
     if checkBits(tile.improvements,"1xxxxx0x") then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = setBit0(tile.improvements,8)
     end
 end
@@ -1256,6 +1288,7 @@ end
 function gen.removeTransporter(tile) 
     tile = toTile(tile)
     if (not tile.city) and checkBits(tile.improvements,"1xxxxx1x") then
+---@diagnostic disable-next-line: assign-type-mismatch
         tile.improvements = setBits(tile.improvements,"0xxxxx0x")
         return
     end
@@ -2209,7 +2242,7 @@ end
 -- returns movement allowance for a unit after taking damage
 -- into account, multiplied by the road/rail multiplier
 -- Helper Function (provided as both local function and in table
-function maxMoves(unit)
+local function maxMoves(unit)
     local fullHpMove = unit.type.move
     if unit.type.domain == 2 then
         -- apply nuclear power
@@ -2348,7 +2381,7 @@ end
 function gen.inPolygon(tile,tableOfCoordinates)
     -- polygon doesn't cross this x value
     local xBound = tableOfCoordinates.doesNotCrossThisX or 0
-    local width,height,maps = civ.getMapDimensions()
+    local width,height,maps = civ.getAtlasDimensions()
     local function isNumericallyEqual(LHS,RHS)
         return math.abs(LHS-RHS) <= 1e-6
     end
@@ -2802,7 +2835,7 @@ function gen.getTileID (tileORX,y,z)
 		error("ERROR: \"getTileID\" function called with an invalid tile or coordinates")
 		return nil
 	end
-	local mapWidth, mapHeight, mapQuantity = civ.getMapDimensions()
+	local mapWidth, mapHeight, mapQuantity = civ.getAtlasDimensions()
 	local mapOffset = tile.z * mapWidth * mapHeight
 	local tileOffset = tile.x + (tile.y * mapWidth)
 	return mapOffset + tileOffset
@@ -2813,7 +2846,7 @@ local getTileID = gen.getTileId
 
 -- gen.getTileFromID(tileID) --> tileObject
 function gen.getTileFromID(ID)
-    local mapWidth, mapHeight, mapQuantity = civ.getMapDimensions()
+    local mapWidth, mapHeight, mapQuantity = civ.getAtlasDimensions()
     local baseMapOffset = mapWidth*mapHeight
     local z = math.floor(ID/baseMapOffset)
     if z < 0 or z >3 then
@@ -2864,7 +2897,7 @@ local function getAdjacentTiles(tile)
                 civ.getTile(xVal,yVal-2,zVal),
                 civ.getTile(xVal-1,yVal-1,zVal),}
     else
-        local xMax,yMax,zMax = civ.getMapDimensions()
+        local xMax,yMax,zMax = civ.getAtlasDimensions()
         return {civ.getTile((xVal-2)%xMax,yVal,zVal),
                 civ.getTile((xVal-1)%xMax,yVal+1,zVal),
                 civ.getTile((xVal)%xMax,yVal+2,zVal),
@@ -3187,7 +3220,7 @@ function gen.cityRadiusTiles(input)
         [21] = civ.getTile(xVal,yVal,zVal),
         }
     else
-        local width,height,maps = civ.getMapDimensions()
+        local width,height,maps = civ.getAtlasDimensions()
         return {
         [1] = civ.getTile((xVal+1)%width,yVal-1,zVal),
         [2] = civ.getTile((xVal+2)%width,yVal,zVal),
@@ -3330,7 +3363,7 @@ function gen.getTilesInRadius(centre,radius,minRadius,maps)
         end
         return index
     end
-    local mapWidth,mapHeight,numberOfMaps = civ.getMapDimensions()
+    local mapWidth,mapHeight,numberOfMaps = civ.getAtlasDimensions()
     local tableOfTiles = {}
     local nextIndex = 1
     for rad = minRadius,radius do
@@ -3947,6 +3980,7 @@ function gen.createUnit(unitType,tribe,locations,options)
         if options.scatter and options.randomize then
             placementTile = placementTable[math.random(1,placementTableSize)]
         end
+        ---@cast placementTile tileObject placementTable isn't empty, so placementTile won't be nil
         local newUnit = civ.createUnit(unitType,tribe,placementTile)
         returnUnits[i] = newUnit
         if i<=vetCount and (math.random() <= vetChance) then
@@ -4538,6 +4572,7 @@ end
 -- makes tile visible to tribe
 function gen.revealTile(tile,tribe)
     tile = toTile(tile)
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.visibility = gen.setBit1(tile.visibility,tribe.id+1)
 end
 
@@ -4545,6 +4580,7 @@ end
 -- covers a tile so it isn't visible to tribe (if it ever was)
 function gen.coverTile(tile,tribe)
     tile = toTile(tile)
+---@diagnostic disable-next-line: assign-type-mismatch
     tile.visibility = gen.setBit0(tile.visibility,tribe.id+1)
 end
 
@@ -4766,7 +4802,7 @@ function gen.chartTruthfully(tile,tribe)
 end
 
 
-function buildAdvancedFlags(name,bitNumber)
+local function buildAdvancedFlags(name,bitNumber)
     gen["is"..name] = function(unitType)
         return isBit1(unitType.advancedFlags,bitNumber)
     end
@@ -4814,7 +4850,7 @@ buildAdvancedFlags("BarbarianWillNotExpire",7)
 -- gen.removeOverrideSPR(unitType) --> void
 buildAdvancedFlags("OverrideSPR",8)
 
-function buildAdvancedSettlerFlags(name,bitNumber)
+local function buildAdvancedSettlerFlags(name,bitNumber)
     gen["is"..name] = function(unitType)
         -- a ~= b is xor when a and b are booleans
         return unitType.role == 5 ~= isBit1(unitType.advancedFlags,bitNumber)
@@ -6367,7 +6403,7 @@ function gen.valueSatisfiesValidDataInfo(value,validDataInfo)
         if data >= minVal and data <= maxVal and (notInteger or data == math.floor(data)) then
             return true
         end
-            error(constructErrorMessage(data,tableDescription,key, extraInfo))
+        return false
     elseif dataType == "string" then
         if vDI == true or vDI[data] then
             return true
@@ -6401,7 +6437,7 @@ end
 --  the valid data is a table where all values are of the
 --  submitted validDataInfo
 function gen.tableOfVDI(vDI)
-    gen.checkValidDataInfo(validDataInfo)
+    gen.checkValidDataInfo(vDI)
     local vDI = gen.copyTable(vDI)
     local function analysisFn(table)
         for key,value in pairs(table) do

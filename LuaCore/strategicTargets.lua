@@ -14,10 +14,12 @@ local fileModified = false -- set this to true if you change this file for your 
 local moduleName = "strategicTargets"
 
 -- data about target units
+---@type table|string
 local targetData = "state not linked"
 
 
 -- if a unit is acting as a target, retrieves the id of the target
+---@type table|string
 local unitIdToTargetId = "state not linked"
 
 
@@ -461,12 +463,14 @@ function strat.iterateTargets(filterItem)
   if filterItem == nil or filterKey == nil or filterValue == nil then
     -- return everything
     return coroutine.wrap(function()
+---@diagnostic disable-next-line: param-type-mismatch
         for key,datum in pairs(targetData) do
           coroutine.yield(getTarget(key))
         end
       end)
   end  
   return coroutine.wrap(function()
+---@diagnostic disable-next-line: param-type-mismatch
       for key,datum in pairs(targetData) do
         if datum[filterKey] == filterValue then
           coroutine.yield(getTarget(key))
@@ -478,6 +482,7 @@ end
   
 
 function discreteEvents.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+---@diagnostic disable-next-line: param-type-mismatch
   for id,datum in pairs(targetData) do
     if loser.id == datum.targetUnitId and gen.getTileId(loser.location) == datum.tileId and loser.owner.id == datum.ownerId then
       strat.destroyTarget(getTarget(id))

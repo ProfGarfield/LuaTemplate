@@ -914,6 +914,7 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
         local receivingTribe = stringToTribe(thenTable["givetechnology"]["receiver"],triggerAttackerString,
             triggerDefenderString, triggerReceiverString)
         if receivingTribe then
+---@diagnostic disable-next-line: param-type-mismatch
             receivingTribe:giveTech(civ.getTech(thenTable["givetechnology"]["technology"]))
         end
     end
@@ -921,6 +922,7 @@ local function performLegacyEventActions(eventIndex, triggerAttackerString,trigg
         local losingTribe = stringToTribe(thenTable["taketechnology"]["whom"],triggerAttackerString,
             triggerDefenderString, triggerReceiverString)
         if losingTribe then
+---@diagnostic disable-next-line: param-type-mismatch
             civ.takeTech(losingTribe,civ.getTech(thenTable["taketechnology"]["technology"]),
                 thenTable["taketechnology"]["collapse"])
         end
@@ -1200,6 +1202,7 @@ local function doReceivedTechnologyEvents()
         if ANDIFTable["futuretech"] and tribe.futureTechs < ANDIFTable["futuretech"] then
             return false
         end
+---@diagnostic disable-next-line: param-type-mismatch
         return civ.hasTech(tribe, civ.getTech(ANDIFTable["technology"]))
     end
     for i=1,#eventTable do
@@ -1264,6 +1267,7 @@ local function isIndividualCivFlagConditionTrue(ANDIFTable,tribeID)
         -- not the correct tribe
         return false
     end
+---@diagnostic disable-next-line: param-type-mismatch
     if ANDIFTable["technology"] and not (tribe and civ.hasTech(tribe, civ.getTech(ANDIFTable["technology"]))) then
         -- technology requirement and tribe does not meet it
         return false

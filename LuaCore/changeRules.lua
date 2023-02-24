@@ -376,7 +376,6 @@ local techAbbreviationToID = {
 ["X6"] =  98,
 ["X7"] =  99,
 ["X64"] = 100,
-["X64"] = 100,
 ["X65"] = 101,
 ["X66"] = 102,
 ["X67"] = 103,
@@ -430,7 +429,6 @@ local techAbbreviationToID = {
 ["X97"] = 151,
 ["X98"] = 152,
 ["X99"] = 153,
-["X9A"] = 154,
 ["X9A"] = 154,
 ["X9B"] = 155,
 ["X9C"] = 156,
@@ -1257,6 +1255,7 @@ for i=0,15 do
     roadTradeAbbreviations[tostring(i)] = i
 end
 
+---@return bitmask
 local function buildRoadTrade(z)
     local suffix = tostring(z)
     if suffix == "0" then
@@ -1286,6 +1285,7 @@ local function buildRoadTrade(z)
             end
         end
     end
+    ---@cast maskNum bitmask
     return maskNum
 end
 

@@ -2,6 +2,7 @@
 local function split(s, sep)
    local fields = {}
    local pattern = string.format("([^%s]+)", sep)
+---@diagnostic disable-next-line: discard-returns
    string.gsub(s, pattern, function(c)
       table.insert(fields, c)
    end)

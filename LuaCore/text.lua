@@ -234,6 +234,7 @@ text.getLinesPerWindow = getLinesPerWindow
 -- imageTable is found, and stored, and then that key is referenced
 -- when the image is needed.
 
+---@type string|table
 local imageTable = "imageTableNotSet"
 local tableName = ""
 
@@ -246,6 +247,7 @@ local function setImageTable(table,tableNm)
         error("setImageTable: first argument must be a table, but a "..type(table)..
         "was provided instead.")
     else
+        ---@cast imageTable table
         imageTable = table
         tableName = tableNm
     end
@@ -322,8 +324,6 @@ end
 --      can be saved in the state table, either the
 --      key referencing the image in the imageTable,
 --      or the table of commands to load the image with civ.ui.loadImage
-
-
 local function stateImageReference(imageInput)
     if type(imageInput) == "table" then
         validateArgumentTable(imageInput,"stateImageReference")
@@ -341,11 +341,11 @@ local function stateImageReference(imageInput)
     elseif type(imageInput) == "string" then
         if type(imageTable) == "string" then
             error("text.stateImageReference: The 'Image Table' has not been set.\n"
-                .."Your input was this: "..input.."\n"
-                .."If this is a key to a table, and table["..input.."] is the image you want\n"
+                .."Your input was this: "..imageInput.."\n"
+                .."If this is a key to a table, and table["..imageInput.."] is the image you want\n"
                 .."to use, then you have not run text.setImageTable(imageTable,tableNameString).\n"
                 .."If your input is a file path to access the image, use the following as your argument:\n"
-                .."{[1]=\""..input.."\",}")
+                .."{[1]=\""..imageInput.."\",}")
         end
         local bool,result = pcall(tableAccess,imageTable,imageInput)
         if bool and civ.isImage(result) then
@@ -358,6 +358,7 @@ local function stateImageReference(imageInput)
         end
     elseif civ.isImage(imageInput) then
         local imgKey = nil
+---@diagnostic disable-next-line: param-type-mismatch
         for key,value in pairs(imageTable) do
             if civ.isImage(value) and value == imageInput then
                 imgKey = key
@@ -381,7 +382,7 @@ local function stateImageReference(imageInput)
             .."loads your desired image.")
         end
     else
-        error("text.stateImageReference: argument 1 has type "..type(input).."\n"
+        error("text.stateImageReference: argument 1 has type "..type(imageInput).."\n"
         .."but only tables, strings, and imageObjects are acceptable.")
     end
 end
@@ -1205,6 +1206,7 @@ function console.testSubstitution()
 
     local rawText = "This unit is type %NAME[type] with cost %ROWSTOMONEY[type] "..
         "and owner %NAME[owner]."
+---@diagnostic disable-next-line: param-type-mismatch
     local unit = civ.createUnit(civ.getUnitType(1),civ.getTribe(1),civ.getCity(0).location)
     print(text.substitute(rawText,unit))
     local genericText = "The unit is %ADJECTIVE[unit], with cost %ROWSTOMONEY[type], which is less than %MONEY1 and more than %MONEY2. [no substitution here]  We should create %STRING3 %#unit#3, or, maybe, only %STRING[one] %#units#[one]."
@@ -1227,6 +1229,7 @@ function console.testSubstitution()
     print(text.substitute(genericText5,{count=1, unit=unit}))
     print(text.substitute(genericText5,{count=2, unit=unit}))
     print(text.substitute(genericText5,{count=3, unit=unit}))
+---@diagnostic disable-next-line: param-type-mismatch
     local egyptUnit = civ.createUnit(civ.getUnitType(1),civ.getTribe(4),civ.getTile(2,2,0))
     print(text.substitute(genericText5,{count=3, unit=egyptUnit}))
     print(text.substitute(genericText5,{count=0, unit=egyptUnit}))
@@ -2570,6 +2573,7 @@ local function automaticMenuChoice(record,callingArgument,history,fullMenuTable)
         if menuOptionTable.noFilter then
             weight = true
         else
+---@diagnostic disable-next-line: need-check-nil
             weight = autoChoiceWeights(menuOptionTable,callingArgument,history,fullMenuTable)
         end
         if type(weight) == "number" and weight > 0 then

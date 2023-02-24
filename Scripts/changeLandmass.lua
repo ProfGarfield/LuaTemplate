@@ -71,7 +71,7 @@ dialog:addOption("No.", 2)
 local choice = dialog:show()
 if choice == 1 then
 print("Changing Landmasses.  This could take some time.")
-local xSize,ySize,maps = civ.getMapDimensions()
+local xSize,ySize,maps = civ.getAtlasDimensions()
 for i=1,63 do
     for z=0,(maps-1) do
         for y = 0,ySize do
@@ -89,9 +89,10 @@ end
 print("All Changes Complete.")
 end
 
-print("setLandmassNumber: xMin,xMax,yMin,yMax,landmassNumber")
+_G.console = _G.console or {}
+print("console.setLandmassNumber(xMin,xMax,yMin,yMax,landmassNumber)")
     
-function setLandmassNumber(xMin,xMax,yMin,yMax,landmass)
+function _G.console.setLandmassNumber(xMin,xMax,yMin,yMax,landmass)
     for x=xMin,xMax do
         for y=yMin,yMax do
             for z=0,3 do

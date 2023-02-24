@@ -96,7 +96,7 @@ civ.ui.text(pSIT7)
 end
 
 local function guessGoodDoesNotCross(vertexTable)
-    local width,height,maps = civ.getMapDimensions()
+    local width,height,maps = civ.getAtlasDimensions()
     local eligibleDNC = {}
     for i=0,width-1 do
         eligibleDNC[i] = true
@@ -156,6 +156,7 @@ civ.scen.onKeyPress(function(keyID)
         local activePolygonVertexTable = polygonTable[activePolygon]
         local tile = civ.getCurrentTile()
         activePolygonVertexTable[#activePolygonVertexTable+1] = {tile.x,tile.y}
+---@diagnostic disable-next-line: param-type-mismatch
         civ.createUnit(polygonCornerMarkerUnitTable[activePolygon],civ.getTribe(0),tile)
     elseif keyID == 214 --[[backspace]] then
         local activePolygonVertexTable = polygonTable[activePolygon]
@@ -175,21 +176,23 @@ civ.scen.onKeyPress(function(keyID)
             return
         elseif choice == 8 then
             local rTile = gen.getRandomTileInPolygon(activePolygonVertexTable,civ.getCurrentTile().z,100)
+---@diagnostic disable-next-line: param-type-mismatch
             civ.createUnit(tileInPolygonMarkerUnit[activePolygon],civ.getTribe(0),rTile)
         elseif choice ==1 then
-            local xMax,yMax,maps = civ.getMapDimensions()
+            local xMax,yMax,maps = civ.getAtlasDimensions()
             for z=0,maps-1 do
                 for y=0,yMax do
                     for x=0,xMax do
                         local tile = civ.getTile(x,y,z)
                         if tile and gen.inPolygon(tile,activePolygonVertexTable) then
+---@diagnostic disable-next-line: param-type-mismatch
                             civ.createUnit(tileInPolygonMarkerUnit[activePolygon],civ.getTribe(0),tile)
                         end
                     end
                 end
             end
         elseif choice == 2 then
-            local xMax,yMax,maps = civ.getMapDimensions()
+            local xMax,yMax,maps = civ.getAtlasDimensions()
             for z=0,maps-1 do
                 for y=0,yMax do
                     for x=0,xMax do
@@ -229,6 +232,7 @@ civ.scen.onKeyPress(function(keyID)
                     if type(tileCoord) == "table" then
                         local tile = civ.getTile(tileCoord[1],tileCoord[2],z) 
                         if tile then
+---@diagnostic disable-next-line: param-type-mismatch
                             civ.createUnit(polygonCornerMarkerUnitTable[activePolygon],civ.getTribe(0),tile)
                         end
                     end

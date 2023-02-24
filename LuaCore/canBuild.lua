@@ -408,7 +408,7 @@ end
 
 local function postProcessParameterTable(parameterTable)
     local function makeNewLocationParameters(existingLocationTable)
-        local width,height,maps = civ.getMapDimensions()
+        local width,height,maps = civ.getAtlasDimensions()
         local locationParametersTable = {}
         local tiles = {}
         local cities = {}
@@ -764,7 +764,7 @@ local function computeMaxNumberTribe(settings,activeTribe,item)
         end
     end
     if settings.customFunction then
-        total = total + customFunction(activeTribe,item)
+        total = total + settings.customFunction(activeTribe,item)
     end
     total = math.max(total, settings.min or total)
     total = math.min(total, settings.max or total)
@@ -829,7 +829,7 @@ local function computeMaxNumberGlobal(settings,activeTribe,item)
         end
     end
     if settings.customFunction then
-        total = total + customFunction(activeTribe,item)
+        total = total + settings.customFunction(activeTribe,item)
     end
     total = math.max(total, settings.min or total)
     total = math.min(total, settings.max or total)
@@ -1241,7 +1241,7 @@ local function buildConstructionStatistics(city)
         if civ.getTech(techId) then
             local total = 0
             for i = 0,7 do
-                if civ.getTribe(i):hasTech(civ.getTech(techId)) then
+                if civ.getTribe(i):hasTech(civ.getTech(techId)--[[@as techObject]]) then
                     total = total + 1
                 end
             end

@@ -78,13 +78,21 @@ local function setTribeShortNameTable(table)
     return
 end
 log.setTribeShortNameTable = setTribeShortNameTable
+---@type table|string
 local logState = "logState not linked"
+---@type table|string
 local combatLog = "logState not linked"
+---@type table|string
 local citiesCapturedAndDestroyedLog = "logState not linked"
+---@type table|string
 local eventLog = "logState not linked"
+---@type table|string
 local eventCounter = "logState not linked"
+---@type table|string
 local casualtyCounter = "logState not linked"
+---@type table|string
 local hideUnitInCasualtyReport = "logState not linked"
+---@type table|string
 local markerRemovalInfoTable = "logState not linked"
 
 
@@ -174,7 +182,7 @@ local function getTileId (tile)
 		print("ERROR: \"getTileId\" function called with an invalid tile (input parameter is nil)")
 		return nil
 	end
-	local mapWidth, mapHeight, mapQuantity = civ.getMapDimensions()
+	local mapWidth, mapHeight, mapQuantity = civ.getAtlasDimensions()
 	local mapOffset = tile.z * mapWidth * mapHeight
 	local tileOffset = tile.x + (tile.y * mapWidth)
 	return mapOffset + tileOffset
@@ -307,6 +315,7 @@ local function gatherVictimCombatInfo(tribe)
     local tribeID = tribe.id
     local tribeCombatTable = {}
     local tribeCTIndex = 1
+---@diagnostic disable-next-line: param-type-mismatch
     for index,combatRecord in pairs(combatLog) do
         if combatRecord.victimTribeID == tribeID then
             tribeCombatTable[tribeCTIndex] = combatRecord
@@ -327,6 +336,7 @@ local function gatherAggressorCombatInfo(tribe)
     local tribeCombatTable = {}
     local tribeCTIndex = 1
     local turn = civ.getTurn()
+---@diagnostic disable-next-line: param-type-mismatch
     for index,combatRecord in pairs(combatLog) do
         if combatRecord.aggressorTribeID == tribeID and combatRecord.turn == turn then
             tribeCombatTable[tribeCTIndex] = combatRecord
@@ -552,7 +562,7 @@ local function sortCombatInfoByRegionAndTile(combatInfo,geoTable)
     geoTable= geoTable or geographyTable
     local sortedCombatInfo = sortCombatInfoByRegion(combatInfo,geoTable)
     for region,combatInfoTable in pairs(sortedCombatInfo) do
-        sortedCombatInfo[region] = sortCombatInfoByTile(combatInfoTable,geoTable)
+        sortedCombatInfo[region] = sortCombatInfoByTile(combatInfoTable)
     end
     return sortedCombatInfo
 end
@@ -684,7 +694,7 @@ end
 -- (undoes Knighttime's getTileID)
 -- Return nil if no tile corresponds to the ID
 local function getTileFromId(ID)
-    local mapWidth, mapHeight, mapQuantity = civ.getMapDimensions()
+    local mapWidth, mapHeight, mapQuantity = civ.getAtlasDimensions()
     local baseMapOffset = mapWidth*mapHeight
     local z = math.floor(ID/baseMapOffset)
     if z < 0 or z >3 then
@@ -897,6 +907,7 @@ local function removeRadarMarker(tile,markerType,safeTile,removalInfoTable,spott
             -- put spotter units for each tribe that might have 'seen' the radar marker
             for i=0,7 do
                 if removalInfo["tribe"..tostring(i).."Vision"] then
+---@diagnostic disable-next-line: param-type-mismatch
                     civ.deleteUnit(civ.createUnit(spotterUnit,civ.getTribe(i),tile))
                 end
             end
@@ -929,7 +940,7 @@ local function removeAllCombatMarkers()
     local removalInfoTable = markerRemovalInfoTable
     local spotterUnit = markerSpotterUnit
     local safeTile = markerSafeTile
-    local mapWidth, mapHeight, mapQuantity = civ.getMapDimensions()
+    local mapWidth, mapHeight, mapQuantity = civ.getAtlasDimensions()
     for z = 0,mapQuantity do
         for y=0,mapHeight do
             for x = 0,mapWidth do
@@ -1115,6 +1126,7 @@ local function centerViewOnCurrentTileOrderNumber()
     local regionKeyTileID=tileOrderTable[CRFArgValues.currentTileOrderNumber]
     local region,tileID = regionKeyTileID.regionKey,regionKeyTileID.tileID
     local triple = organizedCombatInfo[region][tileID][1].victimLocation
+---@diagnostic disable-next-line: param-type-mismatch
     civ.ui.centerView(civ.getTile(triple[1],triple[2],triple[3]))
     return
 end
@@ -1227,6 +1239,7 @@ local function tileInRegionReport()
     local tileCombatInfo = nil
     local organizedCombatInfo = nil
     local combatTile = nil
+    local boxTitle = nil
     if CRFArgValues.aggressorReport then
         organizedCombatInfo = organizedCombatInfoAttack
         tileCombatInfo = organizedCombatInfoAttack[CRFArgValues.currentRegion][tileID]

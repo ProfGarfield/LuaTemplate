@@ -9,6 +9,8 @@ local fileModified = false -- set this to true if you change this file for your 
 local regressionNumber = 1 -- this number is incremented whenever an update to events.lua
 -- removes some functionality.  This should be rare
 
+
+---@diagnostic disable: redundant-parameter
 -- some code to root out pcalls, that I wanted to replace with something requireIfAvailable
 --temppcall = pcall
 --pcall = function() error("remove pcall") end
@@ -62,12 +64,12 @@ _G._discreteEventsRegistrar_events_lua_fileModified = fileModified
 _G._discreteEventsRegistrar_events_lua_regressionNumber = regressionNumber
 
 
-console = {}
+_G.console = {}
 console.commands = function() print('These are keys currently stored in the console table.\n')
     for k,__ in pairs(console) do
         print('console.'..k)
     end end
-_global = {}
+_G._global = {}
 _global.eventTesting = false -- set to true to run event civ.ui.text statements in default code
 local eventsPath = string.gsub(debug.getinfo(1).source, "@", "")
 local scenarioFolder = string.gsub(eventsPath,"events.lua","")
@@ -298,8 +300,11 @@ local function attemptRequireWithKey(moduleName,key,defaultReturnValue)
     end
     local fileFound, prefix = requireIfAvailable(moduleName)
     if fileFound then
+---@diagnostic disable-next-line: need-check-nil
         if type(prefix[key]) == "function" then
+---@diagnostic disable-next-line: need-check-nil
             attemptRequireResults[moduleName.."."..key] = prefix[key]
+---@diagnostic disable-next-line: need-check-nil
             return prefix[key]
         else
             print("WARNING: did not find function associated with key "..key.." in module "..moduleName..".lua.")
@@ -409,9 +414,9 @@ local function onEnterTile(unit,previousTile,previousDomainSpec)
     -- onEnterTile priority is for transport events, so units can
     -- 'drag' other units into the tile before the regular onEnterTile event
     discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDomainSpec)
-    discreteEvents.performOnEnterTile(unit,previousTile)
-    consolidated.onEnterTile(unit,previousTile)
-    eventsFiles.onEnterTile(unit,previousTile)
+    discreteEvents.performOnEnterTile(unit,previousTile,previousDomainSpec)
+    consolidated.onEnterTile(unit,previousTile,previousDomainSpec)
+    eventsFiles.onEnterTile(unit,previousTile,previousDomainSpec)
 end
 
 registeredInThisFile["onEnterTile"] = true
@@ -679,6 +684,7 @@ end
 
 civ.scen.onUseNuclearWeapon( function(unit,tile)
     suppressActivateUnitBackstop = true
+---@diagnostic disable-next-line: need-check-nil
     local result = useNuke.onUseNuclearWeapon(unit,tile)
     if result then
         local map = tile.z
@@ -720,6 +726,7 @@ civ.scen.onGetFormattedDate(function(turn,defaultDateString)
         if humanUnitActive and (not suppressActivateUnitBackstop) and (not activateUnitBackstopMostRecent) and os.time()+os.clock() >= previousUnitActivationTime + 2 and (not civ.getActiveUnit()) then
             activateUnitBackstop()
         end
+---@diagnostic disable-next-line: need-check-nil
         return formattedDate.onGetFormattedDate(turn,defaultDateString)
     end
 )
@@ -816,6 +823,7 @@ civ.scen.onNegotiation(function(talker,listener)
     local consolidatedEventsResult = consolidated.onNegotiation(talker,listener)
     local individualEventsResult = eventsFiles.onNegotiation(talker,listener)
     suppressActivateUnitBackstop = false
+---@diagnostic disable-next-line: return-type-mismatch
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 registeredInThisFile["onNegotiation"] = true
@@ -829,6 +837,7 @@ civ.scen.onSchism(function(tribe)
     local consolidatedEventsResult = consolidated.onSchism(tribe)
     local individualEventsResult = eventsFiles.onSchism(tribe)
     suppressActivateUnitBackstop = false
+---@diagnostic disable-next-line: return-type-mismatch
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 
@@ -857,6 +866,7 @@ civ.scen.onGameEnds(function(reason)
     local discreteEventsResult = discreteEvents.performOnGameEnds(reason)
     local consolidatedEventsResult = consolidated.onGameEnds(reason)
     local individualEventsResult = eventsFiles.onGameEnds(reason)
+---@diagnostic disable-next-line: return-type-mismatch
     return discreteEventsResult and consolidatedEventsResult and individualEventsResult
 end)
 
@@ -999,6 +1009,7 @@ if not rushBuySettingsFound then
     rushBuySettings = {}
     rushBuySettings.onGetRushBuyCost = function(city,cost) return cost end
 end
+---@diagnostic disable-next-line: need-check-nil
 civ.scen.onGetRushBuyCost(rushBuySettings.onGetRushBuyCost)
 
 
@@ -1049,6 +1060,7 @@ for registerName,registerFunction in pairs(civ.scen) do
     if not registeredInThisFile[registerName] then
         local fileFound, prefix = requireIfAvailable('EventsFiles\\'..registerName)
         if fileFound then
+---@diagnostic disable-next-line: need-check-nil
             civ.scen[registerName](prefix[registerName])
             print("NOTICE: civ.scen."..registerName.." registered automatically.  If you didn't add the file 'EventsFiles\\"..registerName.."' deliberately, this might indicate a mistake in the Lua Scenario Template.  Contact Prof. Garfield if that is the case.")
         end

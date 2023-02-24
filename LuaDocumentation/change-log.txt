@@ -51,7 +51,6 @@ leader bonus code
 
 added onUnitDeleted to discreteEvents (and events.lua)
 
-last update
 
 added extra substitution options to text.substitute
 
@@ -64,6 +63,7 @@ fixed bug in leaderBonus.lua
 added "menuRecords" to text.lua
 
 
+last update
 
 todo
 

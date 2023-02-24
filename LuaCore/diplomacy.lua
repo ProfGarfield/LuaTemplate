@@ -640,6 +640,7 @@ local function giftTechnology(tribe, options) --
        -- 253 techs max, so 0-252 is probably enough
        if civ.getTech(techId) then
         local tech = civ.getTech(techId)
+        ---@cast tech techObject
         if not tribe:hasTech(tech) and player:hasTech(tech) and not techInTable(tech, techTable)
         then
 	      listTechs[#listTechs+1] = tech.name
@@ -774,6 +775,9 @@ local function diplomacyMenu(options)
 end
 diplomacy.diplomacyMenu = diplomacyMenu
 
+--[==[
+    This shouldn't be necessary anymore
+
 --  an alternate diplomacy model menu used in a cold war scenario
 --      canGiveUnitFn(unit)-->bool
 --          determines if a unit can be given away as a single unit
@@ -880,13 +884,13 @@ local function coldWarDiplomacyMenu(options,canGiveUnitFn,tribeCanReceiveUnitFn,
 	 return city and city:hasImprovement(civ.getImprovement(1))
       end
       local function buildOptions()
-	 tile = civ.getCurrentTile()
-	 menuTable = {}
+	 local tile = civ.getCurrentTile()
+	 local menuTable = {}
 	 menuTable[1] = "Gift money"
 	 menuTable[2] = "Gift technology"
 	 if canGiveTileFn(civ.getCurrentTile(),civ.getCurrentTribe()) and tile.owner == civ.getCurrentTribe() then
 	    if tile.city == nil then
-	       count = 0
+	       local count = 0
 	       for i in tile.units do
 		  count = count + 1
 	       end
@@ -905,18 +909,18 @@ local function coldWarDiplomacyMenu(options,canGiveUnitFn,tribeCanReceiveUnitFn,
 
       options = options or {}
       local mainDialogText = options.mainDialogText or "Choose your option"
-      menuTable = buildOptions()
-      gift = text.menu(menuTable, mainDialogText, mainDialogText, true)
+      local menuTable = buildOptions()
+      local gift = text.menu(menuTable, mainDialogText, mainDialogText, true)
       if gift ~= 0 and gift ~= 5 then
           menuTable = {}
-    	civSelectionText = options.civSelectionText or "Choose the civ to gift to"
+    	local civSelectionText = options.civSelectionText or "Choose the civ to gift to"
 	    for i = 0, 7 do
             if (gift == 3 or gift == 4) and not canReceiveTileFn(civ.getCurrentTile(),civ.getCurrentTribe(),civ.getTribe(i)) then
             else
 	            menuTable[i+1] = civ.getTribe(i).name
             end
 	    end
-	    tribeId = text.menu(menuTable, civSelectionText, civSelectionText, true)
+	    local tribeId = text.menu(menuTable, civSelectionText, civSelectionText, true)
     elseif gift == 5 then
            giftSingleUnit(canGiveUnitFn,tribeCanReceiveUnitFn,cityCanReceiveUnitFn,afterUnitTransferFn)
            return
@@ -1007,7 +1011,7 @@ local function purchaseUnit(unitForPurchaseFn,cityCanReceivePurchaseFn)
         end
         if purchaseUnit and deliveryCity then
             local unitCost = unitForPurchaseFn(buyer,purchaseUnit)
-            local deliveryCost = cityCanReceivePurchaseFn(city,buyer,purchaseUnit)
+            local deliveryCost = cityCanReceivePurchaseFn(deliveryCity,buyer,purchaseUnit)
             if deliveryCost == true then
                 deliveryCost = 0
             end
@@ -1018,8 +1022,9 @@ local function purchaseUnit(unitForPurchaseFn,cityCanReceivePurchaseFn)
             end
 
         end
+        
 
-        choice = text.menu(menuTable,menuText,"",true)
+        choice = text.menu(menuTable,"","",true)
         if choice == 0 then
             return
         elseif choice == 1 then
@@ -1034,6 +1039,7 @@ local function purchaseUnit(unitForPurchaseFn,cityCanReceivePurchaseFn)
     end
 
 end
+--]==]
 if rawget(_G,"console") then
     _G["console"].diplomacy = diplomacy
 end

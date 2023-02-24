@@ -381,6 +381,7 @@ promotion.checkForUpgrade = checkForUpgrade
 
 local function defaultUpgradeFunction(unitToUpgradeID,replacementTypeID,promotionInfoTable)
     local oldUnit = civ.getUnit(unitToUpgradeID)
+---@diagnostic disable-next-line: param-type-mismatch
     local newUnit = civ.createUnit(civ.getUnitType(replacementTypeID),oldUnit.owner,oldUnit.location)
     gen.copyUnitAttributes(oldUnit,newUnit)
     if oldUnit.owner.isHuman and civ.getCurrentTribe() == oldUnit.owner then

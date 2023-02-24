@@ -378,7 +378,7 @@ local function plusFixed(fixedUnitBonusTable,categoryAttackBonusTable)
 						elseif bonusType == "multiplypercent" then
 							bonusCategory[bonusGivingUnitTypeID]=100*(fixedBonusValue+baseAttack)/baseAttack
 						elseif bonusType == "multiply" then
-							bonusCategory[bonusGivingUnitTypeID]=(fixedBonusValue+baseAttack)/baseAttach
+							bonusCategory[bonusGivingUnitTypeID]=(fixedBonusValue+baseAttack)/baseAttack
 						else
 							error("pluxFixed: categoryAttackBonusTable.type does not have an acceptable value.")
 						end

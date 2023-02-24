@@ -506,7 +506,7 @@ function traits.cityWonderTraitsTable(city)
     end
     local outputTable = {}
     for wonderId, traitTable in pairs(wonderTraits) do
-        local wdr = civ.getWonder(wonderID)
+        local wdr = civ.getWonder(wonderId)
         if wdr.city == city  then
             for trait,boolOrFn in pairs(traitTable) do
                 if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
@@ -553,7 +553,7 @@ end
 
 function traits.anyAssociatedWithTile(tile,...)
     if not civ.isTile(tile) then
-        error("traits.anyAssociatedWithTile: first argument must be a tile object.  Received: "..tostring(tileObject))
+        error("traits.anyAssociatedWithTile: first argument must be a tile object.  Received: "..tostring(tile))
     end
     local arglist = {...}
     local cityImprovementTraits = (tile.city and traits.cityImprovementTraitsTable(tile.city)) or {}
@@ -623,7 +623,7 @@ function traits.makeItemTraitQuickStringAssociation(isItemTypeFn,getItemID,itemT
             error("checkAssociation: arg#1 expected "..itemTypeName.." received: "..tostring(item))
         end
         if type(str) ~= "string" then
-            error("checkAssociation: arg#2 must be a string.  Received: "..tostring(itemOrTrait))
+            error("checkAssociation: arg#2 must be a string.  Received: "..tostring(str))
         end
         local itemID = getItemID(item)
         if storageTable[itemID] and storageTable[itemID][str] then

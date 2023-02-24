@@ -39,12 +39,18 @@ local fileModified = false -- set this to true if you change this file for your 
 -- This section is for the 'require' lines for this file, and anything
 -- else that must be at the top of the file.
 
-local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
+---@module "discreteEventsRegistrar"
+local discreteEvents = require("discreteEventsRegistrar"):minVersion(4)
+---@module "generalLibrary"
 local gen = require("generalLibrary"):minVersion(1)
+---@module "param"
 local param = require("parameters"):minVersion(1)
 local object = require("object")
+---@module "text"
 local text = require("text"):minVersion(1)
+---@module "diplomacy"
 local diplomacy = require("diplomacy"):minVersion(1)
+---@module "delayedAction"
 local delayed = require("delayedAction"):minVersion(1)
 local calendar = require("calendar")
 local keyboard = require("keyboard")
@@ -60,20 +66,29 @@ local civlua = require("civluaModified")
 -- ===============================================================================
 
 --Registers a function to be called every time a unit is activated. The callback takes the unit activated as a parameter, and the source of unit activation. `source` is `true` if activated by keyboard or mouse click, `false` if activated by the game itself. `repeatMove` is `true` if it's a repeat activation caused by moving, `false` otherwise.
-function discreteEvents.onActivateUnit(unit,source,repeatMove)
-    --civ.ui.text("Unit activation Discrete Event")
-end
+--function discreteEvents.onActivateUnit(unit,source,repeatMove)
+--end
 
-function discreteEvents.onCityDestroyed(city) 
-    --civ.ui.text("City destroyed discrete event test")
+discreteEvents.onActivateUnit(function(unit,source,repeatMove)
+    if _global.eventTesting then
+        civ.ui.text("Unit activation Discrete Event")
+    end
+end)
 
-end
 
-function discreteEvents.onBribeUnit(unit,previousOwner)
-    --civ.ui.text("Bribe unit discrete event test")
-end
+discreteEvents.onCityDestroyed(function(city) 
+    if _global.eventTesting then
+        civ.ui.text("City destroyed discrete event test")
+    end
+end)
 
-function discreteEvents.onCityFounded(city) 
+discreteEvents.onBribeUnit(function(unit,previousOwner)
+    if _global.eventTesting then
+        civ.ui.text("Bribe unit discrete event test")
+    end
+end)
+
+discreteEvents.onCityFounded(function(city) 
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onCityFounded for "..city.name)
     end
@@ -86,82 +101,89 @@ function discreteEvents.onCityFounded(city)
         end
     end
     return cityCancelled
+end)
 
-end
-
-function discreteEvents.onCityProcessed(city) 
+discreteEvents.onCityProcessed(function(city) 
     --civ.ui.text("City processed discrete event test for city "..city.name)
 
-end
+end)
 
-function discreteEvents.onCityProduction(city,item) 
+discreteEvents.onCityProduction(function(city,item) 
     --civ.ui.text("City production discrete event test")
 
-end
+end)
 
-function discreteEvents.onCityTaken(city,defender) 
+discreteEvents.onCityTaken(function(city,defender) 
     --civ.ui.text(city.name.." taken from "..defender.name.." discrete event")
 
 
-end
+end)
 
-function discreteEvents.onScenarioLoaded() 
+discreteEvents.onScenarioLoaded(function() 
     --civ.ui.text("discrete event on scenario loaded")
 
-end
+end)
 
-function discreteEvents.onTurn(turn) 
+discreteEvents.onTurn(function(turn) 
     --civ.ui.text("discrete on turn event 1")
-end
+end)
 
-function discreteEvents.onTurn(turn) 
+discreteEvents.onTurn(function(turn) 
     --civ.ui.text("discrete on turn event 2")
 
-end
+end)
 
-function discreteEvents.onTurn(turn) 
+discreteEvents.onTurn(function(turn) 
     --civ.ui.text("discrete on turn event 3")
-end
+end)
 
 
-function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
-    --civ.ui.text(loser.type.name.." was killed by "..winner.type.name.." discrete event 1")
-end
+discreteEvents.onUnitKilled(function(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
+    if _global.eventTesting then
+        civ.ui.text(loser.type.name.." was killed by "..winner.type.name.." discrete event 1")
+    end
+end)
 
-function discreteEvents.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
-    --civ.ui.text(loser.type.name.." was defeated (possibly by event) by "..winner.type.name.." discrete event")
-end
 
-function discreteEvents.onTurn(turn) 
+discreteEvents.onUnitDefeated(function(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
+    if _global.eventTesting then
+    civ.ui.text(loser.type.name.." was defeated (possibly by event) by "..winner.type.name.." discrete event")
+    end
+end)
+
+discreteEvents.onTurn(function(turn)
     --civ.ui.text("discrete on turn event 4")
-end
+end)
 
-function discreteEvents.onCityProcessingComplete(turn,tribe) 
+
+discreteEvents.onCityProcessingComplete(function(turn,tribe) 
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onCityProcessingComplete for "..tribe.name.." on turn "..tostring(turn))
     end
-end
+end)
 
 
-function discreteEvents.onTribeTurnBegin(turn,tribe) 
+discreteEvents.onTribeTurnBegin(function(turn,tribe) 
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onTribeTurnBegin for "..tribe.name.." on turn "..tostring(turn))
     end
-end
+end)
 
-function discreteEvents.onTribeTurnEnd(turn,tribe) 
+discreteEvents.onTribeTurnEnd(function(turn,tribe) 
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onTribeTurnEnd for "..tribe.name.." on turn "..tostring(turn))
     end
-end
+end)
 
-function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
-    --civ.ui.text(loser.type.name.." was killed by "..winner.type.name.." discrete event 2")
-end
+discreteEvents.onUnitKilled(function(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus) 
+    if _global.eventTesting then
+        civ.ui.text(loser.type.name.." was killed by "..winner.type.name.." discrete event 2")
+    end
+end)
 
-function discreteEvents.onCentauriArrival(tribe)
+discreteEvents.onCentauriArrival(function(tribe)
     --civ.ui.text(tribe.name.." arrived at centauri discrete event")
-end
+end)
 
 -- On Game Ends
 -- Return true if the game ends as normal,
@@ -171,10 +193,10 @@ end
 -- If any of these return false, then game end is prevented
 -- Not documented or experimented with much
 -- based on legacy event engine code, reason is an integer
-function discreteEvents.onGameEnds(reason)
+discreteEvents.onGameEnds(function(reason)
     -- return false to stop the game from ending
     return true
-end
+end)
 
 -- On Schism 
 -- Return true (default) if the tribe can schism,
@@ -182,10 +204,10 @@ end
 -- This is combined with the consolidated events and the
 -- legacy events, as well as a separate onSchism.lua file
 -- If any of these return false, then schism is prevented
-function discreteEvents.onSchism(tribe)
+discreteEvents.onSchism(function(tribe)
 
     return true
-end
+end)
 
 
 -- On Negotiation 
@@ -194,10 +216,10 @@ end
 -- This is combined with the consolidated events and the
 -- legacy events, as well as a separate onNegotiation.lua file
 -- If any of these return false, then negotiation is prevented
-function discreteEvents.onNegotiation(talker,listener)
+discreteEvents.onNegotiation(function(talker,listener)
 
     return true
-end
+end)
 
 
 -- Checking if a unit can found a city
@@ -212,32 +234,31 @@ end
 -- a city at the unit's location. `advancedTribe` is `true` when picking 
 -- up a hut with `unit` triggers an advanced tribe. 
 -- Return `true` to allow, `false` to disallow.
-function discreteEvents.onCanFoundCity(unit,advancedTribe)
+discreteEvents.onCanFoundCity(function(unit,advancedTribe)
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onCanFoundCity for "..unit.type.name)
     end
     return true
-end
+end)
 
 -- onEnterTile(unit,previousTile)
 -- executes when a unit successfully enters a tile (so not when it attacks
 -- a unit or fails to enter a tile because it lacks movement points)
-function discreteEvents.onEnterTile(unit,previousTile)
+discreteEvents.onEnterTile(function(unit,previousTile)
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onEnterTile: "..unit.type.name.." has entered tile ("..text.coordinates(unit.location)..") from tile ("..text.coordinates(previousTile)..").")
     end
-
-end
+end)
 
 -- onFinalOrderGiven(unit)
 -- executes when a unit has been given its final order for the turn.
 -- that is, when a new unit is active and the previous unit has spent
 -- all its movement points
-function discreteEvents.onFinalOrderGiven(unit)
+discreteEvents.onFinalOrderGiven(function(unit)
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onFinalOrderGiven: "..unit.type.name.." has been given its order.")
     end
-end
+end)
 
 -- ===============================================================================
 --

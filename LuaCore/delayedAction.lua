@@ -41,7 +41,9 @@ gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."delayedAction.lua")
 local delayedAction = {}
 gen.versionFunctions(delayedAction,versionNumber,fileModified,"LuaCore".."\\".."delayedAction.lua")
 
+---@type string|table
 local delayedActionState = "state not linked"
+---@type string|table
 local savedActions = "state not linked"
 
 -- a savedAction is a table with keys
@@ -68,7 +70,7 @@ delayedAction.linkState = linkState
 
 local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
-    function discreteEvents.linkStateToModules(state,stateTableKeys)
+    discreteEvents.linkStateToModules(function(state,stateTableKeys)
         local keyName = "delayedAction"
         if stateTableKeys[keyName] then
             error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
@@ -78,7 +80,7 @@ if fileFound then
         -- link the state table to the module
         state[keyName] = state[keyName] or {}
         linkState(state[keyName])
-    end
+    end)
 end
 
 
