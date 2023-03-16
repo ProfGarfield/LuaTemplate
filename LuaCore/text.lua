@@ -206,16 +206,18 @@ local linesPerWindow = 12
 local minimumLinesPerWindow = 8
 
 --  text.setLinesPerWindow(integer)--> void
--- Set the lines per window
-local function setLinesPerWindow(integer)
-    linesPerWindow = math.max(math.floor(integer),minimumLinesPerWindow)
-end
-text.setLinesPerWindow = setLinesPerWindow
 
-local function getLinesPerWindow()
+-- Set the number of lines per text box for some functions (especially menus)
+---@param numberOfLines integer
+function text.setLinesPerWindow(numberOfLines)
+    linesPerWindow = math.max(math.floor(numberOfLines),minimumLinesPerWindow)
+end
+local setLinesPerWindow = text.setLinesPerWindow 
+
+function text.getLinesPerWindow()
     return linesPerWindow
 end
-text.getLinesPerWindow = getLinesPerWindow
+local getLinesPerWindow = text.getLinesPerWindow
 
 -- ==============================================================
 --

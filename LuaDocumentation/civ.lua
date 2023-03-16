@@ -13,7 +13,6 @@
 ---"Void" isn't a proper data type in Lua. Instead, it is an indication that a function or method is not returning a value at all. A function with a simple <code>return</code>, or without a <code>return</code> line will return (or, rather, not return) a "void", wheras <code>return nil</code> will return a proper nil value. If your function <em>never</em> returns useful information, returning "void" is appropriate. However, if your code <em>sometimes</em> returns useful data, it should return nil when it does not.
 ---@class void
 
----@alias anythingObject any
 
 ---The 'nil' data type has a single value nil, and tends to represent the absence of a value. Nil is a data type which is native to Lua, and is considered 'falsy' in logical statements. Unassigned keys in a table return nil as their value.
 ---[Programming in Lua, 2.1 -- Nil](https://www.lua.org/pil/2.1.html)
@@ -26,10 +25,6 @@
 ---@class table
 
 
----This is either a table or nil. 
----@alias tableNil
----| table
----| nil
 
 
 ---A number is a data type native to Lua, which allows numerical computations to be performed. Fundamentally, Lua does not have separate data types for integers and numbers with a component after the decimal point, so any integer is also a number.
@@ -37,10 +32,6 @@
 ---@class number
 
 
----This is either a number or nil.
----@alias numberNil
----| number
----| nil
 
 
 ---An integer is a number without a fractional part. Unlike other programming Languages, Lua does not distinguish between integers and 'floating point' numbers. You can convert a number to an integer by using commands like <code>math.floor</code> and <code>math.ceil</code>.
@@ -48,10 +39,6 @@
 ---@class integer
 
 
----This is either an integer or nil. 
----@alias integerNil
----| integer
----| nil
 
 
 ---A boolean is a data type native to Lua with exactly two possible values, <code>true</code> and <code>false</code>. These are often used when evaluating logical statements, but logical statements accept other values as well. All values except <code>false</code> and <code>nil</code> are considered 'truthy', even values such as 0 or the empty string.
@@ -59,10 +46,6 @@
 ---@class boolean
 
 
----This is either a boolean or nil.
----@alias booleanNil
----| boolean
----| nil
 
 
 ---A string is a data type native to Lua which consists of a sequence of characters. These often represent text to be displayed, but are also useful in other contexts. Strings are commonly used as keys in tables, since they make code more readable.
@@ -70,10 +53,6 @@
 ---@class string
 
 
----This is either a string or nil.
----@alias stringNil
----| string
----| nil
 
 
 ---A function is a sequence of instructions, which frequently depend on values that are provided ("arguments"). In Lua, functions are considered values, and can be stored in variables or tables. They can also be supplied as arguments to other functions.
@@ -81,21 +60,6 @@
 ---@class function
 
 
----@alias positiveInteger 
----| integer # An integer greater than or equal to 0.
-
----This is either a positive integer or nil.
----@alias positiveIntegerNil
----| positiveInteger
----| nil
-
-
----@alias positiveNumber number A number greater than or equal to 0.
-
----This is either a positive number or nil.
----@alias positiveNumberNil
----| positiveNumber
----| nil
 
 
 ---<p>A bitmask is an integer that is not meant to be interpreted as a number, but rather as a sequence of 1's and 0's (the binary representation of the number), with each 1 or 0 representing whether a condition is true or false. Bitmasks often have functions written to facilitate their manipulation. If none are available, Lua provides bitwise operators.</p><p>Typically, the leftmost bit (the bit representing the largest value) is interpreted as negative. Hence, the bitmask integer is not guaranteed to be positive.</p>
@@ -146,7 +110,7 @@ end
 ---@field totalTrade integer (get) Returns the total amount of trade arrows the city produces (including trade routes).
 ---@field turnsSinceCapture integer (get/set) Returns the number of turns since the city was last captured.
 ---@field workers bitmask (get/set) Returns a bitmask with the workers and specialists of the city.
----@field tradeRoutes traderouteObjectNil (get) Returns the trade route with id `id` (0-2), or `nil` if not in use.
+---@field tradeRoutes traderouteObject|nil (get) Returns the trade route with id `id` (0-2), or `nil` if not in use.
 local cityObject = {}
 
 ---Alias for `civ.addImprovement(city, improvement)`.
@@ -184,19 +148,14 @@ function cityObject:popTradeRoute() end
 ---@param id id
 function cityObject:removeTradeRoute(id) end
 
----This is either a city object or nil. A city object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a city in the game, and provides a means of interacting with that city.
----[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#city)
----@alias cityObjectNil
----| cityObject
----| nil
 
 
 ---A tile object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a map "square" in the game, and provides a means of interacting with it.
 ---[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#tile)
 ---@class tileObject
 ---@field baseTerrain baseTerrainObject (get/set) Returns the baseterrain object associated with the tile.
----@field city cityObjectNil (get) Returns the city at the tile's location, or `nil` if there's no city there.
----@field defender tribeObjectNil (get) Returns the tile's defender. Returns `nil` if the tile has no defender.
+---@field city cityObject|nil (get) Returns the city at the tile's location, or `nil` if there's no city there.
+---@field defender tribeObject|nil (get) Returns the tile's defender. Returns `nil` if the tile has no defender.
 ---@field fertility integer (get/set) Returns the tile's fertility.
 ---@field grasslandShield boolean (get) Returns `true` if the tile would have a shield when changed to grassland, `false` otherwise.
 ---@field improvements bitmask (get/set) Returns the tile's improvements (bitmask).
@@ -213,25 +172,21 @@ function cityObject:removeTradeRoute(id) end
 ---@field z integer (get) Returns the `z` coordinate of the tile (map number).
 local tileObject = {}
 
----This is either a tile object or nil.
----@alias tileObjectNil
----| tileObject
----| nil
 
 
 ---A unit object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a unit in the game, and provides a means of interacting with it. This should not be confused with the unit type object.
 ---[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#unit)
 ---@class unitObject
 ---@field attributes bitmask (get/set) Returns the attributes of the unit (bitmask).
----@field carriedBy unitObjectNil (get/set) Returns the carrying unit if this unit is currently on board, `nil` otherwise.
+---@field carriedBy unitObject|nil (get/set) Returns the carrying unit if this unit is currently on board, `nil` otherwise.
 ---@field damage integer (get/set) Returns the damage taken by the unit in hitpoints.
 ---@field domainSpec integer (get/set) Returns the value of the 'domain-specific counter' of the unit.
----@field gotoTile tileObjectNil (get/set) Returns the tile the unit is moving to under the goto order, or `nil` if it doesn't have the goto order.
+---@field gotoTile tileObject|nil (get/set) Returns the tile the unit is moving to under the goto order, or `nil` if it doesn't have the goto order.
 ---@field hitpoints integer (get) Returns the number of hitpoints left. It is defined as unit.type.hitpoints - unit.damage.
----@field homeCity cityObjectNil (get/set) Returns the unit's home city, or `nil` if it doesn't have one.
+---@field homeCity cityObject|nil (get/set) Returns the unit's home city, or `nil` if it doesn't have one.
 ---@field id id (get) Returns the unit's id.
 ---@field location tileObject (get) Returns the unit's location.
----@field moveSpent integer (get/set) Returns the number of moves spent by the unit.
+---@field moveSpent integer (get/set) Returns the number of moves spent by the unit.  Consider using `gen.spendMovementPoints` instead of setting directly.
 ---@field order integer (get/set) Returns the current order of the unit.
 ---@field owner tribeObject (get/set) Returns the unit's owner.
 ---@field type unitTypeObject (get) Returns the unit's type.
@@ -245,10 +200,6 @@ function unitObject:activate() end
 ---@param tile tileObject
 function unitObject:teleport(tile) end
 
----This is either a unit object or nil. 
----@alias unitObjectNil
----| unitObject
----| nil
 
 
 ---A unit type object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a unit type entry in the rules.txt, and provides a means of interacting with it. This should not be confused with the unit object.
@@ -260,7 +211,7 @@ function unitObject:teleport(tile) end
 ---@field cost integer (get/set - ephemeral) Returns the cost of the unit type.
 ---@field defense integer (get/set - ephemeral) Returns the defense factor of the unit type.
 ---@field domain integer (get/set - ephemeral) Returns the domain of the unit type (0 - Ground, 1 - Air, 2 - Sea).
----@field expires techObjectNil (get/set - ephemeral) Returns the tech that renders the unit obsolete, or `nil` if there isn't any.
+---@field expires techObject|nil (get/set - ephemeral) Returns the tech that renders the unit obsolete, or `nil` if there isn't any.
 ---@field firepower integer (get/set - ephemeral) Returns the firepower of the unit type.
 ---@field flags bitmask (get/set - ephemeral) Returns the flags of the unit type (bitmask).
 ---@field hitpoints integer (get/set - ephemeral) Returns the number of hit points of the unit type.
@@ -271,7 +222,7 @@ function unitObject:teleport(tile) end
 ---@field name string (get) Returns the name of the unit type.
 ---@field nativeTransport bitmask (get/set) Returns the 'native transport' settings of the unit type (bitmask).
 ---@field notAllowedOnMap bitmask (get/set - ephemeral) Returns the 'not allowed on map' settings of the unit type (bitmask).
----@field prereq techObjectNil (get/set - ephemeral) Returns the prerequisite technology of the unit type, or `nil` if it doesn't have one.
+---@field prereq techObject|nil (get/set - ephemeral) Returns the prerequisite technology of the unit type, or `nil` if it doesn't have one.
 ---@field range integer (get/set - ephemeral) Returns the range of the unit type.
 ---@field role integer (get/set - ephemeral) Returns the role of the unit type.
 ---@field tribeMayBuild bitmask (get/set - ephemeral) Returns the 'tribe may build' settings of the unit type (bitmask).
@@ -283,10 +234,6 @@ local unitTypeObject = {}
 ---@return boolean boolean
 function unitTypeObject:canEnter(tile) end
 
----This is either a unit type object or nil. 
----@alias unitTypeObjectNil
----| unitTypeObject
----| nil
 
 
 ---A tribe object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a tribe, which is to say the characteristics of the tribe overall, in the game, and provides a means of interacting with it.
@@ -310,22 +257,21 @@ function unitTypeObject:canEnter(tile) end
 ---@field reputation integer (get/set) Returns the tribe's reputation with `otherTribe`.
 ---@field researchCost integer (get) Returns the research cost of the tribe.
 ---@field researchProgress integer (get/set) Returns the progress towards the current research (range between 0 and tribe.researchCost).
----@field researching techObjectNil (get/set) Returns the tech the tribe is currently researching, or `nil` if not researching anything.
+---@field researching techObject|nil (get/set) Returns the tech the tribe is currently researching, or `nil` if not researching anything.
 ---@field scienceRate integer (get) Returns the science rate of the tribe.
 ---@field spaceship spaceshipObject (get) Returns the space ship object of the tribe.
 ---@field taxRate integer (get) Returns the tax rate of the tribe.
 ---@field treaties integer (get/set) Returns the tribe's treaties with `otherTribe`.
 local tribeObject = {}
 
----@alias techGroupValues
----| 0 can research, can own
----| 1 can't research, can own
----| 2 can't research, can't own
 
 ---Alias for `civ.enableTechGroup(tribe, techgroup, value)`.
 ---Sets the value of tech group `techgroup` (0-7) to value `value` (0-2, 0 = can research, can own, 1 = can't research, can own, 2 = can't research, can't own) for tribe.
 ---@param techgroup integer # integer in [0,7] 
----@param value techGroupValues
+---@param value 
+---| 0 can research, can own
+---| 1 can't research, can own
+---| 2 can't research, can't own
 function tribeObject:enableTechGroup(techgroup,value) end
 
 ---Alias for `civ.giveTech(tribe, tech)`.
@@ -345,10 +291,6 @@ function tribeObject:kill() end
 ---@param collapse boolean Default value is false.
 function tribeObject:takeTech(tech,collapse) end
 
----This is either a tribe object or nil.
----@alias tribeObjectNil
----| tribeObject
----| nil
 
 
 ---An improvement object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents an improvement entry in the rules.txt, and provides a means of interacting with it.
@@ -363,10 +305,6 @@ function tribeObject:takeTech(tech,collapse) end
 ---@field upkeep integer (get/set - ephemeral) Returns the upkeep cost of the improvement.
 local improvementObject = {}
 
----This is either a improvement object or nil.
----@alias improvementObjectNil
----| improvementObject
----| nil
 
 
 ---A technology object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a technology entry in the rules.txt, and provides a means of interacting with it.
@@ -384,10 +322,6 @@ local improvementObject = {}
 ---@field researched boolean (get) Returns whether or not any tribe has researched the tech.
 local techObject = {}
 
----This is either a technology object or nil.
----@alias techObjectNil
----| techObject
----| nil
 
 
 ---A leader object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents the leader of a tribe, which is to say some characteristics of the tribe specific to the "leader", and provides a means of interacting with it.
@@ -403,19 +337,15 @@ local techObject = {}
 ---@field name string (get/set) Returns the name of the leader.
 local leaderObject = {}
 
----This is either a leader object or nil.
----@alias leaderObjectNil
----| leaderObject
----| nil
 
 
 ---A wonder object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a Wonder of the World, both its entry in the rules.txt and also its characteristics within the game.
 ---[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#wonder)
 ---@class wonderObject
----@field city cityObjectNil (get/set) Returns the city that has built the wonder, `nil` if not built yet or destroyed.
+---@field city cityObject|nil (get/set) Returns the city that has built the wonder, `nil` if not built yet or destroyed.
 ---@field cost integer (get/set - ephemeral) Returns the cost of the wonder.
 ---@field destroyed boolean (get) Returns whether or not the wonder is destroyed. Use wonder:destroy() to set this field.
----@field expires techObjectNil (get/set - ephemeral) Returns the tech that renders the wonder obsolete, or `nil` if there isn't any.
+---@field expires techObject|nil (get/set - ephemeral) Returns the tech that renders the wonder obsolete, or `nil` if there isn't any.
 ---@field id id (get) Returns the id of the wonder.
 ---@field name string (get) Returns the name of the wonder.
 ---@field prereq techObject (get/set - ephemeral) Returns the prerequisite technology of the wonder.
@@ -424,10 +354,6 @@ local wonderObject = {}
 ---Alias for `civ.destroyWonder(wonder)`.
 function wonderObject:destroy() end
 
----This is either a wonder object or nil.
----@alias wonderObjectNil
----| wonderObject
----| nil
 
 
 ---A production item is an object that can be under production in a city. It can be a unit type object, an improvement object, or a wonder object. Note that it is a unit type object, not a unit object, since the unit hasn't been added to the game yet.
@@ -448,10 +374,6 @@ function wonderObject:destroy() end
 ---@field structural integer (get) Returns the number of structural improvements of the space ship.
 local spaceshipObject = {}
 
----This is either a spaceship object or nil.
----@alias spaceshipObjectNil
----| spaceshipObject
----| nil
 
 
 ---A dialog object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a text box that can be displayed to the player and provides properties and methods to customize it.
@@ -507,21 +429,16 @@ function mapObject:copyDefaultResources() end
 ---@return baseTerrainObject baseTerrain
 function mapObject:getBaseTerrain(terrainId) end
 
----@alias resourceNumber
----| 0 no resource
----| 1 fish resource
----| 2 whales resource
 
 ---Alias for `civ.getTerrain(map, terrainType, resource)`
 ---@param terrainId id The id number of the base terrain type sought.
----@param resource resourceNumber
+---@param resource
+---| 0 no resource
+---| 1 fish resource
+---| 2 whales resource
 ---@return terrainObject terrain
 function mapObject:getTerrain(terrainId,resource) end
 
----This is either a map object or nil.
----@alias mapObjectNil
----| mapObject
----| nil
 
 
 ---A base terrain object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents the 'basic' terrain characteristics for a terrain type, which is to say those aspects of terrain which do not change for special resources. The 'terrain' object deals with the characteristics that do change for special resources.
@@ -534,28 +451,26 @@ function mapObject:getTerrain(terrainId,resource) end
 ---@field impassable boolean (get/set - ephemeral) Returns `true` if the underlying terrain type is impassable, `false` otherwise.
 ---@field irrigateAI integer (get/set - ephemeral) The minimum government level needed for the AI to consider irrigating.
 ---@field irrigateBonus integer (get/set - ephemeral) The extra amount of food from irrigation.
----@field irrigateTo baseTerrainObjectNil (get/set - ephemeral) If the irrigation order changes the underlying terrain type return the baseTerrain of the new terrain type, `nil` otherwise.
+---@field irrigateTo baseTerrainObject|nil (get/set - ephemeral) If the irrigation order changes the underlying terrain type return the baseTerrain of the new terrain type, `nil` otherwise.
 ---@field irrigateTurns integer (get/set - ephemeral) The number of turns for settlers to irrigate.
 ---@field map integer (get) The map associated with the baseTerrain object.
 ---@field mineAI integer (get/set - ephemeral) The minimum government level needed for the AI to consider mining.
 ---@field mineBonus integer (get/set - ephemeral) The extra amount of production from mining.
----@field mineTo baseTerrainObjectNil (get/set - ephemeral) If the mine order changes the underlying terrain type return the baseTerrain of the new terrain type, `nil` otherwise.
+---@field mineTo baseTerrainObject|nil (get/set - ephemeral) If the mine order changes the underlying terrain type return the baseTerrain of the new terrain type, `nil` otherwise.
 ---@field mineTurns integer (get/set - ephemeral) The number of turns for settlers to mine.
 ---@field moveCost integer (get/set - ephemeral) The movement cost of the underlying terrain type.
 ---@field name string (get) The name of this baseTerrain.
----@field transformTo baseTerrainObjectNil (get/set - ephemeral) If the underlying terrain type can be transformed return the baseTerrain of the new terrain type, `nil` otherwise.
+---@field transformTo baseTerrainObject|nil (get/set - ephemeral) If the underlying terrain type can be transformed return the baseTerrain of the new terrain type, `nil` otherwise.
 ---@field type integer (get) The terrain type associated with the baseTerrain object.
 local baseTerrainObject = {}
 
 ---Returns the terrain object corresponding to the underlying terrain type and the given resource.
----@param resource resourceNumber
+---@param resource
+---| 0 no resource
+---| 1 fish resource
+---| 2 whales resource
 ---@return terrainObject terrain
 function baseTerrainObject:getTerrain(resource) end
-
----This is either a base terrain object or nil.
----@alias baseTerrainObjectNil
----| baseTerrainObject
----| nil
 
 
 ---A terrain object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents the terrain characteristics which change for special resources. The 'base terrain' object deals with the characteristics that do not change for special resources.
@@ -571,21 +486,12 @@ function baseTerrainObject:getTerrain(resource) end
 ---@field type integer (get) The terrain type associated with the terrain object.
 local terrainObject = {}
 
----This is either a terrain object or nil.
----@alias terrainObjectNil
----| terrainObject
----| nil
-
 
 
 ---A image object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents an image that can be displayed in a dialog object.
 ---[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#dialog)
 ---@class imageObject
 
----This is either a image object or nil.
----@alias imageObjectNil
----| imageObject
----| nil
 
 
 ---A commodity object is a data type that describes a trade commodity that can be carried by trade units.
@@ -595,10 +501,6 @@ local terrainObject = {}
 ---@field name string (get/set - ephemeral) The name of the commodity.
 local commodityObject = {}
 
----This is either a commodity object or nil.
----@alias commodityObjectNil
----| commodityObject
----| nil
 
 
 ---A traderoute object is a data type that describes a trade route that exists between two cities, and offers a means of interacting with it.
@@ -613,31 +515,17 @@ local traderouteObject = {}
 ---Alias for city:removeTradeRoute(id).
 function traderouteObject:remove() end
 
----This is either a traderoute object or nil.
----@alias traderouteObjectNil
----| traderouteObject
----| nil
-
----This is either a id number or a map object.
----@alias idMapObject
----| id
----| mapObject
 
 
----This is either a positive integer or a string.
----@alias positiveIntegerString
----| positiveInteger
----| string
 
 
----
+
+--- The civ module provides functions which can interact directly with the game.  It is always in scope, so you never need to use a `require` call in order to access it.
 ---@class civ
 ---@field civ.ui civ.ui
 ---@field civ.cosmic civ.cosmic
 ---@field civ.game civ.game
 ---@field civ.scen civ.scen
-
-
 civ = {}
 
 ---Adds city improvement `improvement` to city `city`.
@@ -659,7 +547,7 @@ function civ.captureCity(city,tribe) end
 ---Creates a city owned by `tribe` at the location given by `tile`. Returns `nil` if a city could not be created.
 ---@param tribe tribeObject
 ---@param tile tileObject
----@return cityObjectNil city
+---@return cityObject|nil city
 function civ.createCity(tribe,tile) end
 
 ---Creates a unit of type `unittype`, owned by `tribe`, at the location given by `tile`.
@@ -674,7 +562,10 @@ function civ.createUnit(unitType,tribe,tile) end
 function civ.deleteCity(city) end
 
 ---Deletes unit `unit` from the game.
+---Consider unsing `gen.defeatUnit`, `gen.killUnit`, `gen.deleteUnit`, or `gen.replaceUnit` instead, for event integration.
+---<br>Deprecation flag is only here so that designers see the above notice.
 ---@param unit unitObject
+---@deprecated
 function civ.deleteUnit(unit) end
 
 ---Destroys wonder `wonder`, removing it from the game, and marking it as 'lost'.
@@ -684,7 +575,10 @@ function civ.destroyWonder(wonder) end
 ---Sets the value of tech group `techgroup` (0-7) to value `value` (0-2, 0 = can research, can own, 1 = can't research, can own, 2 = can't research, can't own) for tribe `tribe`.
 ---@param tribe tribeObject
 ---@param techgroup integer integer in [0,7]
----@param value techGroupValues
+---@param value 
+---| 0 can research, can own
+---| 1 can't research, can own
+---| 2 can't research, can't own
 function civ.enableTechGroup(tribe,techgroup,value) end
 
 ---Ends the game. `endscreens` is a boolean that determines whether to show the powergraph and related screens.
@@ -702,14 +596,14 @@ function civ.getActiveUnit() end
 function civ.getAtlasDimensions() end
 
 ---Returns the base terrain object for the given map and terrain type.
----@param map idMapObject The map for the base terrain type we want, or its id.
+---@param map id|mapObject The map for the base terrain type we want, or its id.
 ---@param terrainId id The id number of the base terrain type sought
 ---@return baseTerrainObject baseTerrain
 function civ.getBaseTerrain(map,terrainId) end
 
 ---Returns the city with id `id`, or `nil` if it doesn't exist.
 ---@param id id
----@return cityObjectNil city
+---@return cityObject|nil city
 function civ.getCity(id) end
 
 ---Returns the currently selected tile.
@@ -726,12 +620,12 @@ function civ.getGameYear() end
 
 ---Returns the improvement with id `id` (0-39), or `nil` if it doesn't exist.
 ---@param id id
----@return improvementObjectNil improvement
+---@return improvementObject|nil improvement
 function civ.getImprovement(id) end
 
 ---Returns the map with id `id` (0-3) or `nil` if it doesn't exist.
 ---@param id id
----@return mapObjectNil map
+---@return mapObject|nil map
 function civ.getMap(id) end
 
 ---Alias for getAtlasDimensions. (deprecated since 0.16)
@@ -742,7 +636,7 @@ function civ.getMap(id) end
 function civ.getMapDimensions() end
 
 ---Returns the city currently opened in the city window, `nil` if the city window is closed.
----@return cityObjectNil city
+---@return cityObject|nil city
 function civ.getOpenCity() end
 
 ---Returns the player's tribe.
@@ -751,13 +645,16 @@ function civ.getPlayerTribe() end
 
 ---Returns the tech with id `id` (0-99), or `nil` if it doesn't exist.
 ---@param id id
----@return techObjectNil tech
+---@return techObject|nil tech
 function civ.getTech(id) end
 
 ---Returns the terrain object for the given map, terrain type and resource. Out of bound id's cause errors.
----@param map idMapObject The map for the terrain we want, or its id.
+---@param map id|mapObject The map for the terrain we want, or its id.
 ---@param terrainId id The id number of the base terrain type sought.
----@param resource resourceNumber
+---@param resource
+---| 0 no resource
+---| 1 fish resource
+---| 2 whales resource
 ---@return terrainObject terrain
 function civ.getTerrain(map,terrainId,resource) end
 
@@ -765,7 +662,7 @@ function civ.getTerrain(map,terrainId,resource) end
 ---@param x integer the 'x' coordinate of the tile
 ---@param y integer the 'y' coordinate of the tile
 ---@param z integer the 'z' coordinate of the tile ([0,3])
----@return tileObjectNil tile
+---@return tileObject|nil tile
 function civ.getTile(x,y,z) end
 
 ---Returns the absolute path of the ToT installation directory.
@@ -774,7 +671,7 @@ function civ.getToTDir() end
 
 ---Returns the tribe with id `id` (0-7), or `nil` if it doesn't exist.
 ---@param id id
----@return tribeObjectNil tribe
+---@return tribeObject|nil tribe
 function civ.getTribe(id) end
 
 ---Returns the current turn number.
@@ -783,17 +680,17 @@ function civ.getTurn() end
 
 ---Returns the unit with id `id`, or `nil` if it doesn't exist.
 ---@param id id
----@return unitObjectNil unit
+---@return unitObject|nil unit
 function civ.getUnit(id) end
 
 ---Returns the unit type with id `id`, or `nil` if it doesn't exist.
 ---@param id id
----@return unitTypeObjectNil unitType
+---@return unitTypeObject|nil unitType
 function civ.getUnitType(id) end
 
 ---Returns the wonder with id `id` (0-27), or `nil` if it doesn't exist.
 ---@param id id
----@return wonderObjectNil wonder
+---@return wonderObject|nil wonder
 function civ.getWonder(id) end
 
 ---Gives tech `tech` to tribe `tribe`.
@@ -813,72 +710,72 @@ function civ.hasImprovement(city,improvement) end
 function civ.hasTech(tribe,tech) end
 
 ---Returns `true` if `object` is a base terrain, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isBaseTerrain(object) end
 
 ---Returns `true` if `object` is a city, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isCity(object) end
 
 ---Returns `true` if `object` is a dialog, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isDialog(object) end
 
 ---Returns `true` if `object` is an image, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isImage(object) end
 
 ---Returns `true` if `object` is a city improvement, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isImprovement(object) end
 
 ---Returns `true` if `object` is a leader, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isLeader(object) end
 
 ---Returns `true` if `object` is a map, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isMap(object) end
 
 ---Returns `true` if `object` is a tech, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isTech(object) end
 
 ---Returns `true` if `object` is a terrain, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isTerrain(object) end
 
 ---Returns `true` if `object` is a tile, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isTile(object) end
 
 ---Returns `true` if `object` is a tribe, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isTribe(object) end
 
 ---Returns `true` if `object` is a unit, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isUnit(object) end
 
 ---Returns `true` if `object` is a unit type, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isUnitType(object) end
 
 ---Returns `true` if `object` is a wonder, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isWonder(object) end
 
@@ -900,7 +797,7 @@ function civ.killTribe(tribe) end
 function civ.makeAggression(who,whom) end
 
 ---Plays CD track `trackNo`, or with the DirectShow music patch enabled, play the file given by `filename`, where `filename` is relative to the 'Music' directory.
----@param trackOrFilename positiveIntegerString Track number of cd or filename of music.
+---@param trackOrFilename integer|string Track number of cd or filename of music.
 function civ.playMusic(trackOrFilename) end
 
 ---Plays the sound file given by `filename`.
@@ -917,13 +814,13 @@ function civ.playVideo(filename) end
 function civ.removeImprovement(city,improvement) end
 
 ---Sleeps for the given number of milliseconds.
----@param milliseconds positiveInteger
+---@param milliseconds integer
 function civ.sleep(milliseconds) end
 
 ---Takes away tech `tech` from tribe `tribe`, the optional `collapse` parameter determines whether to take away all techs that have `tech` as a prerequisite somewhere up the tree.
 ---@param tribe tribeObject
 ---@param tech techObject
----@param collapse boolean false by default
+---@param collapse? boolean false by default
 ---@overload fun(tribe: tribeObject, tech:techObject)
 function civ.takeTech(tribe,tech,collapse) end
 
@@ -934,11 +831,11 @@ function civ.teleportUnit(unit,tile) end
 
 ---Returns the commodity with id `id` (0-15 for regular commodities, -1 for food supplies), or `nil` if it doesn't exist.
 ---@param id id
----@return commodityObjectNil commodity
+---@return commodityObject|nil commodity
 function civ.getCommodity(id) end
 
 ---Returns `true` if `object` is a trade route, `false` otherwise.
----@param object anythingObject
+---@param object any
 ---@return boolean #
 function civ.isTradeRoute(object) end
 
@@ -1073,16 +970,15 @@ function civ.scen.onBribeUnit(code) end
 <br>Calculate corruption and add changes from commodity trade routes
 <br>Calculate corruption again (now using the value after trade routes) and subtract.
 <br>Add shieldChangeAfterWaste and tradeChangeAfterCorruption
-<br>Calculate Tax/Lux/Sci--]]
+<br>Calculate Tax/Lux/Sci]]
 ---@param code fun(city: cityObject, food:integer, shields:integer, trade:integer):foodChange:integer, shieldChangeBeforeWaste:integer, shieldChangeAfterWaste:integer, tradeChangeBeforeCorruption:integer, tradeChangeAfterCorruption:integer
 function civ.scen.onCalculateCityYield(code) end
 
----@alias defaultBuildFunction fun(city: cityObject, item: prodItem):cityCanBuildItemByDefault:boolean
 --[[
 Registers a function to be called every time a check is done whether a city can build something or not. It is called for all unit types, improvements and wonders. The first parameter of the callback is the default build function, as implemented by the game. It takes the city and item as parameters. You can call this to produce a result for cases you don't need to handle yourself. `item` can be a unittype, improvement or wonder.
 Return `true` if `city` is allowed to produce `item`, `false` if not. 
 ]]
----@param code fun(defaultBuildFunction:defaultBuildFunction,city:cityObject,item: prodItem):cityCanBuildItem:boolean
+---@param code fun(defaultBuildFunction:fun(city: cityObject, item: prodItem):cityCanBuildItemByDefault:boolean,city:cityObject,item: prodItem):cityCanBuildItem:boolean
 function civ.scen.onCanBuild(code) end
 
 --[[
@@ -1112,14 +1008,11 @@ Registers a function that is called when a city is destroyed.
 ---@param code fun(city:cityObject) 
 function civ.scen.onCityDestroyed(code) end
 
----@alias cityFoundedFunction
----| fun(city:cityObject)
----| fun(city:cityObject):fun()
 
 --[[
 Registers a function to be called every time a city is founded. The callback takes the city as a parameter, and can optionally return a function (since 0.18) that is called to perform cleanup when the user cancels founding the city.
 ]]
----@param code cityFoundedFunction
+---@param code fun(city:cityObject)|fun(city:cityObject):fun()
 function civ.scen.onCityFounded(code) end
 
 
@@ -1160,14 +1053,14 @@ local gameEndReasons = {
 }
 
 --[[
-<br>Registers a function that is called when the game ends. `reason` is an integer between 1 and 6:
+Registers a function that is called when the game ends. `reason` is an integer between 1 and 6:
 <br>1 and 2 - Space race victory. This does not trigger if `onCentauriArrival` has a callback registered. 1 means victory by active player.
 <br>3 - Conquest victory
 <br>4 - Defeat
 <br>5 - Retirement
 <br>6 - Macro ENDGAME action
 <br>Return `true` to end the game, `false` to keep playing.
---]]
+]]
 ---@param code fun(reason:gameEndReasons):(gameIsOver:boolean)
 function civ.scen.onGameEnds(code) end
 
@@ -1182,8 +1075,8 @@ function civ.scen.onGetFormattedDate(code) end
 
 --[[
 Registers a function that is called when calculating the cost to rush-buy a city's current production. It takes the city and the cost as calculated by the game as parameters. Returns an integer representing the new costs.
---]]
----@param code fun(city:cityObject, defaultCost: positiveInteger):(costToComplete:positiveInteger)
+]]
+---@param code fun(city:cityObject, defaultCost: integer):(costToComplete:integer)
 function civ.scen.onGetRushBuyCost(code) end
 
 
@@ -1302,7 +1195,7 @@ function civ.scen.onSchism(code) end
 --[[
 Registers a function that is called when a new music track is to be played. `track` is either nil or an integer. If nil, the game wants to play a random track, if not nil it's either due to the user choosing a track from the menu (first track has id 0), or the game playing one of it's special tracks ("Funeral March" - track id 0, and "Ode to Joy" - track id 1). To handle special tracks, you can return nil to signal that the game should play the default track associated with that track id. If you want to handle this track id, call civ.playMusic (this will check the Music folder of the scenario first before falling back to the global Music folder) and return an integer, which is used to synchronize the track list in the menu. The track names can be added in @PICKMUSICTOT in Game.txt.
 ]]
----@param code fun(track:integerNil):integerNil
+---@param code fun(track:integer|nil):integer|nil
 function civ.scen.onSelectMusic(code) end
 
 

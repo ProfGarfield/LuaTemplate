@@ -11,8 +11,20 @@ local suppressEventsLuaWarning = false -- if set to true, this suppresses the wa
 -- you made important changes)
 
 
-
+--[[The Discrete Events Registration Module allows the scenario designer to 
+register code for events in discrete chunks, instead of having to program out
+all the logic for events of a certain type in the same place.  Note, however, that 
+the order of execution of different discrete events is not guaranteed.  If you need
+events to happen in a specific order, you should either progrgram them all in the same
+discrete event, or use either `consolidatedEvents.lua` or the appropriate file in the
+`EventFiles` directory.  To import this module, use the following code:
+```lua
+local discreteEvents = require("discreteEventsRegistrar")
+```
+    ]]
+---@class discreteEvents
 local discreteEvents = {}
+
 local eventsTable = {}
 
 local minVersion = function(self,minVersion)
@@ -544,8 +556,8 @@ end
 --[[
 Registers a function to be called every time a city is founded. The callback takes the city as a parameter, and can optionally return a function (since 0.18) that is called to perform cleanup when the user cancels founding the city.
 ]]
----As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
----@param code cityFoundedFunction
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.  This includes any code returned to cleanup after the user cancels founding the city.
+---@param code fun(city:cityObject)|fun(city:cityObject):fun()
 function discreteEvents.onCityFounded(code)
     newIndexFn(nil,"onCityFounded",code)
 end

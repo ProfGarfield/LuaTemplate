@@ -25,23 +25,37 @@ local fileModified = false -- set this to true if you change this file for your 
 -- * means planned but not implemented
 -- # means needs testing
 --
--- gen.requireIfAvailable(fileName) --> boolean, modulePrefix
---      Attempts to require the module called fileName
---      returns true, modulePrefix if the module is found
---      returns false, nil if no module is found
---      makes an error if there is a problem loading the module
---      Note: if you change the function name here, the function
---      can be copied and pasted if you don't want to require
---      the general library
-local civlua = require("civlua")
+
+
+
+--[[The General Library offers a variety of tools to make it easier to build events. To access functions from the General Library, you should include the following line at the top of your file:
+```lua
+local gen = require("generalLibrary")
+```]]
+---@class gen
 local gen = {}
+
+-- gen.requireIfAvailable(fileName) --> boolean, modulePrefix
+
+--[[
+Attempts to require the module called fileName
+returns true, modulePrefix if the module is found
+returns false, nil if no module is found
+makes an error if there is a problem loading the module]]
+---@param fileName string The name of the file to require
+---@return boolean fileFound true if the module was found, false otherwise
+---@return table|nil modulePrefix returns the module table if it was found, or nil if not
 function gen.requireIfAvailable(fileName)
+--     Note: if you change the function name here, the function can 
+--     be copied and pasted if you don't want to require the general library 
     if package.loaded[fileName] then
+---@diagnostic disable-next-line: redundant-return-value
         return true, require(fileName)
     else
         for _,searcher in ipairs(package.searchers) do
             local loader = searcher(fileName)
             if type(loader) == 'function' then
+---@diagnostic disable-next-line: redundant-return-value
                 return true, require(fileName)
             end
         end
@@ -472,6 +486,8 @@ end
 
 
 -- gen.checkBits(integer,string)-->boolean
+-- Helper function (provided to this library as checkBits and gen.checkBits)
+
 -- Compares the binary representation of an integer with
 -- a string.  If the string has a 1 in a given place,
 -- the binary representation of the integer should also
@@ -481,23 +497,26 @@ end
 -- 0 or a 1.  If the integer representation is longer than
 -- the string, the string is alligned with the smallest
 -- part of the integer.
--- gen.checkBits(0b10101011,"xx10xwqp")-->true
--- gen.checkBits(0b10101011,"xx11xwqp")-->false
--- gen.checkBits(0b011110101011,"xx10xwqp")-->true
--- gen.checkBits(0b011110101011,"xx10xwqp")-->true
--- Helper function (provided to this library as checkBits and gen.checkBits)
+--[[
+```lua
+gen.checkBits(0b10101011,"xx10xwqp")-->true
+gen.checkBits(0b10101011,"xx11xwqp")-->false
+gen.checkBits(0b011110101011,"xx10xwqp")-->true
+gen.checkBits(0b011110101011,"xx10xwqp")-->true
+```]]
 -- note: lua does not actually accept integers specified in binary 
 -- (though it does for hexidecimal)
---
-
-local function checkBits(integer,bitString)
+---@param bitmask integer|bitmask the number/bitmask to be checked
+---@param bitString string specification of bits that should be checked
+---@return boolean bitsMatch
+local function checkBits(bitmask,bitString)
     local strlen = string.len(bitString)
     for i=1,strlen do
         local bitInt = 1<<(i-1)
-        if bitString:sub(-i,-i) == "1" and integer & bitInt == 0 then
+        if bitString:sub(-i,-i) == "1" and bitmask & bitInt == 0 then
             -- ith bit isn't 1, but bitString specifies 1
             return false
-        elseif bitString:sub(-i,-i) == "0" and integer & bitInt == bitInt then
+        elseif bitString:sub(-i,-i) == "0" and bitmask & bitInt == bitInt then
             -- ith bit is 1, but bitString specifies 0
             return false
         end
@@ -508,48 +527,60 @@ end
 gen.checkBits = checkBits
 
 -- gen.setBits(integer,string)-->integer
--- sets binary bits in an integer to 1 or 0 based on
+-- Helper function (provided to this library as setBits and gen.setBits)
+
+-- sets binary bits in an integer/bitmask to 1 or 0 based on
 -- the information provided by a string.  Characters that 
 -- are not 1 or 0 leave the corresponding bit unchanged
 -- Last character of the string corresponds to the 1's bit
 -- in the integer (string lines up to the least significant
 -- part of the number)
--- gen.setBits(0b00000000,"xx10xxxx")-->0b00100000
--- gen.setBits(0b00000000,"xx10xx")-->0b00001000
--- gen.setBits(0b11111100,"xx0011xx")-->0b11001100
--- gen.setBits(0b10101011,"xx10xwqp")-->0b10101011
--- gen.setBits(0b10101011,"xx11xwqp")-->0b10111011
--- Helper function (provided to this library as setBits and gen.setBits)
--- note: lua does not actually accept integers specified in binary 
--- (though it does for hexidecimal)
-local function setBits(integer,bitString)
+--[[
+```lua
+gen.setBits(0b00000000,"xx10xxxx")-->0b00100000
+gen.setBits(0b00000000,"xx10xx")-->0b00001000
+gen.setBits(0b11111100,"xx0011xx")-->0b11001100
+gen.setBits(0b10101011,"xx10xwqp")-->0b10101011
+gen.setBits(0b10101011,"xx11xwqp")-->0b10111011
+```]]
+-- note: lua does not actually accept integers specified in binary (though it does for hexidecimal)
+---comment
+---@param bitmask integer|bitmask the bitmask to change
+---@param bitString string specification of bits to set
+---@return bitmask bitmask The integer/bitmask after the bits have been set
+local function setBits(bitmask,bitString)
     local strlen = string.len(bitString)
     for i=1,strlen do
         local bitInt = 1<<(i-1)
         if bitString:sub(-i,-i) == "1" then
-            integer = integer | bitInt
+            bitmask = bitmask | bitInt
         elseif bitString:sub(-i,-i) == "0" then
-            integer = integer & ~bitInt
+            bitmask = bitmask & ~bitInt
         end
     end
-    return integer
+    ---@cast bitmask bitmask
+    return bitmask
 end
 gen.setBits = setBits
 
 -- gen.printBits(integer,numOfBits or nil) --> string
--- prints the binary representation of integer,
+
+-- creates the binary representation of integer/bitmask,
 -- including the numOfBits least significant bits
 -- if numOfBits is nil, it defaults to 32
-function gen.printBits(integer,numOfBits)
+---@param bitmask bitmask the bits to print
+---@param numOfBits integer the number of bits to show (default 32)
+---@return string binaryRepresentation
+function gen.bitmaskToString(bitmask,numOfBits)
     if not numOfBits then
         numOfBits = 32
     end
-    if type(integer)~= "number" or type(numOfBits) ~= "number" then
+    if type(bitmask)~= "number" or type(numOfBits) ~= "number" then
         error("gen.printBits requires integer arguments.")
     end
     local concatTable = {}
     for i=1,numOfBits do
-        if integer & 1<<(numOfBits-i) == 0 then
+        if bitmask & 1<<(numOfBits-i) == 0 then
             concatTable[i]="0"
         else
             concatTable[i]="1"
@@ -557,42 +588,83 @@ function gen.printBits(integer,numOfBits)
     end
     return table.concat(concatTable)
 end
+gen.printBits = gen.bitmaskToString
 
 -- gen.isBit1(integer,bitNumber)--> boolean
--- tells if bitNumber bit of integer is 1 
--- (1st bit is the bit for the ones position)
 -- Helper Function (provided as local and in gen table)
-local function isBit1(integer,bitNumber)
-    return integer & 1<<(bitNumber-1) == 1<<(bitNumber-1)
+
+-- tells if bitNumber bit of integer/bitmask is 1 
+-- (1st bit is the bit for the ones position)
+--[[
+```lua
+gen.isBit1(0b00000010,2) -->true
+gen.isBit1(0b11111110,1) -->false
+```]]
+-- note: lua does not actually accept integers specified in binary (though it does accept hexidecimal)
+---@param bitmask integer/bitmask
+---@param bitNumber integer
+---@return boolean
+function gen.isBit1(bitmask,bitNumber)
+    return bitmask & 1<<(bitNumber-1) == 1<<(bitNumber-1)
 end
-gen.isBit1 = isBit1
+local isBit1 = gen.isBit1
 
 -- gen.isBit0(integer,bitNumber)--> boolean
+-- Helper Function (provided as local and in gen table)
+
 -- tells if bitNumber bit of integer is 0 
 -- (1st bit is the bit for the ones position)
--- Helper Function (provided as local and in gen table)
-local function isBit0(integer,bitNumber)
-    return integer & 1<<(bitNumber-1) == 0
+--[[
+```lua
+gen.isBit0(0b00000010,2) -->false
+gen.isBit0(0b11111110,1) -->true
+```]]
+-- note: lua does not actually accept integers specified in binary (though it does accept hexidecimal)
+---@param bitmask integer|bitmask
+---@param bitNumber integer
+---@return boolean
+function gen.isBit0(bitmask,bitNumber)
+    return bitmask & 1<<(bitNumber-1) == 0
 end
-gen.isBit0 = isBit0
+local isBit0 = gen.isBit0
 
 -- gen.setBit1(integer,bitNumber)-->integer
--- sets bitNumber bit of the integer to 1
--- (1st bit is the bit for the ones position)
 -- Helper Function (provided as local and in gen table)
-local function setBit1(integer,bitNumber)
-	return integer | 1<<(bitNumber-1)
+
+-- sets bitNumber bit of the integer/bitmask to 1
+-- (1st bit is the bit for the ones position)
+--[[
+```lua
+gen.setBit1(0b00000000,3) --> 0b00000100
+```]]
+-- note: lua does not actually accept integers specified in binary (though it does accept hexidecimal)
+---@param bitmask integer|bitmask
+---@param bitNumber integer
+---@return bitmask
+function gen.setBit1(bitmask,bitNumber)
+---@diagnostic disable-next-line: return-type-mismatch
+	return bitmask | 1<<(bitNumber-1)
 end
-gen.setBit1 = setBit1
+local setBit1 = gen.setBit1
 
 -- gen.setBit0(integer,bitNumber)-->integer
--- sets bitNumber bit of the integer to 0
--- (1st bit is the bit for the ones position)
 -- Helper Function (provided as local and in gen table)
-local function setBit0(integer,bitNumber)
-	return integer & ~(1<<(bitNumber-1))
+
+-- sets bitNumber bit of the integer/bitmask to 0
+-- (1st bit is the bit for the ones position)
+--[[
+```lua
+gen.setBit0(0b11111111,3) --> 0b11111011
+```]]
+-- note: lua does not actually accept integers specified in binary (though it does accept hexidecimal)
+---@param bitmask integer|bitmask
+---@param bitNumber integer
+---@return bitmask
+function gen.setBit0(bitmask,bitNumber)
+---@diagnostic disable-next-line: return-type-mismatch
+	return bitmask & ~(1<<(bitNumber-1))
 end
-gen.setBit0 = setBit0
+local setBit0 = gen.setBit0
 
 local thresholdTableMetatable = { __index = function(thresholdTable,key)
             if type(key) ~= "number" then
@@ -609,6 +681,7 @@ local thresholdTableMetatable = { __index = function(thresholdTable,key)
                 return bestValueSoFar
             end
         end,}
+
 -- A threshold table is a table where if a numerical key is indexed, and that
 -- numerical key doesn't correspond to an index, the value of the largest
 -- numerical index less than the key is used.
@@ -623,10 +696,32 @@ local thresholdTableMetatable = { __index = function(thresholdTable,key)
 -- myTable[3.5]=1
 -- myTable["three"] = nil
 -- myTable[0.5]=0
---
+---@class thresholdTable: table
+
 -- gen.makeThresholdTable(table or nil)-->thresholdTable
+
+-- A threshold table is a table where if a numerical key is indexed, and that
+-- numerical key doesn't correspond to an index, the value of the largest
+-- numerical index less than the key is used.
+-- If there is no numerical index smaller than the key, false is returned.
+-- (nil is returned for non-numerical keys not in table)
+-- Use an index -math.huge to provide values for arbitrarily small numerical keys.
+-- Example:
+--[[
+    ```lua 
+myTable = gen.makeThresholdTable({[-1]=-1,[0]=0,[1]=1,})
+myTable[-2] --> false
+myTable[-1] --> -1
+myTable[-0.6] --> -1
+myTable[3.5]-->1
+myTable["three"] --> nil
+myTable[0.5]-->0
+```]]
 -- makes an input a threshold table or creates an empty thresholdTable
 -- Also returns the table value
+---@param inputTable table|nil
+---@return thresholdTable
+---@overload fun():thresholdTable
 function gen.makeThresholdTable(inputTable)
     inputTable = inputTable or {}
     return setmetatable(inputTable,thresholdTableMetatable)
@@ -634,16 +729,27 @@ end
 
 -- applyWonderBonus(wonderObject or integer,tribeObject or integer)-->boolean
 -- gen.isWonderActiveForTribe(wonderObject or integer,tribeObject or integer)-->boolean
--- returns true if the wonder has been built and is not
--- expired or destroyed 
--- integer means corresponding wonder/tribe id
+
+-- Returns true if the `wonder` is owned by the `tribe` and is not expired, and false otherwise.
+-- Integers corresponding to wonder/tribe ids can be used as arguments instead.
 -- revisions by Knighttime, 2021-11-12
-local function applyWonderBonus(wonder,tribe)
+---@param wonder wonderObject|integer the wonder (or id of wonder) in question 
+---@param tribe tribeObject|integer the tribe (or id of tribe) in question
+---@return boolean wonderIsActive
+function gen.isWonderActiveForTribe(wonder,tribe)
     if type(wonder) == "number" then
+---@diagnostic disable-next-line: cast-local-type
         wonder = civ.getWonder(wonder)
     end
+    if not wonder then
+        error("gen.isWonderActiveForTribe: arg #1 must be either a wonderObject, or an integer ID for a wonder object.  Received: "..tostring(wonder))
+    end
     if type(tribe) == "number" then
+---@diagnostic disable-next-line: cast-local-type
         tribe = civ.getTribe(tribe)
+    end
+    if not tribe then
+        error("gen.isWonderActiveForTribe: arg #2 must be either a tribeObject, or an integer ID for a tribe object.  Received: "..tostring(wonder))
     end
     --check if expired
 	-- Kn: If barbarians (tribe 0) are the first to acquire a wonder expiration tech,
@@ -662,32 +768,47 @@ local function applyWonderBonus(wonder,tribe)
         return false
     end
 end
-gen.isWonderActiveForTribe = applyWonderBonus
+local applyWonderBonus = gen.isWonderActiveForTribe
+
+--[[A tileAnalog is either a tileObject or a table with
+one of the following forms: {[1]=x,[2]=y,[3]=z}, {[1]=x,[2]=y}
+(and assumes z=0), {x=x,y=y,z=z}, or {x=x, y=y} (and assumes z=0).
+The x,y,z values (but not keys) correspond to tile coordinates.
+]]
+---@alias tileAnalog 
+---| tileObject
+---| table {x=xCoord,y=yCoord,z=zCoord} or {xCoord,yCoord,zCoord} if zCoord nil, use map 0
+--[[
+# Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+]]
 
 -- toTile(tile or table)-->tile
 -- gen.toTile(tile or table)-->tile
--- If given a tile object, returns the tile
--- If given coordinates for a tile, returns the tile
--- Causes error otherwise
 -- Helper Function (provided to this library as toTile and gen.toTile)
---
-local function toTile(input)
-    if civ.isTile(input) then
-        if civ.getTile(input.x,input.y,input.z) then
-            return input
+
+-- If given a tile object, returns the tile.
+-- If given coordinates for a tile, returns the tile.
+-- Causes error otherwise
+---@param tileAnalog tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return tileObject
+function gen.toTile(tileAnalog)
+    if civ.isTile(tileAnalog) then
+        if civ.getTile(tileAnalog.x,tileAnalog.y,tileAnalog.z) then
+            return tileAnalog
         else
-            error("toTile: tile coordinates are ("..tostring(input.x)..","..tostring(input.y)..
-            ","..tostring(input.z).." which does not correspond to a tile on the map.  "..
+            error("toTile: tile coordinates are ("..tostring(tileAnalog.x)..","..tostring(tileAnalog.y)..
+            ","..tostring(tileAnalog.z).." which does not correspond to a tile on the map.  "..
             "the game is known to return a 'false tile' for loser.location in unit killed if the"..
             " attacking unit was the loser, though this may happen elsewhere as well.")
         end
-    elseif type(input) == "table" then
-        local xVal = input[1] or input["x"]
-        local yVal = input[2] or input["y"]
-        local zVal = input[3] or input["z"] or 0
+    elseif type(tileAnalog) == "table" then
+        local xVal = tileAnalog[1] or tileAnalog["x"]
+        local yVal = tileAnalog[2] or tileAnalog["y"]
+        local zVal = tileAnalog[3] or tileAnalog["z"] or 0
         if type(xVal)=="number" and type(yVal)=="number" and type(zVal)=="number" then
-            if civ.getTile(xVal,yVal,zVal) then
-                return civ.getTile(xVal,yVal,zVal)
+            local givenTile = civ.getTile(xVal,yVal,zVal)
+            if givenTile then
+                return givenTile
             else
                 error("Table with values {"..tostring(xVal)..","..tostring(yVal)..
                         ","..tostring(zVal).."} does not correspond to a valid tile.")
@@ -699,7 +820,7 @@ local function toTile(input)
         error("Did not receive a tile object or table of coordinates.")
     end
 end
-gen.toTile = toTile
+local toTile = gen.toTile
 
 
 -- by default, the map is considered flat
@@ -709,12 +830,17 @@ gen.toTile = toTile
 -- file, the variable itself is left to avoid errors
 -- with the declareMap functions.
 local flatMap = civ.game.rules.flatWorld
+
 -- gen.isMapFlat()-->boolean
+---Returns true if the game map is flat, and false if it is round.
+---@return boolean mapIsFlat
 function gen.isMapFlat()
     return civ.game.rules.flatWorld
 end
 
 -- gen.isMapRound()-->boolean
+---Returns true if the game map is round, and false if it is flat.
+---@return boolean mapIsRound
 function gen.isMapRound()
     return not civ.game.rules.flatWorld
 end
@@ -724,59 +850,80 @@ end
 -- for things like distances and adjacent squares
 -- no longer has practical effect, since above
 -- functions access world shape directly with TOTPP v16
+---@deprecated
 function gen.declareMapFlat()
     flatMap = true
 end
 
 -- gen.declareMapRound()-->void
+---@deprecated
 function gen.declareMapRound()
     flatMap = false
 end
 
 -- tileDist(locA,locB,zDist=0)
 -- gen.tileDist(locA,locB,zDist=0)
--- takes two tiles and a 'vertical distance' (0 if absent)
--- and computes the distance (1-norm, not Euclidean) between them
--- doesn't pre-process arguments like gen.distance, so might be slightly
--- quicker (though this probably will never matter)
-local function tileDist(locA,locB,zDist)
+
+-- Takes two tiles and a 'vertical distance' (0 if absent)
+-- and computes the distance between them.
+-- Doesn't pre-process arguments like gen.distance, so might be slightly
+-- quicker (though this probably too trivial to ever matter).
+-- Computes the distance you would get by counting tiles.
+-- If you want the game's approximation of "Euclidean" distance that
+-- is used in many game mechanics, use gen.gameMechanicDistance
+---@param tileA tileObject
+---@param tileB tileObject
+---@param zDist? integer The distance between tiles with same x,y coordinates but differing in z by 1. 0 by default.
+---@return integer
+function gen.tileDist(tileA,tileB,zDist)
     zDist = zDist or 0
     if civ.game.rules.flatWorld then
-        return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
+        return (math.abs(tileA.x-tileB.x)+math.abs(tileA.y-tileB.y)+2*zDist*math.abs(tileA.z-tileB.z))//2
     else
         local xMax,yMax,zMax=civ.getAtlasDimensions()
-        return math.min((math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2,
-            (xMax-math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2)
+        return math.min((math.abs(tileA.x-tileB.x)+math.abs(tileA.y-tileB.y)+2*zDist*math.abs(tileA.z-tileB.z))//2,
+            (xMax-math.abs(tileA.x-tileB.x)+math.abs(tileA.y-tileB.y)+2*zDist*math.abs(tileA.z-tileB.z))//2)
     end
 end
-gen.tileDist = tileDist
+local tileDist = gen.tileDist
 
 -- distance(tileUnitCityA,tileUnitCityB,zDist=0)-->integer
 -- gen.distance(tileUnitCityA,tileUnitCityB,zDist=0)-->integer
+
 -- returns the distance (1-norm, not Euclidean) (in terms of tiles, not coordinates) between 
 -- objects A and B, that have a natural location (also converts doubles and triples of tables)
+
+-- Takes two objects and a 'vertical distance' (0 if absent)
+-- and computes the distance between them.  
 -- zDist is the number of tiles that one unit of z coordinate "distance" is equivalent to
-local function distance(tileUnitCityA,tileUnitCityB,zDist)
+-- Computes the distance you would get by counting tiles.
+-- If you want the game's approximation of "Euclidean" distance that
+-- is used in many game mechanics, use gen.gameMechanicDistance
+---@param itemA tileAnalog|unitObject|cityObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>cityObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param itemB tileAnalog|unitObject|cityObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>cityObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param zDist? integer The distance between tiles with same x,y coordinates but differing in z by 1. 0 by default.
+---@return integer
+function gen.distance(itemA,itemB,zDist)
     zDist = zDist or 0
     local locA = nil
     local locB = nil
-    if type(tileUnitCityA)=="table" then
-        locA=toTile(tileUnitCityA)
-    elseif civ.isUnit(tileUnitCityA) or civ.isCity(tileUnitCityA) then
-        locA=tileUnitCityA.location
-    elseif civ.isTile(tileUnitCityA) then
-        locA = tileUnitCityA
+    if type(itemA)=="table" then
+        locA=toTile(itemA)
+    elseif civ.isUnit(itemA) or civ.isCity(itemA) then
+        locA=itemA.location
+    elseif civ.isTile(itemA) then
+        locA = itemA
     else
-        error("gen.distance: first argument must be a tile (or coordinates of a tile), or a unit or a city. Received: "..tostring(tileUnitCityA))
+        error("gen.distance: first argument must be a tile (or coordinates of a tile), or a unit or a city. Received: "..tostring(itemA))
     end
-    if type(tileUnitCityB)=="table" then
-        locB=toTile(tileUnitCityB)
-    elseif civ.isUnit(tileUnitCityB) or civ.isCity(tileUnitCityB) then
-        locB=tileUnitCityB.location
-    elseif civ.isTile(tileUnitCityB) then
-        locB = tileUnitCityB
+    if type(itemB)=="table" then
+        locB=toTile(itemB)
+    elseif civ.isUnit(itemB) or civ.isCity(itemB) then
+        locB=itemB.location
+    elseif civ.isTile(itemB) then
+        locB = itemB
     else
-        error("gen.distance: second argument must be a tile (or coordinates of a tile), or a unit or a city. Received: "..tostring(tileUnitCityB))
+        error("gen.distance: second argument must be a tile (or coordinates of a tile), or a unit or a city. Received: "..tostring(itemB))
     end
     if civ.game.rules.flatWorld then
         return (math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2
@@ -786,7 +933,7 @@ local function distance(tileUnitCityA,tileUnitCityB,zDist)
             (xMax-math.abs(locA.x-locB.x)+math.abs(locA.y-locB.y)+2*zDist*math.abs(locA.z-locB.z))//2)
     end
 end
-gen.distance = distance
+local distance = gen.distance
 
 
 -- gen.gameMechanicDistance(itemOnMap1,itemOnMap2)
@@ -796,24 +943,27 @@ gen.distance = distance
 --  This distance is scaled to match the "Communism Palace Distance",
 --  (based on the corruption work by Knighttime)
 --  Diagonal movement is "1" distance, corner to corner is 1.5 (rounded down)
-function gen.gameMechanicDistance(tileUnitCityA,tileUnitCityB)
+---@param itemA tileAnalog|unitObject|cityObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>cityObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param itemB tileAnalog|unitObject|cityObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>cityObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return integer
+function gen.gameMechanicDistance(itemA,itemB)
     local locA = nil
     local locB = nil
-    if type(tileUnitCityA)=="table" then
-        locA=toTile(tileUnitCityA)
-    elseif civ.isUnit(tileUnitCityA) or civ.isCity(tileUnitCityA) then
-        locA=tileUnitCityA.location
-    elseif civ.isTile(tileUnitCityA) then
-        locA = tileUnitCityA
+    if type(itemA)=="table" then
+        locA=toTile(itemA)
+    elseif civ.isUnit(itemA) or civ.isCity(itemA) then
+        locA=itemA.location
+    elseif civ.isTile(itemA) then
+        locA = itemA
     else
         error("gen.gameMechanicDistance: first argument must be a tile (or coordinates of a tile), or a unit or a city.")
     end
-    if type(tileUnitCityB)=="table" then
-        locB=toTile(tileUnitCityB)
-    elseif civ.isUnit(tileUnitCityB) or civ.isCity(tileUnitCityB) then
-        locB=tileUnitCityB.location
-    elseif civ.isTile(tileUnitCityB) then
-        locB = tileUnitCityB
+    if type(itemB)=="table" then
+        locB=toTile(itemB)
+    elseif civ.isUnit(itemB) or civ.isCity(itemB) then
+        locB=itemB.location
+    elseif civ.isTile(itemB) then
+        locB = itemB
     else
         error("gen.gameMechanicDistance: second argument must be a tile (or coordinates of a tile), or a unit or a city.")
     end
@@ -832,8 +982,11 @@ end
 
 
 -- gen.hasIrrigation(tile)-->boolean
+
 -- returns true if tile has irrigation but no farm
 -- returns false otherwise
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasIrrigation(tile)
     tile = toTile(tile)
     local improvements = tile.improvements
@@ -842,9 +995,11 @@ function gen.hasIrrigation(tile)
 end
 
 -- gen.placeIrrigation(tile)-->void
+
 -- places irrigation on the tile provided
 -- removes mines and farmland if present
 -- does nothing if tile has a city
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeIrrigation(tile)
     tile = toTile(tile)
     if tile.city then
@@ -859,9 +1014,11 @@ function gen.placeIrrigation(tile)
 end
 
 -- gen.removeIrrigation(tile)-->void
+
 -- If tile has irrigation but no farmland, removes the irrigation
 -- Does nothing to farmland
 -- Does nothing if tile has a city
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeIrrigation(tile) 
     tile = toTile(tile)
     -- if tile has a city or farmland, do nothing
@@ -874,6 +1031,9 @@ function gen.removeIrrigation(tile)
 end
 
 -- gen.hasMine(tile)-->boolean
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasMine(tile) 
     tile = toTile(tile)
     local improvements = tile.improvements
@@ -882,9 +1042,11 @@ function gen.hasMine(tile)
 end
 
 -- gen.placeMine(tile)-->void
+
 -- places mines on the tile provided
 -- removes irrigation and farmland if present
 -- does nothing if tile has city
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeMine(tile) 
     tile = toTile(tile)
     if tile.city then
@@ -899,8 +1061,10 @@ function gen.placeMine(tile)
 end
 
 -- gen.placeMineUnderCity(tile) --> void
+
 -- places mine on a tile, even if a city is present
 -- removes irrigation and farmland if present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeMineUnderCity(tile)
     tile = toTile(tile)
     -- set mining bit to 1
@@ -912,9 +1076,11 @@ function gen.placeMineUnderCity(tile)
 end
 
 -- gen.removeMine(tile)-->void
+
 -- if tile has mining but no farmland, removes mines
 -- does nothing to farmland
 -- does nothing if tile has a city
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeMine(tile) 
     tile = toTile(tile)
     -- if tile has a city or farmland, do nothing
@@ -928,8 +1094,10 @@ function gen.removeMine(tile)
 end
 
 -- gen.removeMineUnderCity(tile)-->void
+
 -- if tile has mining but no farmland, removes mines
 -- does nothing to farmland
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeMineUnderCity(tile) 
     tile = toTile(tile)
     -- if tile has a city or farmland, do nothing
@@ -945,14 +1113,19 @@ function gen.removeMineUnderCity(tile)
 
 end
 -- gen.hasFarmland(tile)-->boolean
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasFarmland(tile)
     tile = toTile(tile)
     return tile.improvements & 0x0C == 0x0C
 end
 
 -- gen.placeFarmland(tile)-->void
+
 -- places farmland on a tile (removing mining)
 -- does nothing if a city is present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeFarmland(tile) 
     tile = toTile(tile)
     if tile.city then
@@ -963,9 +1136,11 @@ function gen.placeFarmland(tile)
 end
 
 -- gen.removeFarmland(tile)-->void
+
 -- removes farmland if present
 -- does nothing to irrigation or mining
 -- does nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeFarmland(tile) 
     tile = toTile(tile)
     if (not tile.city) and (tile.improvements & 0x0C == 0x0C) then
@@ -975,16 +1150,21 @@ function gen.removeFarmland(tile)
 end
 
 -- gen.hasAgriculture(tile)-->bool
+
 -- returns true if tile has irrigation or farmland
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasAgriculture(tile)
     tile = toTile(tile)
     return tile.improvements & 0x04 == 0x04
 end
 
 -- gen.improveAgriculture(tile) --> void
+
 -- if tile has no irrigation, place irrigation (even if mining present)
 -- if tile has irrigation, place farmland
 -- if city do nothing
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.improveAgriculture(tile)
     tile = toTile(tile)
     if tile.city then
@@ -999,9 +1179,11 @@ function gen.improveAgriculture(tile)
 end
 
 -- gen.degradeAgriculture(tile) --> void
+
 -- if tile has farmland, reduce to irrigation
 -- if tile has irrigation, remove
 -- does nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.degradeAgriculture(tile)
     tile = toTile(tile)
     if tile.city then
@@ -1015,9 +1197,11 @@ function gen.degradeAgriculture(tile)
 end
 
 -- gen.removeAgriculture(tile) --> void
+
 -- remove farmland and irrigation if present
 -- do nothing to mining
 -- do nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeAgriculture(tile)
     tile = toTile(tile)
     if (not tile.city) and gen.hasAgriculture(tile) then
@@ -1028,15 +1212,20 @@ end
 
 
 -- gen.hasRoad(tile)-->boolean
+
 -- returns true if tile has a road
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasRoad(tile) 
     tile = toTile(tile)
     return tile.improvements & 0x10 == 0x10 
 end
 
 -- gen.placeRoad(tile)-->void
+
 -- places a road on the tile
 -- does nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeRoad(tile) 
     tile=toTile(tile)
     if tile.city then 
@@ -1047,8 +1236,10 @@ function gen.placeRoad(tile)
 end
 
 -- gen.removeRoad(tile)-->void
+
 -- removes a road if there is a road but no rail
 -- doesn't touch rail or cities
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeRoad(tile)
     tile = toTile(tile)
     if tile.city or (tile.improvements & 0x30 == 0x30) then
@@ -1059,7 +1250,10 @@ function gen.removeRoad(tile)
 end
 
 -- gen.hasRailroad(tile)-->boolean
+
 -- returns true if a tile has a railroad (and road)
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasRailroad(tile) 
     tile = toTile(tile)
     return tile.improvements & 0x30 == 0x30 
@@ -1067,8 +1261,10 @@ function gen.hasRailroad(tile)
 end
 
 -- gen.placeRailroad(tile)-->void
+
 -- places a railroad (and road) on a tile
 -- does nothing if city is present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeRailroad(tile) 
     tile = toTile(tile)
     if tile.city then
@@ -1079,9 +1275,11 @@ function gen.placeRailroad(tile)
 end
 
 -- gen.removeRailroad(tile)-->void
+
 -- removes railroad from a tile if it exits,
 -- leaving road intact (if there is already road there)
 -- does nothing if a city is present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeRailroad(tile) 
     tile = toTile(tile)
     if (tile.improvements & 0x30 == 0x30) and (not tile.city) then
@@ -1090,8 +1288,11 @@ function gen.removeRailroad(tile)
     end
 end
 -- gen.hasTransportation(tile) --> boolean
+
 -- returns true if tile has road or rail 
 -- (but not if city, unless an event has placed a road)
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasTransportation(tile)
     tile = toTile(tile)
     return tile.improvements & 0x10 == 0x10 
@@ -1099,8 +1300,10 @@ end
 
 
 -- gen.upgradeTransportation(tile) --> void
+
 -- places railroad if road exists, otherwise places road
 -- does nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.upgradeTransportation(tile)
     tile = toTile(tile)
     if tile.city then
@@ -1115,10 +1318,12 @@ function gen.upgradeTransportation(tile)
 end
 
 -- gen.degradeTransportation(tile) --> void
+
 -- reduces railroad to road, if rail exists
 -- if no rail but road, removes road
 -- if no transportation, does nothing
 -- if city does nothing
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.degradeTransportation(tile)
     tile = toTile(tile)
     if tile.city then
@@ -1131,8 +1336,11 @@ function gen.degradeTransportation(tile)
 end
 
 -- gen.removeTransportation(tile) -->void
+
+
 -- removes road and rail, if it exists
 -- does nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeTransportation(tile)
     tile = toTile(tile)
     if tile.city then
@@ -1144,15 +1352,21 @@ function gen.removeTransportation(tile)
 end
 
 -- gen.hasFortress(tile)-->boolean
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasFortress(tile)
+
     tile = toTile(tile)
     -- must be fortress, and not airbase
     return checkBits(tile.improvements,"x1xxxx0x")
 end
 
 -- gen.placeFortress(tile)-->void
+
 -- places a fortress on a square, unless
 -- there is already a city, transporter, or airbase on the tile
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeFortress(tile)
     tile = toTile(tile)
     if tile.city or isBit1(tile.improvements,2) then
@@ -1163,8 +1377,10 @@ function gen.placeFortress(tile)
 end
 
 -- gen.placeFortressForce(tile)-->void
+
 -- places fortress (replacing airbase/transporter if necessary)
 -- If city on tile, nothing happens
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeFortressForce(tile) 
     tile = toTile(tile)
     if tile.city then
@@ -1176,8 +1392,10 @@ function gen.placeFortressForce(tile)
 end
 
 -- gen.removeFortress(tile)-->void
+
 -- Checks that a fortress is in place (so as not to change
 -- other terrain improvements), and if so, removes the fortress
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeFortress(tile) 
     tile = toTile(tile)
     if checkBits(tile.improvements,"x1xxxx0x") then
@@ -1187,15 +1405,20 @@ function gen.removeFortress(tile)
 end
 
 -- gen.hasAirbase(tile)-->boolean
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasAirbase(tile) 
     tile = toTile(tile)
     return checkBits(tile.improvements,"x1xxxx1x")
 end
 
 -- gen.placeAirbase(tile)--> void
+
 -- places an airbase on a tile as long as there is not already
 -- pollution, fortress, or transporter on the tile
 -- does nothing if city present
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeAirbase(tile)
     tile = toTile(tile)
     local tileImprovements = tile.improvements
@@ -1207,8 +1430,10 @@ function gen.placeAirbase(tile)
 end
 
 -- gen.placeAirbaseForce(tile)-->void
+
 -- places airbase, removing fortress/transporter/pollution if necessary
 -- if city on tile, nothing happens
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placeAirbaseForce(tile) 
     tile = toTile(tile)
     if tile.city then
@@ -1219,9 +1444,11 @@ function gen.placeAirbaseForce(tile)
 end
 
 -- gen.removeAirbase(tile)-->void
+
 -- removes airbase, if one is on tile
 -- (so that something else doesn't get removed)
 -- nothing happens if tile is a city
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeAirbase(tile) 
     tile = toTile(tile)
     if checkBits(tile.improvements,"x1xxxx1x") and (not tile.city) then
@@ -1231,6 +1458,9 @@ function gen.removeAirbase(tile)
 end
 
 -- gen.hasPollution(tile)-->boolean
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasPollution(tile) 
     tile = toTile(tile)
     return checkBits(tile.improvements,"1xxxxx0x")
@@ -1238,8 +1468,10 @@ function gen.hasPollution(tile)
 end
 
 -- gen.placePollution(tile)-->void
+
 -- places pollution, unless the tile has a city, airbase
 -- or transporter already on the tile
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placePollution(tile) 
     tile = toTile(tile)
     if tile.city or isBit1(tile.improvements,2) then
@@ -1250,8 +1482,10 @@ function gen.placePollution(tile)
 end
 
 -- gen.placePollutionForce(tile)-->void
+
 -- places pollution, unless the tile has a city, 
 -- transporters and airbases are removed
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.placePollutionForce(tile) 
     tile = toTile(tile)
     if tile.city then
@@ -1266,7 +1500,9 @@ function gen.placePollutionForce(tile)
     end
 end
 -- gen.removePollution(tile)-->void
+
 -- checks if tile has pollution, and if so, removes it
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removePollution(tile) 
     tile = toTile(tile)
     if checkBits(tile.improvements,"1xxxxx0x") then
@@ -1276,15 +1512,26 @@ function gen.removePollution(tile)
 end
 
 -- gen.hasTransporter(tile)-->boolean
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return boolean
 function gen.hasTransporter(tile) 
     tile = toTile(tile)
     return checkBits(tile.improvements,"1xxxxx1x")
 end
 
--- placing transporters doesn't work
---
+-- Placing transporters doesn't work.
+-- This function simply produces an error.
+-- (This function exists mainly to show this functionality wasn't overlooked.)
+---@deprecated
+function gen.placeTransporter(tile) 
+    error("gen.placeTransporter: transporters can't be placed with Lua.  This function exists so that you know it wasn't overlooked.")
+end
+
 
 -- gen.removeTransporter(tile)-->void
+
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 function gen.removeTransporter(tile) 
     tile = toTile(tile)
     if (not tile.city) and checkBits(tile.improvements,"1xxxxx1x") then
@@ -1295,132 +1542,197 @@ function gen.removeTransporter(tile)
 end
 
 -- gen.setTerrainType(tile,terrainID)-->void
+
 -- changes the terrain type of tile to terrainID
 -- have this function, so that if
 -- terrainType key functionality is changed, this
 -- function can change instead of all code everywhere
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param terrainID integer the id (0-15) of the new baseTerrain type
 function gen.setTerrainType(tile,terrainID)
     tile = toTile(tile)
-    tile.terrainType = terrainID
+    tile.baseTerrain = civ.getBaseTerrain(tile.z,terrainID)
+    --tile.terrainType = terrainID
 end
 --
+
 -- gen.isFortifying(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isFortifying(unit) 
     return unit.order == 0x01
 end
 
 -- gen.setToFortifying(unit)-->void
+
+---@param unit unitObject
 function gen.setToFortifying(unit) 
     unit.order = 0x01
 end
 
 -- gen.isFortified(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isFortified(unit) 
     return unit.order == 0x02
 end
 
 -- gen.setToFortified(unit)-->void
+
+---@param unit unitObject
 function gen.setToFortified(unit) 
     unit.order = 0x02
 end
 
 -- gen.isSleeping(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isSleeping(unit) 
     return unit.order == 0x03
 end
 
 -- gen.setToSleeping(unit)-->void
+
+---@param unit unitObject
 function gen.setToSleeping(unit) 
     unit.order = 0x03
 end
 --
 -- gen.isBuildingFortress(unit) --> boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isBuildingFortress(unit)
     return unit.order == 0x04
 end
 
 
 -- gen.setToBuildingFortress(unit)-->void
+
+---@param unit unitObject
 function gen.setToBuildingFortress(unit) 
     unit.order = 0x04
 end
 --
 -- gen.isBuildingRoad(unit) --> boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isBuildingRoad(unit)
     return unit.order == 0x05
 end
 
 -- gen.setToBuildingRoad(unit)-->void
+
+---@param unit unitObject
 function gen.setToBuildingRoad(unit) 
     unit.order = 0x05
 end
 
 
 -- gen.isIrrigating(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isIrrigating(unit) 
     return unit.order == 0x06
 end
 
 -- gen.setToIrrigating(unit)-->void
+
+---@param unit unitObject
 function gen.setToIrrigating(unit) 
     unit.order = 0x06
 end
 
 -- gen.isMining(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isMining(unit) 
     return unit.order == 0x07
 end
 
 -- gen.setToMining(unit)-->void
+
+---@param unit unitObject
 function gen.setToMining(unit) 
     unit.order = 0x07
 end
 
 -- gen.isTransformingTerrain(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isTransformingTerrain(unit) 
     return unit.order == 0x08
 end
 
 -- gen.setToTransformingTerrain(unit)-->void
+
+---@param unit unitObject
 function gen.setToTransformingTerrain(unit) 
     unit.order = 0x08
 end
 
 -- gen.isCleaningPollution(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isCleaningPollution(unit) 
     return unit.order == 0x09
 end
 
 -- gen.setToCleaningPollution(unit)-->void
+
+---@param unit unitObject
 function gen.setToCleaningPollution(unit) 
     unit.order = 0x09
 end
 -- gen.isBuildingAirbase(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isBuildingAirbase(unit) 
     return unit.order == 0x0A
 end
 
 -- gen.setToBuildingAirbase(unit)-->void
+
+---@param unit unitObject
 function gen.setToBuildingAirbase(unit) 
     unit.order = 0x0a
 end
 
 -- gen.isBuildingTransporter(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isBuildingTransporter(unit) 
     return unit.order == 0x0B
 end
 
 -- gen.setToBuildingTransporter(unit)-->void
+
+---@param unit unitObject
 function gen.setToBuildingTransporter(unit) 
     unit.order = 0x0B
 end
 
 -- gen.isGoingTo(unit)-->boolean
+
+-- Returns true if the unit has a goto order, and false otherwise.
+---@param unit unitObject
+---@return boolean
 function gen.isGoingTo(unit)
     return not not unit.gotoTile
 end
 
 -- gen.setToGoingTo(unit,tile or nil)-->void
+
 -- gives the unit a goto order for the tile
 -- if nil is submitted, and the unit already
 -- has a goto order, the unit will be changed to no orders
@@ -1428,6 +1740,8 @@ end
 -- if the unit has some other order, it will keep that order
 -- note: this also accepts a table of coordinates as a tile
 -- (just as all other tile functions do here)
+---@param unit unitObject
+---@param tile tileAnalog|nil if table, the table must be a tile of coordinates
 function gen.setToGoingTo(unit,tile) 
     if tile == nil and unit.gotoTile then
         unit.order = 0xFF
@@ -1440,534 +1754,816 @@ function gen.setToGoingTo(unit,tile)
 end
 
 -- gen.isNoOrder(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isNoOrder(unit) 
     return unit.order == 0xFF
 end
 
 -- gen.setToNoOrders(unit)-->void
+
+---@param unit unitObject
 function gen.setToNoOrders(unit) 
     unit.order = 0xFF
 end
 
 -- gen.isWaiting(unit)-->bool
+
+---@param unit unitObject
+---@return boolean
 function gen.isWaiting(unit)
     return unit.attributes & 0x4000 == 0x4000
 end
 -- gen.setToWaiting(unit)-->void
+
+---@param unit unitObject
 function gen.setToWaiting(unit)
+---@diagnostic disable-next-line: assign-type-mismatch
     unit.attributes = unit.attributes | 0x4000
 end
 -- gen.clearWaiting(unit)-->void
+
+---@param unit unitObject
 function gen.clearWaiting(unit)
+---@diagnostic disable-next-line: assign-type-mismatch
     unit.attributes = unit.attributes & ~0x4000
 end
 -- gen.isParadropped(unit)-->boolean
+
+---@param unit unitObject
+---@return boolean
 function gen.isParadropped(unit)
     return isBit1(unit.attributes,5)
 end
 -- gen.setParadropped(unit)-->void
+
+---@param unit unitObject
 function gen.setParadropped(unit)
     unit.attributes = setBit1(unit.attributes,5)
 end
 -- gen.clearParadropped(unit)-->void
+
+---@param unit unitObject
 function gen.clearParadropped(unit)
     unit.attributes = setBit0(unit.attributes,5)
 end
 -- gen.isMoved(unit)-->boolean
--- game sets this flag when a unit moves (even if no move spent)
--- unit won't heal on next turn if this flag is set
+
+-- The game sets this flag when a unit moves (even if no movement points are spent).  The Unit won't heal on next turn if this flag is set.
+---@param unit unitObject
+---@return boolean
 function gen.isMoved(unit)
     return isBit1(unit.attributes,7)
 end
 -- gen.setMoved(unit)-->void
+
+-- The game sets this flag when a unit moves (even if no movement points are spent).  The Unit won't heal on next turn if this flag is set.
+---@param unit unitObject
 function gen.setMoved(unit)
     unit.attributes = setBit1(unit.attributes,7)
 end
 -- gen.clearMoved(unit)-->void
+
+-- The game sets this flag when a unit moves (even if no movement points are spent).  The Unit won't heal on next turn if this flag is set.
+---@param unit unitObject
 function gen.clearMoved(unit)
     unit.attributes = setBit0(unit.attributes,7)
 end
---
+
+
 -- gen.isSeeTwoSpaces(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isSeeTwoSpaces(unitType) 
     return isBit1(unitType.flags,1)
 end
 
 -- gen.giveSeeTwoSpaces(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveSeeTwoSpaces(unitType) 
     unitType.flags = setBit1(unitType.flags,1)
 end
 
 -- gen.removeSeeTwoSpaces(unitType)-->void
--- Note: The typo is preserved, on the off chance that
--- someone used it
-function gen.removeSeeTowSpaces(unitType) 
+
+---@param unitType unitTypeObject
+function gen.removeSeeTwoSpaces(unitType) 
     unitType.flags = setBit0(unitType.flags,1)
 end
-gen.removeSeeTwoSpaces = gen.removeSeeTowSpaces
+-- Note: The typo is preserved, on the off chance that
+-- someone used it
+gen.removeSeeTowSpaces = gen.removeSeeTwoSpaces 
 
 -- gen.isIgnoreZOC(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isIgnoreZOC(unitType) 
     return isBit1(unitType.flags,2)
 end
 
 -- gen.giveIgnoreZOC(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveIgnoreZOC(unitType) 
     unitType.flags = setBit1(unitType.flags,2)
 end
 
 -- gen.removeIgnoreZOC(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeIgnoreZOC(unitType) 
     unitType.flags = setBit0(unitType.flags,2)
 end
 
 -- gen.isAmphibious(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isAmphibious(unitType) 
     return isBit1(unitType.flags,3)
 end
 
 -- gen.giveAmpibious(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveAmpibious(unitType) 
     unitType.flags = setBit1(unitType.flags,3)
 end
 
 -- gen.removeAmphibious(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeAmphibious(unitType) 
     unitType.flags = setBit0(unitType.flags,3)
 end
 
 -- gen.isSubmarine(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isSubmarine(unitType) 
     return isBit1(unitType.flags,4)
 end
 
 -- gen.giveSubmarine(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveSubmarine(unitType)
    unitType.flags = setBit1(unitType.flags,4)
 end
 
 -- gen.removeSubmarine(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeSubmarine(unitType) 
     unitType.flags = setBit0(unitType.flags,4)
 end
 
 -- gen.isAttackAir(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isAttackAir(unitType) 
     return isBit1(unitType.flags,5)
 end
 
 -- gen.giveAttackAir(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveAttackAir(unitType) 
     unitType.flags = setBit1(unitType.flags,5)
 end
 
 -- gen.removeAttackAir(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeAttackAir(unitType) 
     unitType.flags = setBit0(unitType.flags,5)
 end
 
 -- gen.isCoastal(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isCoastal(unitType) 
     return isBit1(unitType.flags,6)
 end
 
 -- gen.giveCoastal(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveCoastal(unitType) 
     unitType.flags = setBit1(unitType.flags,6)
 end
 
 -- gen.removeCoastal(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeCoastal(unitType) 
     unitType.flags = setBit0(unitType.flags,6)
 end
 
 -- gen.isIgnoreWalls(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isIgnoreWalls(unitType) 
     return isBit1(unitType.flags,7)
 end
 
 -- gen.giveIngoreWalls(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveIngoreWalls(unitType) 
     unitType.flags = setBit1(unitType.flags,7)
 end
 
 -- gen.removeIgnoreWalls(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeIgnoreWalls(unitType) 
     unitType.flags = setBit0(unitType.flags,7)
 end
 
 -- gen.isCarryAir(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
  function gen.isCarryAir(unitType) 
     return isBit1(unitType.flags,8)
 end
 
 -- gen.giveCarryAir(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveCarryAir(unitType) 
     unitType.flags = setBit1(unitType.flags,8)
 end
 
 -- gen.removeCarryAir(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeCarryAir(unitType) 
     unitType.flags = setBit0(unitType.flags,8)
 end
 
 -- gen.isParadrop(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isParadrop(unitType) 
     return isBit1(unitType.flags,9)
 end
 
 -- gen.giveParadrop(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveParadrop(unitType) 
     unitType.flags = setBit1(unitType.flags,9)
 end
 
 -- gen.removeParadrop(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeParadrop(unitType) 
     unitType.flags = setBit0(unitType.flags,9)
 end
 
 -- gen.isAlpine(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isAlpine(unitType) 
     return isBit1(unitType.flags,10)
 end
 
 -- gen.giveAlpine(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveAlpine(unitType) 
     unitType.flags = setBit1(unitType.flags,10)
 end
 
 -- gen.removeAlpine(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeAlpine(unitType) 
     unitType.flags = setBit0(unitType.flags,10)
 end
 
 -- gen.isBonusAgainstHorse(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isBonusAgainstHorse(unitType) 
     return isBit1(unitType.flags,11)
 end
 
 -- gen.giveBonusAgainstHorse(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveBonusAgainstHorse(unitType) 
     unitType.flags = setBit1(unitType.flags,11)
 end
 
 -- gen.removeBonusAgainstHorse(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeBonusAgainstHorse(unitType) 
     unitType.flags = setBit0(unitType.flags,11)
 end
 
 -- gen.isFreeSupportUnderFundamentalism(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isFreeSupportUnderFundamentalism(unitType) 
     return isBit1(unitType.flags,12)
 end
 
 -- gen.giveFreeSupportUnderFundamentalism(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveFreeSupportUnderFundamentalism(unitType) 
     unitType.flags = setBit1(unitType.flags,12)
 end
 
 -- gen.removeFreeSupportUnderFundamentalism(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeFreeSupportUnderFundamentalism(unitType) 
     unitType.flags = setBit0(unitType.flags,12)
 end
 
 -- gen.isDestroyedAfterAttacking(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isDestroyedAfterAttacking(unitType) 
     return isBit1(unitType.flags,13)
 end
 
 -- gen.giveDestroyedAfterAttacking(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveDestroyedAfterAttacking(unitType) 
     unitType.flags = setBit1(unitType.flags,13)
 end
 
 -- gen.removeDestroyedAfterAttacking(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeDestroyedAfterAttacking(unitType) 
     unitType.flags = setBit0(unitType.flags,13)
 end
 
 -- gen.isBonusAgainstAir(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isBonusAgainstAir(unitType) 
     return isBit1(unitType.flags,14)
 end
 
 -- gen.giveBonusAgainstAir(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveBonusAgainstAir(unitType) 
     unitType.flags = setBit1(unitType.flags,14)
 end
 
 -- gen.removeBonusAgainstAir(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeBonusAgainstAir(unitType) 
     unitType.flags = setBit0(unitType.flags,14)
 end
 
 -- gen.isSpotSubmarines(unitType)-->boolean
+
+---@param unitType unitTypeObject
+---@return boolean
 function gen.isSpotSubmarines(unitType) 
     return isBit1(unitType.flags,15)
 end
 
 -- gen.giveSpotSubmarines(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.giveSpotSubmarines(unitType) 
     unitType.flags = setBit1(unitType.flags,15)
 end
 
 -- gen.removeSpotSubmarines(unitType)-->void
+
+---@param unitType unitTypeObject
 function gen.removeSpotSubmarines(unitType) 
     unitType.flags = setBit0(unitType.flags,15)
 end
 
 
 -- gen.isCivilDisorder(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isCivilDisorder(city)
 	return isBit1(city.attributes,1)
 end
 
 -- gen.setCivilDisorder(city)-->void
+
+---@param city cityObject
 function gen.setCivilDisorder(city)
 	 city.attributes = setBit1(city.attributes,1)
 end
 
 -- gen.clearCivilDisorder(city)-->void
+
+---@param city cityObject
 function gen.clearCivilDisorder(city)
 	 city.attributes = setBit0(city.attributes,1)
 end
 
 -- gen.isWeLoveTheKing(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isWeLoveTheKing(city)
 	return isBit1(city.attributes,2)
 end
 
 -- gen.setWeLoveTheKing(city)-->void
+
+---@param city cityObject
 function gen.setWeLoveTheKing(city)
 	 city.attributes = setBit1(city.attributes,2)
 end
 
 -- gen.clearWeLoveTheKing(city)-->void
+
+---@param city cityObject
 function gen.clearWeLoveTheKing(city)
 	 city.attributes = setBit0(city.attributes,2)
 end
 
 -- gen.isImprovementSold(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isImprovementSold(city)
 	return isBit1(city.attributes,3)
 end
 
 -- gen.setImprovementSold(city)-->void
+
+---@param city cityObject
 function gen.setImprovementSold(city)
 	 city.attributes = setBit1(city.attributes,3)
 end
 
 -- gen.clearImprovementSold(city)-->void
+
+---@param city cityObject
 function gen.clearImprovementSold(city)
 	 city.attributes = setBit0(city.attributes,3)
 end
 
 -- gen.isTechnologyStolen(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isTechnologyStolen(city)
 	return isBit1(city.attributes,4)
 end
 
 -- gen.setTechnologyStolen(city)-->void
+
+---@param city cityObject
 function gen.setTechnologyStolen(city)
 	 city.attributes = setBit1(city.attributes,4)
 end
 
 -- gen.clearTechnologyStolen(city)-->void
+
+---@param city cityObject
 function gen.clearTechnologyStolen(city)
 	 city.attributes = setBit0(city.attributes,4)
 end
 
 -- gen.isAutoBuild(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isAutoBuild(city)
 	return isBit1(city.attributes,5)
 end
 
 -- gen.setAutoBuild(city)-->void
+
+---@param city cityObject
 function gen.setAutoBuild(city)
 	 city.attributes = setBit1(city.attributes,5)
 end
 
 -- gen.clearAutoBuild(city)-->void
+
+---@param city cityObject
 function gen.clearAutoBuild(city)
 	 city.attributes = setBit0(city.attributes,5)
 end
 
+
 -- gen.isAttribute6(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute6(city)
 	return isBit1(city.attributes,6)
 end
 
 -- gen.setAttribute6(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute6(city)
 	 city.attributes = setBit1(city.attributes,6)
 end
 
 -- gen.clearAttribute6(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute6(city)
 	 city.attributes = setBit0(city.attributes,6)
 end
 
 -- gen.isAttribute7(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute7(city)
 	return isBit1(city.attributes,7)
 end
 
 -- gen.setAttribute7(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute7(city)
 	 city.attributes = setBit1(city.attributes,7)
 end
 
 -- gen.clearAttribute7(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute7(city)
 	 city.attributes = setBit0(city.attributes,7)
 end
 
 -- gen.isBuildCoastal(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isBuildCoastal(city)
 	return isBit1(city.attributes,8)
 end
 
 -- gen.setBuildCoastal(city)-->void
+
+---@param city cityObject
 function gen.setBuildCoastal(city)
 	 city.attributes = setBit1(city.attributes,8)
 end
 
 -- gen.clearBuildCoastal(city)-->void
+
+---@param city cityObject
 function gen.clearBuildCoastal(city)
 	 city.attributes = setBit0(city.attributes,8)
 end
 
 -- gen.isAttribute9(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute9(city)
 	return isBit1(city.attributes,9)
 end
 
 -- gen.setAttribute9(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute9(city)
 	 city.attributes = setBit1(city.attributes,9)
 end
 
 -- gen.clearAttribute9(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute9(city)
 	 city.attributes = setBit0(city.attributes,9)
 end
 
 -- gen.isAttribute10(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute10(city)
 	return isBit1(city.attributes,10)
 end
 
 -- gen.setAttribute10(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute10(city)
 	 city.attributes = setBit1(city.attributes,10)
 end
 
 -- gen.clearAttribute10(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute10(city)
 	 city.attributes = setBit0(city.attributes,10)
 end
 
 -- gen.isAttribute11(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute11(city)
 	return isBit1(city.attributes,11)
 end
 
 -- gen.setAttribute11(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute11(city)
 	 city.attributes = setBit1(city.attributes,11)
 end
 
 -- gen.clearAttribute11(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute11(city)
 	 city.attributes = setBit0(city.attributes,11)
 end
 
 -- gen.isBuildHydroPlant(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isBuildHydroPlant(city)
 	return isBit1(city.attributes,12)
 end
 
 -- gen.setBuildHydroPlant(city)-->void
+
+---@param city cityObject
 function gen.setBuildHydroPlant(city)
 	 city.attributes = setBit1(city.attributes,12)
 end
 
 -- gen.clearBuildHydroPlant(city)-->void
+
+---@param city cityObject
 function gen.clearBuildHydroPlant(city)
 	 city.attributes = setBit0(city.attributes,12)
 end
 
 -- gen.isAttribute13(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute13(city)
 	return isBit1(city.attributes,13)
 end
 
 -- gen.setAttribute13(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute13(city)
 	 city.attributes = setBit1(city.attributes,13)
 end
 
 -- gen.clearAttribute13(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute13(city)
 	 city.attributes = setBit0(city.attributes,13)
 end
 
 -- gen.isAttribute14(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute14(city)
 	return isBit1(city.attributes,14)
 end
 
 -- gen.setAttribute14(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute14(city)
 	 city.attributes = setBit1(city.attributes,14)
 end
 
 -- gen.clearAttribute14(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute14(city)
 	 city.attributes = setBit0(city.attributes,14)
 end
 
 -- gen.isAttribute15(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute15(city)
 	return isBit1(city.attributes,15)
 end
 
 -- gen.setAttribute15(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute15(city)
 	 city.attributes = setBit1(city.attributes,15)
 end
 
 -- gen.clearAttribute15(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute15(city)
 	 city.attributes = setBit0(city.attributes,15)
 end
 
 -- gen.isAttribute16(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute16(city)
 	return isBit1(city.attributes,16)
 end
 
 -- gen.setAttribute16(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute16(city)
 	 city.attributes = setBit1(city.attributes,16)
 end
 
 -- gen.clearAttribute16(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute16(city)
 	 city.attributes = setBit0(city.attributes,16)
 end
 
 -- gen.isUsedAirport(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isUsedAirport(city)
 	return isBit1(city.attributes,17)
 end
 
 -- gen.setUsedAirport(city)-->void
+
+---@param city cityObject
 function gen.setUsedAirport(city)
 	 city.attributes = setBit1(city.attributes,17)
 end
 
 -- gen.clearUsedAirport(city)-->void
+
+---@param city cityObject
 function gen.clearUsedAirport(city)
 	 city.attributes = setBit0(city.attributes,17)
 end
@@ -1976,91 +2572,145 @@ gen.setAttribute17 = gen.setUsedAirport
 gen.clearAttribute17 = gen.clearUsedAirport
 
 -- gen.isAttribute18(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute18(city)
 	return isBit1(city.attributes,18)
 end
 
 -- gen.setAttribute18(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute18(city)
 	 city.attributes = setBit1(city.attributes,18)
 end
 
 -- gen.clearAttribute18(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute18(city)
 	 city.attributes = setBit0(city.attributes,18)
 end
 
 -- gen.isAttribute19(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute19(city)
 	return isBit1(city.attributes,19)
 end
 
 -- gen.setAttribute19(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute19(city)
 	 city.attributes = setBit1(city.attributes,19)
 end
 
 -- gen.clearAttribute19(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute19(city)
 	 city.attributes = setBit0(city.attributes,19)
 end
 
 -- gen.isAttribute20(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute20(city)
 	return isBit1(city.attributes,20)
 end
 
 -- gen.setAttribute20(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute20(city)
 	 city.attributes = setBit1(city.attributes,20)
 end
 
 -- gen.clearAttribute20(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute20(city)
 	 city.attributes = setBit0(city.attributes,20)
 end
 
 -- gen.isAttribute21(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute21(city)
 	return isBit1(city.attributes,21)
 end
 
 -- gen.setAttribute21(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute21(city)
 	 city.attributes = setBit1(city.attributes,21)
 end
 
 -- gen.clearAttribute21(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute21(city)
 	 city.attributes = setBit0(city.attributes,21)
 end
 
 -- gen.isBuildShips(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isBuildShips(city)
 	return isBit1(city.attributes,22)
 end
 
 -- gen.setBuildShips(city)-->void
+
+---@param city cityObject
 function gen.setBuildShips(city)
 	 city.attributes = setBit1(city.attributes,22)
 end
 
 -- gen.clearBuildShips(city)-->void
+
+---@param city cityObject
 function gen.clearBuildShips(city)
 	 city.attributes = setBit0(city.attributes,22)
 end
 
 -- gen.isCityInvestigated(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isCityInvestigated(city)
 	return isBit1(city.attributes,23)
 end
 
 -- gen.setCityInvestigated(city)-->void
+
+---@param city cityObject
 function gen.setCityInvestigated(city)
 	 city.attributes = setBit1(city.attributes,23)
 end
 
 -- gen.clearCityInvestigated(city)-->void
+
+---@param city cityObject
 function gen.clearCityInvestigated(city)
 	 city.attributes = setBit0(city.attributes,23)
 end
@@ -2069,57 +2719,86 @@ gen.setAttribute23 = gen.setCityInvestigated
 gen.clearAttribute23 = gen.clearCityInvestigated
 
 -- gen.isAttribute24(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute24(city)
 	return isBit1(city.attributes,24)
 end
 
 
 -- gen.setAttribute24(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute24(city)
 	 city.attributes = setBit1(city.attributes,24)
 end
 
 -- gen.clearAttribute24(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute24(city)
 	 city.attributes = setBit0(city.attributes,24)
 end
 
 -- gen.isMilitaryAutoBuild(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isMilitaryAutoBuild(city)
 	return isBit1(city.attributes,25)
 end
 
 -- gen.setMilitaryAutoBuild(city)-->void
+
+---@param city cityObject
 function gen.setMilitaryAutoBuild(city)
 	 city.attributes = setBit1(city.attributes,25)
 end
 
 -- gen.clearMilitaryAutoBuild(city)-->void
+
+---@param city cityObject
 function gen.clearMilitaryAutoBuild(city)
 	 city.attributes = setBit0(city.attributes,25)
 end
 
 -- gen.isDomesticAutoBuild(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isDomesticAutoBuild(city)
 	return isBit1(city.attributes,26)
 end
 
 -- gen.setDomesticAutoBuild(city)-->void
+
+---@param city cityObject
 function gen.setDomesticAutoBuild(city)
 	 city.attributes = setBit1(city.attributes,26)
 end
 
 -- gen.clearDomesticAutoBuild(city)-->void
+
+---@param city cityObject
 function gen.clearDomesticAutoBuild(city)
 	 city.attributes = setBit0(city.attributes,26)
 end
 
 -- gen.isObjective(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isObjective(city)
 	return isBit1(city.attributes,27)
 end
 
 -- gen.setObjective(city)-->void
+
+---@param city cityObject
 function gen.setObjective(city)
 	 city.attributes = setBit1(city.attributes,27)
      -- objective flag overrides major objective flag, so 
@@ -2128,31 +2807,48 @@ function gen.setObjective(city)
 end
 
 -- gen.clearObjective(city)-->void
+
+---@param city cityObject
 function gen.clearObjective(city)
 	 city.attributes = setBit0(city.attributes,27)
 end
 
 -- gen.isAttribute28(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute28(city)
 	return isBit1(city.attributes,28)
 end
 
 -- gen.setAttribute28(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute28(city)
 	 city.attributes = setBit1(city.attributes,28)
 end
 
 -- gen.clearAttribute28(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute28(city)
 	 city.attributes = setBit0(city.attributes,28)
 end
 
 -- gen.isMajorObjective(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isMajorObjective(city)
 	return isBit1(city.attributes,29)
 end
 
 -- gen.setMajorObjective(city)-->void
+
+---@param city cityObject
 function gen.setMajorObjective(city)
 	 city.attributes = setBit1(city.attributes,29)
      -- objective flag overrides major objective flag, so 
@@ -2161,54 +2857,83 @@ function gen.setMajorObjective(city)
 end
 
 -- gen.clearMajorObjective(city)-->void
+
+---@param city cityObject
 function gen.clearMajorObjective(city)
 	 city.attributes = setBit0(city.attributes,29)
 end
 
 -- gen.isUsedTransporter(city)-->boolean
+
+---@param city cityObject
+---@return boolean
 function gen.isUsedTransporter(city)
 	return isBit1(city.attributes,30)
 end
 gen.isAttribute30 = gen.isUsedTransporter
 
 -- gen.setUsedTransporter(city)-->void
+
+---@param city cityObject
 function gen.setUsedTransporter(city)
 	 city.attributes = setBit1(city.attributes,30)
 end
 gen.setAttribute30 = gen.setUsedTransporter
 
 -- gen.clearUsedTransporter(city)-->void
+
+---@param city cityObject
 function gen.clearUsedTransporter(city)
 	 city.attributes = setBit0(city.attributes,30)
 end
 gen.clearAttribute30 = gen.clearUsedTransporter
 
 -- gen.isAttribute31(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute31(city)
 	return isBit1(city.attributes,31)
 end
 
 -- gen.setAttribute31(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute31(city)
 	 city.attributes = setBit1(city.attributes,31)
 end
 
 -- gen.clearAttribute31(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute31(city)
 	 city.attributes = setBit0(city.attributes,31)
 end
 
 -- gen.isAttribute32(city)-->boolean
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
+---@return boolean
 function gen.isAttribute32(city)
 	return isBit1(city.attributes,32)
 end
 
 -- gen.setAttribute32(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.setAttribute32(city)
 	 city.attributes = setBit1(city.attributes,32)
 end
 
 -- gen.clearAttribute32(city)-->void
+
+-- The function of this byte in `city.attributes` is currently unknown.  If you discover it, please inform the Scenario League at Civfanatics.
+---@param city cityObject
 function gen.clearAttribute32(city)
 	 city.attributes = setBit0(city.attributes,32)
 end
@@ -2216,14 +2941,17 @@ end
 --
 --
 -- gen.wonderModifiedMoves(unit)-->integer
--- returns the movement allowance of a unit after
--- taking into account nuclear power, wonders
--- returns atomic movement points
+
+-- Returns the movement allowance of a unit after
+-- taking into account Nuclear Power tech, Magellan's Expedition, and Lighthouse.
+-- Returns "atomic" movement points (that is, the movement recorded by `unit.moveSpent`, or "regular" movement points * `totpp.movementMultipliers.aggregate`
+---@param unit unitObject
+---@return integer atomicMovementPoints
 function gen.wonderModifiedMoves(unit)
     local fullHpMove = unit.type.move
     if unit.type.domain == 2 then
         -- apply nuclear power
-        if unit.owner:hasTech(civ.getTech(59)) then
+        if unit.owner:hasTech(civ.getTech(59)--[[@as techObject]]) then
             fullHpMove = fullHpMove+totpp.movementMultipliers.aggregate
         end
         -- apply magellan's and lighthouse
@@ -2236,17 +2964,21 @@ function gen.wonderModifiedMoves(unit)
     end
     return fullHpMove
 end
---
+
 -- maxMoves(unit)--> integer
 -- gen.maxMoves(unit) --> integer
--- returns movement allowance for a unit after taking damage
--- into account, multiplied by the road/rail multiplier
 -- Helper Function (provided as both local function and in table
-local function maxMoves(unit)
+
+-- Returns movement allowance for a unit after taking damage
+-- into account.
+-- Returns "atomic" movement points (that is, the movement recorded by `unit.moveSpent`, or "regular" movement points * `totpp.movementMultipliers.aggregate`
+---@param unit unitObject
+---@return integer atomicMovementPoints
+function gen.maxMoves(unit)
     local fullHpMove = unit.type.move
     if unit.type.domain == 2 then
         -- apply nuclear power
-        if unit.owner:hasTech(civ.getTech(59)) then
+        if unit.owner:hasTech(civ.getTech(59)--[[@as techObject]]) then
             fullHpMove = fullHpMove+totpp.movementMultipliers.aggregate
         end
         -- apply magellan's and lighthouse
@@ -2268,21 +3000,27 @@ local function maxMoves(unit)
         return fullHpMove
     elseif unit.type.domain == 2 then
         return math.min(math.max( moveAllowance,2*moveMult),fullHpMove)
+    else
+        -- shouldn't get here
+        return math.min(math.max( moveAllowance,moveMult),fullHpMove)
     end
 end
-gen.maxMoves = maxMoves
+local maxMoves = gen.maxMoves
 
 -- gen.moveRemaining(unit)
--- returns gen.maxMoves-unit.moveSpent
+
+-- Returns gen.maxMoves-unit.moveSpent
 -- bug fixed by Knighttime
-local function moveRemaining(unit)
+---@param unit unitObject
+---@return integer atomicMovementPoints
+function gen.moveRemaining(unit)
 	local actualMoveSpent = unit.moveSpent
 	if actualMoveSpent < 0 then
 		actualMoveSpent = actualMoveSpent + 256
 	end
     return maxMoves(unit)-actualMoveSpent
 end
-gen.moveRemaining = moveRemaining
+local moveRemaining = gen.moveRemaining
 
 
 
@@ -2326,18 +3064,22 @@ end
 
 
 --#gen.inPolygon(tile,tableOfCoordinates)-->bool
--- the table of coordinates defines the corners of the
+
+-- The table of coordinates defines the corners of the
 -- polygon.  Returns true if the tile is within the
 -- polygon defined by the table of coordinates, and
 -- false otherwise.  Checking that the map is correct
 -- must be done separately
--- the entry:
--- tableOfCoordinates.doesNotCrossThisX
+-- The entry: `tableOfCoordinates.doesNotCrossThisX`
 -- sets an x coordinate that the polygon does not
 -- cross.  If absent, 0 is used,
--- meaning the polygon shouldn't cross the date line
---
---
+-- meaning the polygon shouldn't cross the "date line".
+--<br> Press CTRL+SHIFT+F4 and select the 'Start the Polygon Script' option to generate polygons.
+---@param tile tileObject The tile to check
+---@param tableOfCoordinates table Table of {[1]=xCoord, [2]=yCoord} without gaps in the integer keys.
+---@return boolean tileIsInPolygon
+function gen.inPolygon(tile,tableOfCoordinates)
+
 -- Method (not necessary to understand for use)
 -- (Note: I will use the "regular" mathematical coordinate system
 -- in this explanation and code (i.e. positive y is "up" or "north").
@@ -2378,7 +3120,7 @@ end
 -- replaced by x+mapWidth for all calculations (both tile coordinate and
 -- tile x value itself
 -- Note that if doesNotCrossThisX has 0 value, no compensation is made
-function gen.inPolygon(tile,tableOfCoordinates)
+
     -- polygon doesn't cross this x value
     local xBound = tableOfCoordinates.doesNotCrossThisX or 0
     local width,height,maps = civ.getAtlasDimensions()
@@ -2522,15 +3264,21 @@ end
 
 
 --  gen.getRandomTileInPolygon(polygonTableOfCoordinates,map=0,maxAttempts=100) -> tile
---      generates a random tile within the polygon defined
---      by the table of coordinates (same as used by gen.inPolygon
---      and generated by the PolygonScript.lua)
---      map is the map of the tile generated (0 by default)
---      this code is probabalistic, so after maxAttempts, the first
---      polygon coordinate is returned, and a text box displayed.
---      The console prints the polygon that caused the issue
---
+
+--[[
+Generates a random tile within the polygon defined
+by the table of coordinates (same as used by gen.inPolygon
+and generated by the Polygon Script found in CTRL+SHIFT+F4).
+Map is the map of the tile generated (0 by default).
+This code is probabalistic, so after maxAttempts, the first
+polygon coordinate is returned, and a text box displayed.
+The console prints the polygon that caused the issue.
+]]
 --  Inspired by Pablostuka
+---@param polygonTable table a table of coordinate pairs
+---@param map? integer The map for the random tile (default 0)
+---@param maxAttempts? integer the number of attempts to find an eligible square (default 100)
+---@return tileObject
 function gen.getRandomTileInPolygon(polygonTable,map,maxAttempts)
     map = map or 0
     maxAttempts = maxAttempts or 100
@@ -2545,6 +3293,7 @@ function gen.getRandomTileInPolygon(polygonTable,map,maxAttempts)
             yRand = math.random(boundary.yMin,boundary.yMax)
         until yRand % 2 == xRand % 2
         local randomTile = civ.getTile(xRand,yRand,map)
+        ---@cast randomTile tileObject
         if gen.inPolygon(randomTile,polygonTable) then
             return randomTile
         end
@@ -2554,6 +3303,7 @@ function gen.getRandomTileInPolygon(polygonTable,map,maxAttempts)
     print("New method for getting a random tile from this polygon")
     print(gen.tableToString(polygonTable))
     civ.ui.text("gen.getRandomTileInPolygon failed for a polygon, and a suitable default was used instead.  There is more information in the console.  If this message appears regularly, you should contact the scenario creator.")
+---@diagnostic disable-next-line: return-type-mismatch
     return civ.getTile(polygonTable[1][1],polygonTable[1][2],map)
 
 end
@@ -2561,11 +3311,13 @@ end
 
 
 -- gen.cityCanSupportAnotherUnit(city)-->bool
--- returns true if the city has enough production to support all existing
--- units and at least one other unit
--- Units that get free support under fundamentalism are still counted as
--- "supported", since they still take up a free support "slot" if they are
--- among the first 8 units supported by the city
+
+--[[ Returns true if the city has enough production to support all existing units and at least one other unit.
+Units that get free support under fundamentalism are still counted as
+"supported", since they still take up a free support "slot" if they are
+among the first 8 units supported by the city.]]
+---@param city cityObject
+---@return boolean
 function gen.cityCanSupportAnotherUnit(city)
     local unitsSupported = 0
     -- check that unit's location is a tile, otherwise dead units show
@@ -2594,8 +3346,12 @@ function gen.cityCanSupportAnotherUnit(city)
 end
 
 -- gen.rehomeUnitsInCapturedCity(city,defender) --> void
--- re-homes units in a captured city to other cities owned by
--- the same tribe, so that they are not disbanded
+
+-- Re-homes units in a captured city to other cities owned by
+-- the same tribe, so that they are not disbanded.
+-- <br>If you are using the Lua Scenario Template, you can enable this feature in simpleSettings.lua. 
+---@param city cityObject
+---@param defender tribeObject
 function gen.rehomeUnitsInCapturedCity(city,defender)
 	local citySupportTable = {}
 	for unit in civ.iterateUnits() do
@@ -2645,9 +3401,12 @@ function gen.rehomeUnitsInCapturedCity(city,defender)
 end
 
 --#gen.homeToNearestCity(unit)-->void
---  finds the nearest city (of the same tribe) that can support another
---  unit, and sets the unit's home city to that city
---  if there is no suitable city, the unit's home city isn't changed
+
+--  Finds the nearest city (of the same tribe) that can support another
+--  unit, and sets the unit's home city to that city.
+--  If there is no suitable city, the unit's home city isn't changed.
+-- <br> Note: This counts the number of squares between the unit and the city, and ignores map differences.  This is not suitable for all applications (e.g. if maps are not "stacked", or if you're trying to re-create an existing game mechanic).
+---@param unit unitObject
 function gen.homeToNearestCity(unit)
     local bestDist = 1000000
     local bestCity = nil
@@ -2696,10 +3455,13 @@ local waitingUnits = {}
 -- not the next unit the game would activate
 local saveActiveUnit = nil
 
--- put in onKeyPress
---      if civ.getActiveUnit() and keyID == 87 then
---          gen.betterUnitManualWait()
---      end
+-- Part of custom unit selection (In the Lua Scenario Template, this can be activated in simpleSettings.lua -- enableCustomUnitSelection
+--[[If you're not using the Template, add this code to the onKeyPress event:
+```lua
+    if civ.getActiveUnit() and keyID == 87 then
+        gen.betterUnitManualWait()
+    end
+```]]
 function gen.betterUnitManualWait()
     if saveActiveUnit then
         waitingUnits[saveActiveUnit.id]=true
@@ -2715,6 +3477,15 @@ function gen.clearManualWait()
 end
 
 
+-- Part of custom unit selection (In the Lua Scenario Template, this can be activated in simpleSettings.lua -- enableCustomUnitSelection
+--[[If you're not using the Template, use as the first line inside the function given to `civ.scen.onActivateUnit(function(unit,source)-->void)`.
+The line should be
+`gen.selectNextActiveUnit(unit,source,customWeightFn)`
+(note: if the arguments to function(unit,source)
+arent called 'unit' and 'source', use the actual name)]]
+---@param activeUnit unitObject
+---@param source boolean
+---@param customWeightFn fun(unit: unitObject, activeUnit:unitObject):integer returns the "weight" of each possbile unit, and selects the lowest weight to be active next
 function gen.selectNextActiveUnit(activeUnit,source,customWeightFn)
     if  (not civ.getCurrentTribe().isHuman) then
         -- If the AI is playing, we don't want to interfere
@@ -2730,6 +3501,9 @@ function gen.selectNextActiveUnit(activeUnit,source,customWeightFn)
     local bestNotWaitingUnit = nil
     local bestNotWaitingValue = math.huge
     local gotoUnitWithMovementLeft = false
+    ---@param unit unitObject
+    ---@param activeUnit unitObject
+    ---@return integer
     local function defaultWeightFunction(unit,activeUnit)
         local weight = 0
         if unit.type ~= activeUnit.type then
@@ -2788,23 +3562,31 @@ local activationFunction = function(unit,source) error("Use gen.linkActivationFu
 
 
 -- gen.activate(unit)-->void
+
+-- Deprecated.  This was written when unit:activate() did not run the civ.scen.onActivateUnit event.
 -- use to activate a unit.  This assumes that the 'source' of the activation is true
 -- (i.e. human generated).  Use gen.activateWithSource if false is needed (either sometimes or always)
+---@deprecated
 function gen.activate(unit)
     unit:activate()
     activationFunction(unit,true)
 end
 
 --#gen.activateSource(unit,source)-->void
+
+-- Deprecated.  This was written when unit:activate() did not run the civ.scen.onActivateUnit event.
 -- use to activate a unit and specify the source of the activation
+---@deprecated
 function gen.activateWithSource(unit,source)
     unit:activate()
     activationFunction(unit,source)
 end
 
 --#gen.linkActivationFunction(function(unit,source)-->void)-->void
+-- If you are using the Lua Scenario Template, there is no need to worry about this function.
 -- use to specify the code that should be run when a unit is
 -- activated by gen.activate or gen.activateWtihSource
+---@param activationFn fun(unit:unitObject, source:boolean)
 function gen.linkActivationFunction(activationFn)
     if type(activationFn) == "function" then
         activationFunction = activationFn
@@ -2816,19 +3598,33 @@ end
 
 --gen.getActivationFunction()-->function(unit,source)
 --provides the unit activation function linked to the general library
+---@return fun(unit:unitObject,source:boolean)
 function gen.getActivationFunction()
     return activationFunction
 end
 
 
---gen.getTileID(tileObject or int,int or nil,int or nil)-->int (by Knighttime, converts a tile/coordinates to a single integer as an ID number)
--- Returns a single-value numeric key that uniquely identifies a tile on any map
+--gen.getTileID(tileObject or int,int or nil,int or nil)-->int 
+--(by Knighttime, converts a tile or the coordinate of a tile to a single integer as an ID number)
+
+-- Returns a single-value numeric key that uniquely identifies a tile on any map.
 --[[ by Knighttime, modified by Prof. Garfield ]]
+---@param tileORX integer|tileAnalog
+---@param y? integer|nil
+---@param z? integer|nil
+---@return nil
+---@overload fun(x:integer,y:integer,z:integer):integer
+---@overload fun(tile: tileObject):integer
+---@overload fun(coordinateTable: table):integer
 function gen.getTileID (tileORX,y,z)
     local tile=nil
     if civ.isTile(tileORX) then
         tile = tileORX
+    elseif type(tileORX) == "table" then
+        tile = gen.toTile(tileORX)
     else
+
+---@diagnostic disable-next-line: param-type-mismatch
         tile = civ.getTile(tileORX,y,z or 0)
     end
 	if tile == nil then
@@ -2845,15 +3641,19 @@ local getTileId = gen.getTileId
 local getTileID = gen.getTileId
 
 -- gen.getTileFromID(tileID) --> tileObject
-function gen.getTileFromID(ID)
+
+--- Takes an integer generated by `gen.getTileID`, and returns the corresponding tile (or nil, if the key doesn't correspond to a real tile).
+---@param tileID integer
+---@return tileObject|nil
+function gen.getTileFromID(tileID)
     local mapWidth, mapHeight, mapQuantity = civ.getAtlasDimensions()
     local baseMapOffset = mapWidth*mapHeight
-    local z = math.floor(ID/baseMapOffset)
+    local z = math.floor(tileID/baseMapOffset)
     if z < 0 or z >3 then
         print("getTileFromID: did not receive a valid ID")
         return nil
     end
-    local tileOffset = ID % baseMapOffset
+    local tileOffset = tileID % baseMapOffset
     local y = math.floor(tileOffset/mapWidth)
     local x = tileOffset % mapWidth
     return civ.getTile(x,y,z)
@@ -2865,16 +3665,38 @@ local getTileFromID = gen.getTileFromId
 
 
 --gen.unitTypeOnTile(tile,unitTypeOrTableOfUnitType)-->bool
---returns true if tile has any of the unit types listed in the table,
---false otherwise
-function gen.unitTypeOnTile(tile,unitTypeTable)
+
+--Returns true if tile has any of the unit types listed in the table,
+--false otherwise. A unit or units can be excluded from the check.
+---@param tile tileObject The tile to try to find specific unit types on.
+---@param unitTypeTable unitTypeObject|table<any,unitTypeObject> The unit type or types to check for.
+---@param excludeFromCheck? unitObject|table<any,unitObject> These units are excluded from the check.  If they are of a matching unit type, the function still won't return true.  (Unless a different unit has a matching type.)
+---@return boolean
+---@overload fun(tile: tileObject, unitTypeTable: unitTypeObject|table<any,unitTypeObject>):boolean
+function gen.unitTypeOnTile(tile,unitTypeTable,excludeFromCheck)
     if civ.isUnitType(unitTypeTable) then
         unitTypeTable = {unitTypeTable}
     end
+    local exclusionSet = {}
+    if civ.isUnit(excludeFromCheck) then
+        ---@cast excludeFromCheck unitObject
+        exclusionSet[excludeFromCheck.id] = true
+    elseif type(excludeFromCheck) == "table" then
+        for key,unit in pairs(excludeFromCheck) do
+            if not civ.isUnit(unit) then
+        error("gen.unitTypeOnTile: Arg #3 must be a unit or table of units.  For key: "..tostring(key)..", Received: "..tostring(unit))
+            end
+            exclusionSet[unit.id] = true
+        end
+    elseif excludeFromCheck ~= nil then
+        error("gen.unitTypeOnTile: Arg #3 must be a unit or table of units.  Received: "..tostring(excludeFromCheck))
+    end
     for unit in tile.units do
-        for __,unitType in pairs(unitTypeTable) do
-            if unit.type == unitType then
-                return true
+        if not exclusionSet[unit.id] then
+            for __,unitType in pairs(unitTypeTable) do
+                if unit.type == unitType then
+                    return true
+                end
             end
         end
     end
@@ -2882,9 +3704,13 @@ function gen.unitTypeOnTile(tile,unitTypeTable)
 end
 
 --#gen.getAdjacentTiles(tile)-->tableOfTiles
--- returns a table (indexed by integers) with all adjacent
--- tiles to the input tile
-local function getAdjacentTiles(tile)
+
+-- Returns a table (indexed by integers) with all adjacent
+-- tiles to the input tile.  Note: some keys will have nil values
+-- if the tile is on the edge of the map.
+---@param tile tileAnalog if table, should be a coordinate pair or triple
+---@return table<integer,tileObject> tileTable table of adjacent tiles
+function gen.getAdjacentTiles(tile)
     tile = toTile(tile)
     local xVal,yVal,zVal = tile.x,tile.y,tile.z
     if civ.game.rules.flatWorld then
@@ -2908,15 +3734,19 @@ local function getAdjacentTiles(tile)
                 civ.getTile((xVal-1)%xMax,yVal-1,zVal),}
     end
 end
-gen.getAdjacentTiles = getAdjacentTiles
+local getAdjacentTiles = gen.getAdjacentTiles
 
--- gen.moveUnitAdjacent(unit,destRankFn=suitableDefault)-->tile or bool
--- Moves the unit to an adjacent tile, choosing the tile based on the 
--- destRankFn(unit,tile)--> integer or false
--- lower values mean preferred tiles, false means unit can't move to tile
--- default is prefer empty squares before squares with units on them
--- returns the tile the unit is moved to, or false if the unit can't be moved
-local function moveUnitAdjacent(unit,destRankFn)
+-- gen.moveUnitAdjacent(unit,destRankFn=suitableDefault)-->tile or false
+
+-- Moves the unit to an adjacent tile, choosing the tile based on  
+-- `destRankFn(unit,tile)--> integer or false`.
+-- Lower values mean preferred tiles, false means unit can't move to tile.
+-- Default is prefer empty squares before squares with units on them.
+-- Returns the tile the unit is moved to, or false if the unit can't be moved.
+---@param unit unitObject
+---@param destRankFn? fun(unit:unitObject, tile: tileObject):integer|false If the unit can be placed on the tile, return an integer (lower being more preferred).  If it can't, return false.
+---@return tileObject|false destination The tile the unit was moved to, or false if it could not be moved.
+function gen.moveUnitAdjacent(unit,destRankFn)
     local function defaultDestinationRank(theUnit,destTile)
         if (destTile.defender and destTile.defender ~=theUnit.owner) or(destTile.city and destTile.city.owner ~= theUnit.owner) or (not civ.canEnter(theUnit.type,destTile)) then
             return false
@@ -2945,21 +3775,30 @@ local function moveUnitAdjacent(unit,destRankFn)
         return false
     end
 end
-gen.moveUnitAdjacent = moveUnitAdjacent
+local moveUnitAdjacent = gen.moveUnitAdjacent
 
 --#gen.unprotectTile(tile,isProtectingUnit,isProtectedUnit,isProtectedTile)-->void
--- isProtectingUnit(unit)-->bool
+
+-- `isProtectingUnit(unit)-->bool`
 -- if true, the unit is a 'protecting' unit that must be moved
 -- e.g. air units with range >= 2 in air protected stacks
--- isProtectedUnit(unit)-->bool
+-- <br>`isProtectedUnit(unit)-->bool`
 -- if true, the unit is a 'protected' unit, meaning that 'protecting' units
 -- must be moved off square if one is on it
 -- e.g. land and sea units in air protected stacks
--- isProtectedTile(tile)-->bool
+-- <Br>`isProtectedTile(tile)-->bool`
 -- if true, the protecting unit must be moved, if not it can stay
 -- e.g. clear tiles are true in air protected stacks,
 -- cities, airbases, tiles with carriers return false for air protected stacks
-
+-- <br>`destRankFn(unit,tile)--> integer or false`.
+-- The choice on where to move protecting units is based on this function.
+-- Lower values mean preferred tiles, false means unit can't move to tile.
+-- Default is prefer empty squares before squares with units on them.
+---@param tile tileObject
+---@param isProtectingUnit fun(unit:unitObject):boolean Returns true if the unit is a "protecting" unit that must be moved, false otherwise.
+---@param isProtectedUnit fun(unit:unitObject):boolean Returns true if the unit is a unit that can be "protected" by protecting units, false otherwise.
+---@param isProtectedTile fun(tile:tileObject):boolean Returns true if units can be protected on this tile, false otherwise.
+---@param destRankFn? fun(unit:unitObject, tile: tileObject):integer|false If the unit can be placed on the tile, return an integer (lower being more preferred).  If it can't, return false.
 function gen.unprotectTile(tile,isProtectingUnit,isProtectedUnit,isProtectedTile,destRankFn)
     -- if the tile has no defender, it is not protected
     if tile.defender == nil then
@@ -2989,8 +3828,8 @@ end
 
 --#gen.clearAirProtection(tile)-->void
 -- A basic function to move air units protecting stacks
--- from a tile
-
+-- from a tile.  See `gen.clearAirProtection` and `gen.clearAdjacentAirProtection`
+-- for functions to actually use.
 function gen.makeClearAirProtection()
     local function isProtectedTile(tile)
         if tile.city or gen.hasAirbase(tile) then
@@ -3043,11 +3882,22 @@ function gen.makeClearAirProtection()
     return function(tile)  gen.unprotectTile(tile,isProtectingUnit,isProtectedUnit,isProtectedTile,tileRank) end
 end
 local clearAirProtection = gen.makeClearAirProtection()
-gen.clearAirProtection = clearAirProtection
+
+---Clears standard Civ II Air protection from the tile.  That is, moves air units off the tile if they prevent ground/sea units on the tile from being attacked
+---@param tile tileObject
+function gen.clearAirProtection(tile)
+    clearAirProtection(tile)
+end
 
 
 --#gen.clearAdjacentAirProtection(unit) -->void 
---clears air protection for tiles adjacent to the unit that are not owned by the unit's owner
+
+--Clears air protection for tiles adjacent to the unit, as long as those tiles are not owned by the unit's owner.
+--[[In the Lua Scenario Template, simpleSettings.lua has the following settings:
+```lua
+simpleSettings.clearAdjacentAirProtectionAI = false
+simpleSettings.clearAdjacentAirProtectionHuman = false```]]
+---@param unit unitObject
 function gen.clearAdjacentAirProtection(unit)
     local tileList = getAdjacentTiles(unit.location)
     for __,tile in pairs(tileList) do
@@ -3058,7 +3908,12 @@ function gen.clearAdjacentAirProtection(unit)
 end
 
 --#gen.inTable(object,table)--> bool
--- determines if the object is a value in the table
+
+-- Returns `true` if the `object` is a value in the `table`, `false` otherwise
+---comment
+---@param object any
+---@param table table
+---@return boolean
 function gen.inTable(object,table)
     for key,value in pairs(table) do
         if value == object then
@@ -3069,8 +3924,14 @@ function gen.inTable(object,table)
 end
 
 --#gen.copyTable(table)-->table
--- constructs (and returns) a new table with the same keys as the input
--- tables within the table are also copied
+
+-- Constructs (and returns) a new table with the same keys as the input.
+-- Tables within the table are also copied.
+-- Note: although this is meant for copying tables, 
+-- the way the function is contructed, any value can be input and
+-- returned.
+---@param table any
+---@return any
 local function copyTable(table)
     if type(table) ~= "table" then
         return table
@@ -3085,17 +3946,27 @@ gen.copyTable = copyTable
 
 
 --#gen.errorForNilKey(table,tableName)-->void
--- generates an error when a key with a nil
--- value is accessed from the table
--- useful for debugging in certain circumstances
+
+-- Changes a table's metatable, so that an error is 
+-- generated when a key with a nil
+-- value is accessed from the table.
+-- Useful for debugging in certain circumstances.
+---@param table table 
+---@param tableName string the name for the table you want to be used in error displays.
 function gen.errorForNilKey(table,tableName)
     local mt = getmetatable(table) or {}
     setmetatable(table,mt)
     mt.__index = function(myTable,key) error("The "..tableName.." table doesn't have a value associated with "..tostring(key)..".") end
 end
+
 -- gen.noNewKey(table,tableName)-->void
--- generates an error if attempting to set a key in
--- a table that doesn't already exist
+
+-- Changes a table's metatable, so that an error is 
+-- generated when assigning a value to a key 
+-- which doesn't already exist in that table.
+-- Useful for debugging in certain circumstances.
+---@param table table 
+---@param tableName string the name for the table you want to be used in error displays.
 function gen.noNewKey(table,tableName)
     local mt = getmetatable(table) or {}
     setmetatable(table,mt)
@@ -3108,6 +3979,7 @@ end
 -- global variable, or when accessing a global variable that doesn't already exist
 -- if you want to have a 'console' table to access certain functions from the console,
 -- you should declare it (but you don't have to fill it) before running this function
+-- In the Lua Scenario Template, this is run near the top of events.lua
 function gen.noGlobal()
     local mt = getmetatable(_G) or {}
     setmetatable(_G,mt)
@@ -3152,7 +4024,8 @@ function gen.noGlobal()
 end
 
 
-
+-- Allows Global variables to be used, if they have been disabled by
+-- `gen.noGlobal`
 function gen.restoreGlobal()
     local mt = getmetatable(_G) or {}
     setmetatable(_G,mt)
@@ -3166,12 +4039,11 @@ end
 
 
 -- gen.cityRadiusTiles(cityOrTileOrCoordTable) --> table
---  returns a table of tiles around a center tile, the 
+
+--  Returns a table of tiles around a center tile, the 
 --  size of a city 'footprint'.  The indices are listed below
 --  and are based on how city.workers determines which tiles
---  are worked
---
---      
+--  are worked.
 --
 --      #       #       #       #       #
 --          #       #       #       #       #
@@ -3186,7 +4058,9 @@ end
 --      #       #       #       #       #
 --          #       #       #       #       #
 --
---
+-- If the center is at the edge of the map, absent tiles have nil values
+---@param input cityObject|tileAnalog If table, the table must be tile coordinates.
+---@return table<integer,tileObject>
 function gen.cityRadiusTiles(input)
     if civ.isCity(input) then
         input = input.location
@@ -3250,27 +4124,36 @@ end
     
 
 -- gen.getTilesInRadius(centre,radius,minRadius=0,maps=nil) --> table
---      produces a table of nearby tiles to centre,
---      lower index means closer tile (or, same distance),
---      not counting z axis if multiple maps are used
---      starts at 1, no missing indices (if a tile doesn't exist, there
---      won't be an empty entry, the next tile will use that entry)
---      centre = a tile or table of coordinates 
---          central til around which we will find tiles
---      radius = integer
---          is the distance (in tiles, not coordinates) from the centre to the furthest
---          tiles desired
---      minRadius = integer
---          is the distance in tiles from the centre for the nearest tile to be
---          included (e.g. if you don't want centre itself, set minRadius to 1, if you
---          want a ring only, set minRadius to radius)
---      maps = nil or integer in 0-3 or table of integers
---          if nil, only get tiles from the map that centre is on
---          if integer, only get tiles from that map
---          if table of integers, tiles from all maps listed
---          e.g. {1,3} means get tiles from maps 1 and 3
---
---      
+
+--[[
+Produces a table of nearby tiles to centre.  
+Lower index means closer tile (or, same distance),
+not counting z axis if multiple maps are used.
+Keys start at 1, no missing indices (if a tile doesn't exist, there
+won't be an empty entry, the next tile will use that entry).
+
+centre = a tile or table of coordinates 
+    central til around which we will find tiles
+
+radius = integer
+    is the distance (in tiles, not coordinates) from the centre to the furthest
+    tiles desired
+
+minRadius = integer
+    is the distance in tiles from the centre for the nearest tile to be
+    included (e.g. if you don't want centre itself, set minRadius to 1, if you
+    want a ring only, set minRadius to radius)
+
+maps = nil or integer in 0-3 or table of integers
+    if nil, only get tiles from the map that centre is on
+    if integer, only get tiles from that map
+    if table of integers, tiles from all maps listed
+    e.g. {1,3} means get tiles from maps 1 and 3]]
+---@param centre tileAnalog if table, must be a table of coordinates.
+---@param radius integer The number of tiles out you want to get.
+---@param minRadius? integer 0 by default
+---@param maps? integer|table if table, values are the maps to get the tiles from.  Same map as `centre` by default.
+---@return table<integer,tileObject>
 function gen.getTilesInRadius(centre,radius,minRadius,maps)
     centre = toTile(centre)
     local cX,cY,cZ = centre.x,centre.y,centre.z
@@ -3377,12 +4260,15 @@ function gen.getTilesInRadius(centre,radius,minRadius,maps)
 end
 
 -- gen.clearGapsInArray(table,lowestValue=1)-->void
+
 -- Re-indexes all integer keys and values
 -- in a table, so that there are no gaps.
--- Starts at lowestValue, and maintains order
+-- Starts at lowestValue (1 by default), and maintains order
 -- of integer keys
 -- Non integer keys (including other numbers)
 -- and integers below lowestValue are left unchanged
+---@param table table
+---@param lowestValue? integer default is 1
 function gen.clearGapsInArray(table,lowestValue)
     lowestValue = lowestValue or 1
     local largestIndex = lowestValue-1
@@ -3403,9 +4289,10 @@ function gen.clearGapsInArray(table,lowestValue)
     end
 end
 
--- all integer values in the table are re-indexed so that they 
--- start at 1 and proceed without gaps
--- all other keys are ignored
+-- All integer values in the table are re-indexed so that they 
+-- start at 1 and proceed without gaps.
+-- All other keys are ignored.
+---@param table table
 function gen.makeArrayOneToN(table)
     local lowestIntKey = math.huge
     local highestIntKey = -math.huge
@@ -3436,11 +4323,21 @@ end
 
 local musicFolder = ""
 -- gen.playMusic(fileName)
+
+-- Plays music from `fileName`, found in the folder set by
+-- gen.setMusicDirectory (in Lua Scenario Template, this is <MainScenarioDirectory>\Sound).
+--
+-- gen.playMusic stops any currently plaing game music in order
+-- to play music, and the music won't play if the "music" is disabled in the menu.  This is different from playing a sound with civ.playSound, which doesn't stop any existing music.
 function gen.playMusic(fileName)
     civ.playMusic(musicFolder.."\\"..fileName)
 end
 
 -- gen.setMusicDirectory(path)
+
+-- Tells gen.playMusic to look in this directory for music files.
+-- In the Lua Scenario Template, the directory is <MainScenarioDirectory>\Sound
+---@param path string
 function gen.setMusicDirectory(path)
     musicFolder = path
 end
@@ -3452,18 +4349,29 @@ end
 -- However, the information will not be preserved after a save and load
 local ephemeralTable = {}
 -- gen.getEphemeralTable()-->table
+
+-- The ephemeralTable is a table for shared data.
+-- Since it is not saved, it doesn't have to be serializeable,
+-- so you don't have to worry about making keys and
+-- values text or numbers.
+-- However, the information will not be preserved after a save and load.
+---@return table
 function gen.getEphemeralTable()
     return ephemeralTable
 end
 
+--[[A state savable table can be saved in the 'state' table, which is to say, the table where data is saved to the saved game file. A state savable table is a table where the keys are integers and strings, and the values are integers, strings, and other state savable tables.]]
+---@alias stateSavableTable table<string|number,string|number|table> | string | number
+
+---@type string|stateSavableTable
 local state = "stateNotLinked"
 
 -- gen.linkState(stateTable)
--- links the state table to the General Library
+
+-- Links the state table to the General Library
 -- provides access to the state table so that
--- gen.getState() can provide it
-
-
+-- gen.getState() can provide it.
+---@param stateTable stateSavableTable
 function gen.linkState(stateTable)
     if type(stateTable) == "table" then
         state = stateTable
@@ -3473,22 +4381,26 @@ function gen.linkState(stateTable)
 end
 
 -- gen.getState()
--- returns the state table submitted to gen.linkState
+
+-- Returns the state table submitted to `gen.linkState`.
 -- If you're writing a module intended for use by others,
--- it is recommended that
--- you use a linkState system with a sub table, so that
--- table keys don't accidentally conflict
+-- it is recommended that you use a linkState system with a 
+-- sub table, so that table keys don't accidentally conflict
+---@return stateSavableTable
 function gen.getState()
     return state
 end
 
 
+---@type stateSavableTable|string
 local genStateTable = "stateTableNotLinked"
 -- gen.linkGeneralLibraryState(stateTable) --> void
--- links a sub table of the state table for the purposes of
+
+-- Links a sub table of the state table for the purposes of
 -- providing a table for functions in the General Library
--- this is distinct from getState, which provides a state
+-- this is distinct from getState, which provides a 
 -- 'visible' state table to the end user
+---@param stateTable stateSavableTable
 function gen.linkGeneralLibraryState(stateTable)
     if type(stateTable) == "table" then
         genStateTable = stateTable
@@ -3502,8 +4414,9 @@ end
 
 local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if fileFound then
+    ---@cast discreteEvents -nil
     discreteEvents:minVersion(1)
-    function discreteEvents.linkStateToModules(state,stateTableKeys)
+    discreteEvents.linkStateToModules(function(state,stateTableKeys)
         local keyName = "designerState"
         if stateTableKeys[keyName] then
             error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
@@ -3513,8 +4426,8 @@ if fileFound then
         -- link the state table to the module
         state[keyName] = state[keyName] or {}
         gen.linkState(state[keyName])
-    end
-    function discreteEvents.linkStateToModules(state,stateTableKeys)
+    end)
+    discreteEvents.linkStateToModules(function(state,stateTableKeys)
         local keyName = "generalLibraryState"
         if stateTableKeys[keyName] then
             error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
@@ -3524,15 +4437,27 @@ if fileFound then
         -- link the state table to the module
         state[keyName] = state[keyName] or {}
         gen.linkGeneralLibraryState(state[keyName])
-    end
+    end)
 end
 
 
 -- gen.limitedExecutions(key,maxTimes,limitedFunction)--> void
--- if the value at key is less than maxTimes, limitedFunction will execute,
--- and the value at key will increment by 1
--- Otherwise, don't execute limitedFunction
+
+-- If the value at key is less than maxTimes, limitedFunction will execute,
+-- and the value at key will increment by 1.
+-- Otherwise, don't execute limitedFunction.
 -- Note: limitedFunction()-->void
+-- 
+-- Example: Volunteers will be created in a capital up to 3 times for a certain trigger.
+--[[```lua
+gen.limitedExecutions("Tribe 1 Volunteers",3, function()
+    text.simple("Young men flock to Washington to fight the South.")
+    gen.createUnit(gen.original.uRiflemen, object.pUnion, object.lWashington, {})
+end)
+```]]
+---@param key string|integer The key for this limited execution
+---@param maxTimes integer The number of times the limited function will be executed
+---@param limitedFunction fun() The function to execute a maximum number of times.
 function gen.limitedExecutions(key,maxTimes,limitedFunction)
     genStateTable.limitedExecutions[key] = genStateTable.limitedExecutions[key] or 0
     if genStateTable.limitedExecutions[key] < maxTimes then
@@ -3542,14 +4467,24 @@ function gen.limitedExecutions(key,maxTimes,limitedFunction)
 end
 
 -- gen.justOnce(key,limitedFunction) --> void
--- wrapper for gen.limitedExecutions with maxTimes being 1
+
+-- If justOnce has never been executed for this key before, then
+-- the limited function will execute.  Otherwise, it won't.
+-- (Wrapper for gen.limitedExecutions with maxTimes being 1.)
+-- Example: Show a message once for a certain trigger
+--[[```lua
+gen.justOnce("Rebel Attack", function()
+    text.simple("The Rebels have attacked Union troops.  We're now in a shooting war!","Secretary of Defense")
+end)
+```]]
 function gen.justOnce(key,limitedFunction)
     gen.limitedExecutions(key,1,limitedFunction)
 end
 
 -- gen.isSinglePlayerGame() --> boolean
--- returns true if there is exactly one human player, false otherwise
 
+-- Returns true if there is exactly one human player, false otherwise.
+---@return boolean
 function gen.isSinglePlayerGame()
     local humanMask = civ.game.humanPlayers
     -- not humanMask >= 0, so don't have to worry about negatives
@@ -3564,17 +4499,19 @@ end
 
 
 -- gen.tableWrap(item)-->table
--- if item is a table, return the table
--- otherwise, return a table with the item as element 1
--- This is useful so that the scenario designer doesn't have
--- to wrap a single element in a table
--- gen.tableWrap(item,needsWrapFn)-->table
---  needsWrapFn(item)-->bool
---  if true, item needs a wrapping table, if not, it doesn't
+-- If item is a table, return the table
+-- otherwise, return a table with the item as element 1.
+-- This is useful so that functions can accept either a single
+-- element or a table of such elements.
+--  `needsWrapFn(item)-->boolean`
+--  If true, item needs a wrapping table, if not, it doesn't
 --  useful if you can distinguish between tables that represent other
---  data structures, and tables of such data structures
---
-
+--  data structures, and tables of such data structures.
+--  By default, returns true if the item isn't a table, and false if it is.
+---@param item any
+---@param needsWrapFn fun(item:any):boolean Default: returns true if item is not a table, and false if it is.
+---@return table
+---@overload fun(item:any):table
 function gen.tableWrap(item,needsWrapFn)
     needsWrapFn = needsWrapFn or function(item) return type(item)~="table" end
     if needsWrapFn(item) then
@@ -3586,17 +4523,21 @@ end
 
 --
 -- gen.copyUnitAttributes(parent,child)-->void
--- copies the attributes of the 'parent' unit to the 'child' unit
--- all attributes accessible through lua are copied (except unit type,
--- and unit id number, and carriedBy)
+
+-- Copies the attributes of the `parent` unit to the `child` unit.
+-- All attributes accessible through lua are copied (except unit type,
+-- and unit id number)
 --  Useful if a unit's type must be changed (by creating a new unit), but everything
 --  else should stay the same
+---@param parent unitObject The unit giving the attributes.
+---@param child unitObject The unit receiving the attributes.
 function gen.copyUnitAttributes(parent,child)
     child.owner = parent.owner
     child:teleport(parent.location)
     child.homeCity = parent.homeCity
     child.damage = parent.damage
     child.moveSpent = parent.moveSpent
+    child.carriedBy = parent.carriedBy
     if parent.gotoTile then
         gen.setToGoingTo(child,parent.gotoTile)
     else
@@ -3608,16 +4549,22 @@ function gen.copyUnitAttributes(parent,child)
 end
 
 -- gen.nearbyUnits(center,radius,maps={0,1,2,3}) --> iterator providing units
---      provides an iterator over all the units within radius
---      tiles of the center tile
---      maps = nil or integer in 0-3 or table of integers
---          if integer, only get units from tiles from that map
---          if table of integers, units from all maps listed
---          e.g. {1,3} means get units from maps 1 and 3
---          if nil, get units from all maps (this choice is for backwards compatibility)
-
+--[[
+provides an iterator over all the units within radius
+tiles of the center tile
+maps = nil or integer in 0-3 or table of integers
+    if integer, only get units from tiles from that map
+    if table of integers, units from all maps listed
+    e.g. {1,3} means get units from maps 1 and 3
+    if nil, get units from all maps (this choice is for backwards compatibility)
+]]
+---@param center tileAnalog If table, must be a table of coordinates.
+---@param radius integer How far away from the center you wish to get units.
+---@param maps? integer|table If integer, get units from that map. If table, values are the maps to get the tiles from.  Get from all maps by default (for backwards compatibility).
+---@return iterator
 function gen.nearbyUnits(center,radius,maps)
     maps = maps or {0,1,2,3}
+---@diagnostic disable-next-line: return-type-mismatch
     return coroutine.wrap(function ()
         for __,tile in pairs(gen.getTilesInRadius(center,radius,0,maps)) do
             for unit in tile.units do
@@ -3628,15 +4575,15 @@ function gen.nearbyUnits(center,radius,maps)
 end
 
 
---
---
---
 
 local defeatFunction = nil
 local deathFunction = nil 
 local deletionFunction = nil
 local deathOutsideCombat = nil
 -- gen.setDeathFunctions(defeatFunction,deathFunction,deletionFunction) --> void
+-- Registers event functions for when units are killed/deleted.
+-- If you are using the Lua Scenario Template, this is already
+-- run in events.lua, and you do not need to use this function.
 --      defeatFunction(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)--> nil or unit
 --          function for when a unit is defeated either in game combat or in an event representing combat
 --          if a unit is returned, that is a replacement unit for demotion
@@ -3648,6 +4595,10 @@ local deathOutsideCombat = nil
 --  or deleted by events in some other way
 --      deathNoCombatFn(dyingUnit) --> void
 --          for when a unit dies, but not in combat or through the gen.defeatUnit function
+---@param defeatFn fun(loser:unitObject,winner:unitObject,aggressor:unitObject,victim:unitObject,loserLocation:tileObject,winnerVetStatus:boolean,loserVetStatus:boolean):unitObject|nil
+---@param deathFn fun(dyingUnit: unitObject)
+---@param deletionFn fun(deletedUnit: unitObject, replacingUnit: nil|unitObject)
+---@param deathNoCombatFn fun(dyingUnit: unitObject)
 function gen.setDeathFunctions(defeatFn,deathFn,deletionFn,deathNoCombatFn)
     defeatFunction = defeatFn
     deathFunction = deathFn
@@ -3656,41 +4607,64 @@ function gen.setDeathFunctions(defeatFn,deathFn,deletionFn,deathNoCombatFn)
 end
 
 -- gen.defeatUnit(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)-->unit or nil
---      "defeats" the loser, deletes the loser, and returns a unit if and only if the loser 
---      was demoted, otherwise nil is returned
+
+-- "Defeats" the loser, deletes the loser, and returns a unit if and only if the loser was demoted, otherwise nil is returned.
+-- Runs the events for unit defeat, death, and deletion.
+---@param loser unitObject
+---@param winner unitObject
+---@param aggressor unitObject 
+---@param victim unitObject
+---@param loserLocation tileObject
+---@param winnerVetStatus boolean
+---@param loserVetStatus boolean
+---@return unitObject|nil survivingDemotedUnit
 function gen.defeatUnit(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     local survivor = defeatFunction(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     deathFunction(loser)
     deletionFunction(loser,survivor)
+---@diagnostic disable-next-line: deprecated
     civ.deleteUnit(loser)
     return survivor
 end
 
 -- gen.killUnit(dyingUnit)-->void
---      "kills" the dying unit
+
+-- "Kills" the dying unit, running events for 'death', 'death outside combat', and 'deletion'.
+---@param dyingUnit unitObject
 function gen.killUnit(dyingUnit)
     deathFunction(dyingUnit)
     deathOutsideCombat(dyingUnit)
     deletionFunction(dyingUnit,nil)
+---@diagnostic disable-next-line: deprecated
     civ.deleteUnit(dyingUnit)
     return
 end
 
 -- gen.deleteUnit(deletedUnit,replacementUnit=nil)-->void
---      deletes the deleted unit
---      if the unit is being 'replaced', the replacing unit must be provided
+
+-- Deletes the deleted unit.
+-- I the unit is being 'replaced', the replacing unit must be provided.
+-- Runs events associated with unit deletion.
+---@param deletedUnit unitObject
+---@param replacementUnit unitObject|nil
 function gen.deleteUnit(deletedUnit,replacementUnit)-->void
     replacementUnit=replacementUnit or nil
     deletionFunction(deletedUnit,replacementUnit)
+---@diagnostic disable-next-line: deprecated
     civ.deleteUnit(deletedUnit)
     return
 end
 
 -- gen.replaceUnit(oldUnit,replacementType)--> unit
--- creates a unit to replace the old unit, 
+
+-- Creates a unit to replace the old unit, 
 -- copies the old unit's attributes, and
--- deletes the old unit (applying the deletion function)
--- returns the newly created unit
+-- deletes the old unit (applying the deletion function).
+-- Returns the newly created unit.
+---comment
+---@param oldUnit unitObject
+---@param replacementType unitTypeObject
+---@return unitObject
 function gen.replaceUnit(oldUnit,replacementType)
     local newUnit = civ.createUnit(replacementType,oldUnit.owner,oldUnit.location)
     gen.copyUnitAttributes(oldUnit,newUnit)
@@ -3699,33 +4673,41 @@ function gen.replaceUnit(oldUnit,replacementType)
 end
 
 -- gen.makeAllowedTerrainFunction(allowedTilesTable) --> function(tile)-->bool
---      converts a table of integer values into a function that returns
---      true if tile.terrainType%16 is a value in the table, and false otherwise
---      if nil is entered, all terrain is allowed
---
+--Converts a table of integer values into a function that returns
+--true if tile.baseTerrain.type is a value in the table, and false otherwise.
+--If nil is entered, all terrain is allowed.
+---@param allowedTilesList table<integer,integer>|nil
+---@return fun(tile:tileObject):boolean
 function gen.makeAllowedTerrainFunction(allowedTilesList)
     allowedTilesList = allowedTilesList or {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
     local allowedTilesTable = {}
     for __,terrainID in pairs(allowedTilesList) do
         allowedTilesTable[terrainID] = true
     end
+    ---@param tile tileObject
+    ---@return boolean
     local function allowedTile(tile)
-        return allowedTilesTable[(tile.terrainType % 16)] or false
+        return allowedTilesTable[tile.baseTerrain.type ] or false
     end
     return allowedTile
 end
 
 -- 
 -- gen.nearbyUnoccupiedTiles(tile,distance,allowedTiles) --> table
---      returns the table of nearby unoccupied tiles
---      Indices start at 1 without gaps, but tiles are in no particular order
---      tile is that you want to find other tiles near to (on same map)
---      distance is the number of squares away that you can search
---      allowetiles is either a table of integers such that a tile is acceptable if
---          possibleTile.terrainType % 16 appears as a value in the table
---      or a function allowedtiles(possibletile)-->bool
---          that returns true if the tile is allowed, and false if not
---      if nil is entered, all terrain is allowed
+
+--Returns the table of nearby unoccupied tiles.
+--Indices start at 1 without gaps, but tiles are in no particular order.
+--`centerTile` is the tile that you want to find other tiles near to (on same map).
+--`distance` is the number of squares away that you can search.
+--`allowedTiles` is either a table of integers such that a tile is acceptable if
+--`possibleTile.baseTerrain.type` appears as a value in the table
+--or a function `allowedtiles(possibletile)-->bool`
+--that returns true if the tile is allowed, and false if not.
+--If `nil` is entered, all terrain is allowed.
+---@param centerTile tileAnalog
+---@param distance integer
+---@param allowedTiles table<integer,integer>|fun(tile:tileObject):boolean
+---@return table<integer,tileObject>
 function gen.nearbyUnoccupiedTiles(centerTile,distance,allowedTiles)
     centerTile = toTile(centerTile)
     if type(allowedTiles) == "table" or type(allowedTiles) == "nil" then
@@ -3743,17 +4725,21 @@ function gen.nearbyUnoccupiedTiles(centerTile,distance,allowedTiles)
 end
 
 -- gen.getRandomNearbyUnoccupiedTile(tile,distance,allowedTiles) --> tile
---      returns a random square near tile, on the same map
---      tile is that you want to find other tiles near to (on same map)
---      returns nil if no suitable tile is found
---      distance is the number of squares away that you can search
---      allowetiles is either a table {[terraintype]=bool or nil}
---          such that a tile is acceptable if allowedtiles[possibletile.terraintype % 16] == true
---      or a function allowedtiles(possibletile)-->bool
---          that returns true if the tile is allowed, and false if not
---      if nil is entered, all terrain is allowed
-function gen.getRandomNearbyUnoccupiedTile(tile,distance,allowedTiles)
-    local tileList = gen.nearbyUnoccupiedTiles(tile,distance,allowedTiles)
+
+--Returns a random unoccupied square near tile, on the same map.  Returns nil if there is no such tile.
+--`centerTile` is the tile that you want to find other tiles near to (on same map).
+--`distance` is the number of squares away that you can search.
+--`allowedTiles` is either a table of integers such that a tile is acceptable if
+--`possibleTile.baseTerrain.type` appears as a value in the table
+--or a function `allowedtiles(possibletile)-->bool`
+--that returns true if the tile is allowed, and false if not.
+--If `nil` is entered, all terrain is allowed.
+---@param centerTile tileAnalog
+---@param distance integer
+---@param allowedTiles table<integer,integer>|fun(tile:tileObject):boolean
+---@return tileObject|nil
+function gen.getRandomNearbyUnoccupiedTile(centerTile,distance,allowedTiles)
+    local tileList = gen.nearbyUnoccupiedTiles(centerTile,distance,allowedTiles)
     local numberOfTiles = #tileList
     if numberOfTiles > 0 then
         return tileList[math.random(1,numberOfTiles)]
@@ -3763,21 +4749,32 @@ function gen.getRandomNearbyUnoccupiedTile(tile,distance,allowedTiles)
 end
 
 -- gen.isEmpty(table)-->bool
---      returns true if the table has no entries, and false otherwise
---      (I got this idea from stackoverflow, https://stackoverflow.com/questions/1252539/most-efficient-way-to-determine-if-a-lua-table-is-empty-contains-no-entries )
+
+--Returns true if the table has no entries, and false otherwise.
+--(I got this idea from stackoverflow, https://stackoverflow.com/questions/1252539/most-efficient-way-to-determine-if-a-lua-table-is-empty-contains-no-entries )
+---comment
+---@param table table
+---@return boolean
 function gen.isEmpty(table)
     return next(table) == nil
 end
+
 --  gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
---      returns a table of nearby tiles that are either unoccupied or occupied
---      by a specific tribe
---      centerTile is the tile that you want to find other tiles nearby to (on the same map)
---      distance is the number of squares away that you can search
---      allowedTiles is either a table of integers such that a tile is acceptable if
---          possibleTile.terrainType % 16 appears as a value in the table
---      or a function allowedTiles(possibleTile)-->bool
---          that returns true if the tile is allowed, and false if not
---      if nil is entered, all terrain is allowed
+--Returns a table of nearby tiles, on the same map, that are either unoccupied or only has units/city of the `tribe`
+--Indices start at 1 without gaps, but tiles are in no particular order.
+--`centerTile` is the tile that you want to find other tiles near to (on same map).
+--`distance` is the number of squares away that you can search.
+--`allowedTiles` is either a table of integers such that a tile is acceptable if
+--`possibleTile.baseTerrain.type` appears as a value in the table
+--or a function `allowedtiles(possibletile)-->bool`
+--that returns true if the tile is allowed, and false if not.
+--If `nil` is entered, all terrain is allowed.
+--`tribe` the tribe that is searching for open tiles.
+---@param centerTile tileAnalog
+---@param distance integer
+---@param allowedTiles table<integer,integer>|fun(tile:tileObject):boolean
+---@param tribe tribeObject
+---@return table<integer,tileObject>
 function gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
     centerTile = toTile(centerTile)
     if type(allowedTiles) == "table"  or type(allowedTiles) == "nil" then
@@ -3796,18 +4793,22 @@ function gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
     return tileList
 end
 
--- gen.getRandomNearbyOpenTileForTribe(tile,distance,allowedTiles,tribe) --> tile
---      returns a random square near tile, on the same map, that is either
---      empty or only has units/city of the same tribe
---      tile is that you want to find other tiles near to (on same map)
---      returns nil if no suitable tile is found
---      distance is the number of squares away that you can search
---      allowetiles is either a table {[terraintype]=bool or nil}
---          such that a tile is acceptable if allowedtiles[possibletile.terraintype % 16] == true
---      or a function allowedtiles(possibletile)-->bool
---          that returns true if the tile is allowed, and false if not
---      tribe is the tribe that can be occupying 
---      if nil is entered, all terrain is allowed
+-- gen.getRandomNearbyOpenTileForTribe(tile,distance,allowedTiles,tribe) --> tile|nil
+
+--Returns a random square near tile, on the same map, that is either empty or only has units/city of the same tribe.  Returns nil if there is no such tile.
+--`centerTile` is the tile that you want to find other tiles near to (on same map).
+--`distance` is the number of squares away that you can search.
+--`allowedTiles` is either a table of integers such that a tile is acceptable if
+--`possibleTile.baseTerrain.type` appears as a value in the table
+--or a function `allowedtiles(possibletile)-->bool`
+--that returns true if the tile is allowed, and false if not.
+--If `nil` is entered, all terrain is allowed.
+--`tribe` the tribe that is searching for open tiles.
+---@param centerTile tileAnalog
+---@param distance integer
+---@param allowedTiles table<integer,integer>|fun(tile:tileObject):boolean
+---@param tribe tribeObject
+---@return tileObject|nil
 function gen.getRandomNearbyOpenTileForTribe(centerTile,distance,allowedTiles,tribe)
     local tileList = gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
     local numberOfTiles = #tileList
@@ -3818,53 +4819,21 @@ function gen.getRandomNearbyOpenTileForTribe(centerTile,distance,allowedTiles,tr
     end
 end
 
--- gen.createUnit(unitType,tribe,locations,options) --> table of units
---      This is a createUnit function, meant to supersede civlua.createUnit
---      returns a table of units, indexed by integers starting at 1 (unless no units were created
---      unitType is the type of unit to be created
---      tribe is the tribe that will own the unit(s)
---      locations is one of the following
---          a tile object
---          a table of 3 elements, (indexed by integers 1,2,3) corresponding to x,y,z coordinate
---          a table of tile objects (indexed by integers)
---          a table of coordinate triple tables (indexed by integers)
---      options is a table with the following keys
---          count = integer
---              the number of units to create
---              nil means 1
---          randomize = bool or nil
---              if true, randomize the list of locations
---              if false or nil, try to place at the tile with the smallest index in table first
---          scatter = bool or nil
---              if true, and if randomize is true, each unit is created on a random tile
---              in the location table
---          inCapital = bool or nil
---              if true, attempt to place in the capital before other locations
---              in case of multiple capitals, capitals are ranked with smallest city id first
---              randomize/scatter applies to list of capitals if this is selected
---          veteran = bool or fraction in 0-1 or integer or nil
---              if true, make the created unis veteran
---              if a fraction in 0-1, each unit created has that chance of being veteran
---              if number >= 1, this many of the count are veteran (take floor)
---              nil or false means no veterans
---          homeCity = city or true or nil
---              if city, that city is the home city
---              if true, the game selects the home city (probably the same way a city is chosen if you
---              create a unit by using the cheat menu)
---              if nil, no home city
---          overrideCanEnter = bool or nil
---              if true, unit will be placed even if unitType:canEnter(tile) returns false
---              false or nil means follow the restriction 
---              civ.canEnter appears to check if the terrain is impassible, or the unit can cross impassible
---          overrideDomain = bool or nil
---              if true, sea units can be created on land outside cities, and land units at sea
---              false or nil means units can only be created where they could travel naturally
---          overrideDefender = bool or nil
---              if true, unit can be placed on tiles with enemy units or cities
---              false or nil means the tile must have no enemy cities, and no enemy defender
---
---
 
+
+
+
+
+
+-- gen.createUnit(unitType,tribe,locations,options) --> table of units
+
+--This is a createUnit function, meant to supersede civlua.createUnit.
+--Returns a table of units, indexed by integers starting at 1 (unless no units were created.
+---@param unitType unitTypeObject The type of unit to create.
+---@param tribe tribeObject The owner of the new unit or units.
+---@param locations tileAnalog|table<integer,tileAnalog> locations is one of the following:<br><br>tileObject<br>{xCoord,yCoord}<br>{xCoord,yCoord,zCoord}<br>{x=xCoord,y=yCoord}<br>{x=xCoord,y=yCoord,z=zCoord}<br>table<integer,above_types>
+---@param options table options is a table with the following keys: <br><br> count : integer|nil <br> The number of units to create.  `nil` means 1.<br><br>randomize : boolean|nil <br> If true, randomize the list of locations.  If false or nil, try to place at the tile with the smallest index in the table first.<br><br>scatter : boolean|nil <br> If true, and if randomize is true, each unit is created on a random tile in the location table.<br><br>inCapital : boolean|nil <br> If true, attempt to place in the capital before other locations.  IN case of multiple capitals, capitals are ranked with smallest city id first.  randomize/scatter applies to list of capitals if this is selected.<br><br>veteran : boolean|number|nil <br> If true, make the created units veteran.  If a fraction between 0 and 1, each unit has this probability of being veteran.  If number 1 or more, this many of the count are made veteran (take floor).  If nil or false, no veterans.<br><br>homeCity : city|true|nil <br> If city, that city is the home city.  If true, the game selects the home city (probably the way a city is chosen if you crate a unit using the cheat menu).  If nil, no home city.<br><br>overrideCanEnter : boolean|nil <br> If true, the units will be placed even if unitType : canEnter(tile) returns false.  False or nil means follow the restriction.  civ.canEnter appears to check if the terrain is impassible, or if the unit can cross impassible.<br><br>overrideDomain : boolean|nil <br> If true, sea units can be created on land outside cities, and land units at sea.  False or nil means units can only be created where they could travel naturally.<br><br>overrideDefender : boolean|nil <br> If true, unit can be placed on tiles with enemy units or cities.  False or nil means the tile must have no enemy city, and no enemy defender.
+---@return table
 function gen.createUnit(unitType,tribe,locations,options)
     options = options or {}
     -- must copyTable locations, in case that table is used for multiple things
@@ -3958,6 +4927,7 @@ function gen.createUnit(unitType,tribe,locations,options)
     end
     local numToPlace = options.count or 1
     local vetCount = 0 
+    ---@type true|number
     local vetChance = 0  
     if options.veteran == true then
         vetCount = numToPlace
@@ -3966,7 +4936,7 @@ function gen.createUnit(unitType,tribe,locations,options)
         vetCount = numToPlace
         vetChance = options.veteran
     elseif type(options.veteran) == "number" then
-        vetCount = math.floor(options.veteran)
+        vetCount = math.floor(options.veteran--[[@as number]])
         vetChance = 1
     end
     local placementTile = nil
@@ -3998,12 +4968,16 @@ function gen.createUnit(unitType,tribe,locations,options)
 end
 
 -- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
--- returns the tile production values, presuming that the city
--- given is the one working the tile
--- That is to say, returns the values that would be seen on the tile in the city window
--- Doesn't check if that city is actually working the tile
-
-local function getTileProduction(tile,city)
+-- Returns the tile production values, presuming that the city
+-- given is the one working the tile.
+-- That is to say, returns the values that would be seen on the tile in the city window.
+-- Doesn't check if that city is actually working the tile.
+---@param tile tileAnalog
+---@param city cityObject
+---@return integer foodProduction
+---@return integer shieldProduction
+---@return integer tradeProduction
+function gen.getTileProduction(tile,city)
     tile = toTile(tile)
     local terrain = tile.terrain
     local baseTerrain = tile.baseTerrain
@@ -4016,7 +4990,7 @@ local function getTileProduction(tile,city)
         -- road and river don't add trade to ocean
         -- colossus always adds trade to ocean, even if it doesn't
         -- have any trade production
-        if civ.getWonder(2).city == city and applyWonderBonus(civ.getWonder(2),city.owner) then
+        if civ.getWonder(2).city == city and applyWonderBonus(civ.getWonder(2)--[[@as wonderObject]],city.owner) then
             trade = trade+1
         end
         local tribeGovernment = city.owner.government
@@ -4032,7 +5006,7 @@ local function getTileProduction(tile,city)
             end
         end
         -- highways apply to ocean
-        if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)) then
+        if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)--[[@as improvementObject]]) then
             trade = (3*trade)//2
         end
         -- pollution occurs after highway bonus
@@ -4046,15 +5020,15 @@ local function getTileProduction(tile,city)
         -- mining doesn't increase ocean shield production
 
         -- apply offshore platform
-        if city:hasImprovement(civ.getImprovement(31)) then
+        if city:hasImprovement(civ.getImprovement(31)--[[@as improvementObject]]) then
             shields = shields+1
         end
         -- King Richard's Crusade
-        if civ.getWonder(8).city == city and applyWonderBonus(civ.getWonder(8),city.owner) then
+        if civ.getWonder(8).city == city and applyWonderBonus(civ.getWonder(8)--[[@as wonderObject]],city.owner) then
             shields = shields+1
         end
         -- railroads apply to ocean
-        if gen.hasRailroad(tile) or (tile.city and city.owner:hasTech(civ.getTech(67))) then
+        if gen.hasRailroad(tile) or (tile.city and city.owner:hasTech(civ.getTech(67)--[[@as techObject]])) then
             shields = (3*shields)//2
         end
         -- despotism seems to happen after railroads
@@ -4074,7 +5048,7 @@ local function getTileProduction(tile,city)
         -- Farmland doesn't affect it either
 
         -- apply harbour
-        if city:hasImprovement(civ.getImprovement(30)) then
+        if city:hasImprovement(civ.getImprovement(30)--[[@as improvementObject]]) then
             food = food+1
         end
         if (tribeGovernment == 1 and not gen.isWeLoveTheKing(city)) or tribeGovernment == 0 then
@@ -4109,7 +5083,7 @@ local function getTileProduction(tile,city)
             trade = trade+1
         end
         -- apply colossus
-        if civ.getWonder(2).city == city and trade >= 1 and applyWonderBonus(civ.getWonder(2),city.owner) then
+        if civ.getWonder(2).city == city and trade >= 1 and applyWonderBonus(civ.getWonder(2)--[[@as wonderObject]],city.owner) then
             -- colossus adds 1 trade to each tile that already has a trade arrow,
             -- (also adds 1 trade to ocean even if no trade arrow, see above)
             trade = trade+1
@@ -4133,7 +5107,7 @@ local function getTileProduction(tile,city)
         --  4->3 (despotism)->4(highway)  Observed`
         --  4 -> 6 (highway) -> 5 (despotism) Not observed
         -- apply highways bonus
-        if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)) then
+        if (gen.hasRoad(tile) or tile.city) and city:hasImprovement(civ.getImprovement(25)--[[@as improvementObject]]) then
             trade = (3*trade)//2
         end
         -- pollution occurs after highway bonus
@@ -4162,10 +5136,10 @@ local function getTileProduction(tile,city)
         end
         -- KRC happens after 1 shield minimum, before the railroad bonus
         -- King Richard's Crusade
-        if civ.getWonder(8).city == city and applyWonderBonus(civ.getWonder(8),city.owner) then
+        if civ.getWonder(8).city == city and applyWonderBonus(civ.getWonder(8)--[[@as wonderObject]],city.owner) then
             shields = shields+1
         end
-        if gen.hasRailroad(tile) or (tile.city and city.owner:hasTech(civ.getTech(67))) then
+        if gen.hasRailroad(tile) or (tile.city and city.owner:hasTech(civ.getTech(67)--[[@as techObject]])) then
             shields = (3*shields)//2
         end
         -- despotism seems to happen after railroads
@@ -4189,7 +5163,7 @@ local function getTileProduction(tile,city)
         end
         -- don't need refrigeration tech to take advantage of farm production, just supermarket
         -- city tile counts as farmland even without refrigeration
-        if city:hasImprovement(civ.getImprovement(24)) and (tile.city or gen.hasFarmland(tile)) then
+        if city:hasImprovement(civ.getImprovement(24)--[[@as improvementObject]]) and (tile.city or gen.hasFarmland(tile)) then
             food = (3*food)//2
         end
 
@@ -4214,11 +5188,16 @@ local function getTileProduction(tile,city)
     end
     return food, shields, trade
 end
-gen.getTileProduction = getTileProduction
+local getTileProduction = gen.getTileProduction
 
 -- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
--- Computes the resources harvested by the city from the terrain
--- includes superhighway/supermarket/railroad bonus, but not factories/powerplants
+
+-- Computes the resources harvested by the city from the terrain.
+-- Includes superhighway/supermarket/railroad bonus, but not factories/powerplants.
+---@param city cityObject
+---@return integer foodProduction
+---@return integer shieldProduction
+---@return integer tradeProduction
 function gen.computeBaseProduction(city)
     local tileList = gen.cityRadiusTiles(city)
     local cityWorkers = city.workers
@@ -4238,48 +5217,55 @@ function gen.computeBaseProduction(city)
 end
 
 -- gen.persistentRandom(key) --> number between 0 and 1
--- checks the persistentRandom table (within the state table)
+-- Checks the persistentRandom table (within the state table)
 -- for a value associated with key. If it exits, the value is
 -- returned.  If it does not exist, a random number between
 -- 0 and 1 is generated, stored in the table under the key,
--- and also returned
--- example of use: WWII scenario with seasons
+-- and also returned.<br>
+--
+-- Example of use: WWII scenario with seasons
 -- You may want to have some games where the 1941 spring starts
 -- in April, and other games where it starts in May.  When
 -- determining whether to load winter or summer terrain stats during
 -- 1941, you would use gen.persistentRandom("EarlySpring1941") < 0.5
 -- as part of the season check in April, and load summer if the value is less than 0.5
 -- and winter otherwise.  This way, each when each player starts their
--- game that month, they will all either get winter or summer terrain
+-- game that month, they will all either get winter or summer terrain.
+---@param key string # Key for the persistent random value.
+---@return number # number between 0 and 1
 function gen.persistentRandom(key)
     genStateTable.persistentRandom[key] = genStateTable.persistentRandom[key] or math.random()
     return genStateTable.persistentRandom[key]
 end
 
 -- gen.clearPersistentRandom(key) --> void
--- sets the value associated with the key in the
--- persistentRandom table.  This could either be for reuse of the key,
--- or to prevent the key from staying in the state table indefinitely
+-- Sets the value associated with the key in the
+-- persistentRandom table to nil.  This could either be for reuse of the key,
+-- or to prevent the key from staying in the state table indefinitely.
+---@param key string
 function gen.clearPersistentRandom(key)
     genStateTable.persistentRandom[key] = nil
 end
 
 -- gen.getPersistentRandomTable() --> table
--- returns the persistentRandom table
+-- Returns the persistentRandom table.
+---@return table<string,number>
 function gen.getPersistentRandomTable()
+---@diagnostic disable-next-line: return-type-mismatch
     return genStateTable.persistentRandom
 end
 
 
 -- gen.mergeTableValues(table,table,...) --> table
---  accepts an arbitrary number of tables as
+
+--  Accepts an arbitrary number of tables as
 --  arguments and returns a table with all
 --  the values from all the tables.
 --  Table keys are lost, and replaced by
 --  integers starting at 1.
---  Duplicate values will appear multiple times
---
---
+--  Duplicate values will appear multiple times.
+---@param ... table
+---@return table
 function gen.mergeTableValues(...)
     local argTable = {...}
     local output = {}
@@ -4299,224 +5285,224 @@ end
 gen.original = {}
 
 
-gen.original.aAdvancedFlight          = civ.getTech(0)
-gen.original.aAlphabet                = civ.getTech(1)
-gen.original.aAmphibiousWarfare       = civ.getTech(2)
-gen.original.aAstronomy               = civ.getTech(3)
-gen.original.aAtomicTheory            = civ.getTech(4)
-gen.original.aAutomobile              = civ.getTech(5)   --Automobile
-gen.original.aBanking                 = civ.getTech(6)
-gen.original.aBridgeBuilding          = civ.getTech(7)   --Bridge Building
-gen.original.aBronzeWorking           = civ.getTech(8)
-gen.original.aCeremonialBurial        = civ.getTech(9)
-gen.original.aChemistry               = civ.getTech(10)
-gen.original.aChivalry                = civ.getTech(11)
-gen.original.aCodeofLaws              = civ.getTech(12)
-gen.original.aCombinedArms            = civ.getTech(13)
-gen.original.aCombustion              = civ.getTech(14)
-gen.original.aCommunism               = civ.getTech(15)
-gen.original.aComputers               = civ.getTech(16)
-gen.original.aConscription            = civ.getTech(17)
-gen.original.aConstruction            = civ.getTech(18)
-gen.original.aCorporation             = civ.getTech(19)
-gen.original.aCurrency                = civ.getTech(20)
-gen.original.aDemocracy               = civ.getTech(21)
-gen.original.aEconomics               = civ.getTech(22)
-gen.original.aElectricity             = civ.getTech(23)
-gen.original.aElectronics             = civ.getTech(24)
-gen.original.aEngineering             = civ.getTech(25)
-gen.original.aEnvironmentalism        = civ.getTech(26)
-gen.original.aEspionage               = civ.getTech(27)
-gen.original.aExplosives              = civ.getTech(28)
-gen.original.aFeudalism               = civ.getTech(29)
-gen.original.aFlight                  = civ.getTech(30)
-gen.original.aFundamentalism          = civ.getTech(31)
-gen.original.aFusionPower             = civ.getTech(32)
-gen.original.aGeneticEngineering      = civ.getTech(33)
-gen.original.aGuerrillaWarfare        = civ.getTech(34)
-gen.original.aGunpowder               = civ.getTech(35)
-gen.original.aHorsebackRiding         = civ.getTech(36)
-gen.original.aIndustrialization       = civ.getTech(37)
-gen.original.aInvention               = civ.getTech(38)
-gen.original.aIronWorking             = civ.getTech(39)
-gen.original.aLaborUnion              = civ.getTech(40)
-gen.original.aLaser                   = civ.getTech(41)
-gen.original.aLeadership              = civ.getTech(42)
-gen.original.aLiteracy                = civ.getTech(43)
-gen.original.aMachineTools            = civ.getTech(44)
-gen.original.aMagnetism               = civ.getTech(45)
-gen.original.aMapMaking               = civ.getTech(46)
-gen.original.aMasonry                 = civ.getTech(47)
-gen.original.aMassProduction          = civ.getTech(48)
-gen.original.aMathematics             = civ.getTech(49)
-gen.original.aMedicine                = civ.getTech(50)
-gen.original.aMetallurgy              = civ.getTech(51)
-gen.original.aMiniaturization         = civ.getTech(52)
-gen.original.aMobileWarfare           = civ.getTech(53)
-gen.original.aMonarchy                = civ.getTech(54)
-gen.original.aMonotheism              = civ.getTech(55)
-gen.original.aMysticism               = civ.getTech(56)
-gen.original.aNavigation              = civ.getTech(57)
-gen.original.aNuclearFission          = civ.getTech(58)
-gen.original.aNuclearPower            = civ.getTech(59)
-gen.original.aPhilosophy              = civ.getTech(60)
-gen.original.aPhysics                 = civ.getTech(61)
-gen.original.aPlastics                = civ.getTech(62)
-gen.original.aPlumbing                = civ.getTech(63)
-gen.original.aPolytheism              = civ.getTech(64)
-gen.original.aPottery                 = civ.getTech(65)
-gen.original.aRadio                   = civ.getTech(66)
-gen.original.aRailroad                = civ.getTech(67)
-gen.original.aRecycling               = civ.getTech(68)
-gen.original.aRefining                = civ.getTech(69)
-gen.original.aRefrigeration           = civ.getTech(70)
-gen.original.aRepublic                = civ.getTech(71)
-gen.original.aRobotics                = civ.getTech(72)
-gen.original.aRocketry                = civ.getTech(73)
-gen.original.aSanitation              = civ.getTech(74)
-gen.original.aSeafaring               = civ.getTech(75)
-gen.original.aSpaceFlight             = civ.getTech(76)
-gen.original.aStealth                 = civ.getTech(77)
-gen.original.aSteamEngine             = civ.getTech(78)
-gen.original.aSteel                   = civ.getTech(79)
-gen.original.aSuperconductor          = civ.getTech(80)
-gen.original.aTactics                 = civ.getTech(81)
-gen.original.aTheology                = civ.getTech(82)
-gen.original.aTheoryofGravity         = civ.getTech(83)
-gen.original.aTrade                   = civ.getTech(84)
-gen.original.aUniversity              = civ.getTech(85)
-gen.original.aWarriorCode             = civ.getTech(86)
-gen.original.aWheel                   = civ.getTech(87)
-gen.original.aWriting                 = civ.getTech(88)
-gen.original.aFutureTechnology        = civ.getTech(89)
-gen.original.aUserDefTechA            = civ.getTech(90)
-gen.original.aUserDefTechB            = civ.getTech(91)
-gen.original.aUserDefTechC            = civ.getTech(92)
-gen.original.aExtraAdvance1           = civ.getTech(93)
-gen.original.aExtraAdvance2           = civ.getTech(94)
-gen.original.aExtraAdvance3           = civ.getTech(95)
-gen.original.aExtraAdvance4           = civ.getTech(96)
-gen.original.aExtraAdvance5           = civ.getTech(97)
-gen.original.aExtraAdvance6           = civ.getTech(98)
-gen.original.aExtraAdvance7           = civ.getTech(99)
-gen.original.uSettlers                = civ.getUnitType(0)
-gen.original.uEngineers               = civ.getUnitType(1)   --Engineers
-gen.original.uWarriors                = civ.getUnitType(2)
-gen.original.uPhalanx                 = civ.getUnitType(3)
-gen.original.uArchers                 = civ.getUnitType(4)
-gen.original.uLegion                  = civ.getUnitType(5)
-gen.original.uPikemen                 = civ.getUnitType(6)
-gen.original.uMusketeers              = civ.getUnitType(7)
-gen.original.uFanatics                = civ.getUnitType(8)
-gen.original.uPartisans               = civ.getUnitType(9)
-gen.original.uAlpineTroops            = civ.getUnitType(10)
-gen.original.uRiflemen                = civ.getUnitType(11)
-gen.original.uMarines                 = civ.getUnitType(12)
-gen.original.uParatroopers            = civ.getUnitType(13)
-gen.original.uMechInf                 = civ.getUnitType(14)
-gen.original.uHorsemen                = civ.getUnitType(15)
-gen.original.uChariot                 = civ.getUnitType(16)
-gen.original.uElephant                = civ.getUnitType(17)
-gen.original.uCrusaders               = civ.getUnitType(18)
-gen.original.uKnights                 = civ.getUnitType(19)
-gen.original.uDragoons                = civ.getUnitType(20)
-gen.original.uCavalry                 = civ.getUnitType(21)
-gen.original.uArmor                   = civ.getUnitType(22)
-gen.original.uCatapult                = civ.getUnitType(23)
-gen.original.uCannon                  = civ.getUnitType(24)
-gen.original.uArtillery               = civ.getUnitType(25)
-gen.original.uHowitzer                = civ.getUnitType(26)
-gen.original.uFighter                 = civ.getUnitType(27)
-gen.original.uBomber                  = civ.getUnitType(28)
-gen.original.uHelicopter              = civ.getUnitType(29)
-gen.original.uStlthFtr                = civ.getUnitType(30)
-gen.original.uStlthBmbr               = civ.getUnitType(31)
-gen.original.uTrireme                 = civ.getUnitType(32)
-gen.original.uCaravel                 = civ.getUnitType(33)
-gen.original.uGalleon                 = civ.getUnitType(34)
-gen.original.uFrigate                 = civ.getUnitType(35)
-gen.original.uIronclad                = civ.getUnitType(36)
-gen.original.uDestroyer               = civ.getUnitType(37)
-gen.original.uCruiser                 = civ.getUnitType(38)
-gen.original.uAEGISCruiser            = civ.getUnitType(39)
-gen.original.uBattleship              = civ.getUnitType(40)
-gen.original.uSubmarine               = civ.getUnitType(41)
-gen.original.uCarrier                 = civ.getUnitType(42)
-gen.original.uTransport               = civ.getUnitType(43)
-gen.original.uCruiseMsl               = civ.getUnitType(44)
-gen.original.uNuclearMsl              = civ.getUnitType(45)   --Nuclear Msl
-gen.original.uDiplomat                = civ.getUnitType(46)
-gen.original.uSpy                     = civ.getUnitType(47)   --Spy
-gen.original.uCaravan                 = civ.getUnitType(48)
-gen.original.uFreight                 = civ.getUnitType(49)   --Freight
-gen.original.uExplorer                = civ.getUnitType(50)
-gen.original.uExtraLand               = civ.getUnitType(51)
-gen.original.uExtraShip               = civ.getUnitType(52)
-gen.original.uExtraAir                = civ.getUnitType(53)
-gen.original.iNothing                 = civ.getImprovement(0)
-gen.original.iPalace                  = civ.getImprovement(1)
-gen.original.iBarracks                = civ.getImprovement(2)
-gen.original.iGranary                 = civ.getImprovement(3)
-gen.original.iTemple                  = civ.getImprovement(4)
-gen.original.iMarketPlace             = civ.getImprovement(5)
-gen.original.iLibrary                 = civ.getImprovement(6)
-gen.original.iCourthouse              = civ.getImprovement(7)
-gen.original.iCityWalls               = civ.getImprovement(8)
-gen.original.iAqueduct                = civ.getImprovement(9)
-gen.original.iBank                    = civ.getImprovement(10)
-gen.original.iCathedral               = civ.getImprovement(11)
-gen.original.iUniversity              = civ.getImprovement(12)
-gen.original.iMassTransit             = civ.getImprovement(13)
-gen.original.iColosseum               = civ.getImprovement(14)
-gen.original.iFactory                 = civ.getImprovement(15)
-gen.original.iManufacturingPlant      = civ.getImprovement(16)
-gen.original.iSDIDefense              = civ.getImprovement(17)
-gen.original.iRecyclingCenter         = civ.getImprovement(18)
-gen.original.iPowerPlant              = civ.getImprovement(19)
-gen.original.iHydroPlant              = civ.getImprovement(20)
-gen.original.iNuclearPlant            = civ.getImprovement(21)
-gen.original.iStockExchange           = civ.getImprovement(22)
-gen.original.iSewerSystem             = civ.getImprovement(23)
-gen.original.iSupermarket             = civ.getImprovement(24)
-gen.original.iSuperhighways           = civ.getImprovement(25)
-gen.original.iResearchLab             = civ.getImprovement(26)
-gen.original.iSAMMissileBattery       = civ.getImprovement(27)
-gen.original.iCoastalFortress         = civ.getImprovement(28)
-gen.original.iSolarPlant              = civ.getImprovement(29)
-gen.original.iHarbor                  = civ.getImprovement(30)
-gen.original.iOffshorePlatform        = civ.getImprovement(31)
-gen.original.iAirport                 = civ.getImprovement(32)
-gen.original.iPoliceStation           = civ.getImprovement(33)
-gen.original.iPortFacility            = civ.getImprovement(34)
-gen.original.iTransporter             = civ.getImprovement(35)
-gen.original.wPyramids                = civ.getWonder(0)
-gen.original.wHangingGardens          = civ.getWonder(1)
-gen.original.wColossus                = civ.getWonder(2)
-gen.original.wLighthouse              = civ.getWonder(3)
-gen.original.wGreatLibrary            = civ.getWonder(4)
-gen.original.wOracle                  = civ.getWonder(5)
-gen.original.wGreatWall               = civ.getWonder(6)
-gen.original.wSunTzusWarAcademy       = civ.getWonder(7)
-gen.original.wKingRichardsCrusade     = civ.getWonder(8)
-gen.original.wMarcoPolosEmbassy       = civ.getWonder(9)
-gen.original.wMichelangelosChapel     = civ.getWonder(10)
-gen.original.wCopernicusObservatory   = civ.getWonder(11)
-gen.original.wMagellansExpedition     = civ.getWonder(12)
-gen.original.wShakespearesTheatre     = civ.getWonder(13)
-gen.original.wLeonardosWorkshop       = civ.getWonder(14)
-gen.original.wJSBachsCathedral        = civ.getWonder(15)
-gen.original.wIsaacNewtonsCollege     = civ.getWonder(16)
-gen.original.wAdamSmithsTradingCo     = civ.getWonder(17)
-gen.original.wDarwinsVoyage           = civ.getWonder(18)
-gen.original.wStatueofLiberty         = civ.getWonder(19)
-gen.original.wEiffelTower             = civ.getWonder(20)
-gen.original.wWomensSuffrage          = civ.getWonder(21)
-gen.original.wHooverDam               = civ.getWonder(22)
-gen.original.wManhattanProject        = civ.getWonder(23)
-gen.original.wUnitedNations           = civ.getWonder(24)
-gen.original.wApolloProgram           = civ.getWonder(25)
-gen.original.wSETIProgram             = civ.getWonder(26)
-gen.original.wCureforCancer           = civ.getWonder(27)
+gen.original.aAdvancedFlight          = civ.getTech(0) --[[@as techObject]]
+gen.original.aAlphabet                = civ.getTech(1) --[[@as techObject]]
+gen.original.aAmphibiousWarfare       = civ.getTech(2) --[[@as techObject]]
+gen.original.aAstronomy               = civ.getTech(3) --[[@as techObject]]
+gen.original.aAtomicTheory            = civ.getTech(4) --[[@as techObject]]
+gen.original.aAutomobile              = civ.getTech(5) --[[@as techObject]]   --Automobile
+gen.original.aBanking                 = civ.getTech(6) --[[@as techObject]]
+gen.original.aBridgeBuilding          = civ.getTech(7) --[[@as techObject]]   --Bridge Building
+gen.original.aBronzeWorking           = civ.getTech(8) --[[@as techObject]]
+gen.original.aCeremonialBurial        = civ.getTech(9) --[[@as techObject]]
+gen.original.aChemistry               = civ.getTech(10) --[[@as techObject]]
+gen.original.aChivalry                = civ.getTech(11) --[[@as techObject]]
+gen.original.aCodeofLaws              = civ.getTech(12) --[[@as techObject]]
+gen.original.aCombinedArms            = civ.getTech(13) --[[@as techObject]]
+gen.original.aCombustion              = civ.getTech(14) --[[@as techObject]]
+gen.original.aCommunism               = civ.getTech(15) --[[@as techObject]]
+gen.original.aComputers               = civ.getTech(16) --[[@as techObject]]
+gen.original.aConscription            = civ.getTech(17) --[[@as techObject]]
+gen.original.aConstruction            = civ.getTech(18) --[[@as techObject]]
+gen.original.aCorporation             = civ.getTech(19) --[[@as techObject]]
+gen.original.aCurrency                = civ.getTech(20) --[[@as techObject]]
+gen.original.aDemocracy               = civ.getTech(21) --[[@as techObject]]
+gen.original.aEconomics               = civ.getTech(22) --[[@as techObject]]
+gen.original.aElectricity             = civ.getTech(23) --[[@as techObject]]
+gen.original.aElectronics             = civ.getTech(24) --[[@as techObject]]
+gen.original.aEngineering             = civ.getTech(25) --[[@as techObject]]
+gen.original.aEnvironmentalism        = civ.getTech(26) --[[@as techObject]]
+gen.original.aEspionage               = civ.getTech(27) --[[@as techObject]]
+gen.original.aExplosives              = civ.getTech(28) --[[@as techObject]]
+gen.original.aFeudalism               = civ.getTech(29) --[[@as techObject]]
+gen.original.aFlight                  = civ.getTech(30) --[[@as techObject]]
+gen.original.aFundamentalism          = civ.getTech(31) --[[@as techObject]]
+gen.original.aFusionPower             = civ.getTech(32) --[[@as techObject]]
+gen.original.aGeneticEngineering      = civ.getTech(33) --[[@as techObject]]
+gen.original.aGuerrillaWarfare        = civ.getTech(34) --[[@as techObject]]
+gen.original.aGunpowder               = civ.getTech(35) --[[@as techObject]]
+gen.original.aHorsebackRiding         = civ.getTech(36) --[[@as techObject]]
+gen.original.aIndustrialization       = civ.getTech(37) --[[@as techObject]]
+gen.original.aInvention               = civ.getTech(38) --[[@as techObject]]
+gen.original.aIronWorking             = civ.getTech(39) --[[@as techObject]]
+gen.original.aLaborUnion              = civ.getTech(40) --[[@as techObject]]
+gen.original.aLaser                   = civ.getTech(41) --[[@as techObject]]
+gen.original.aLeadership              = civ.getTech(42) --[[@as techObject]]
+gen.original.aLiteracy                = civ.getTech(43) --[[@as techObject]]
+gen.original.aMachineTools            = civ.getTech(44) --[[@as techObject]]
+gen.original.aMagnetism               = civ.getTech(45) --[[@as techObject]]
+gen.original.aMapMaking               = civ.getTech(46) --[[@as techObject]]
+gen.original.aMasonry                 = civ.getTech(47) --[[@as techObject]]
+gen.original.aMassProduction          = civ.getTech(48) --[[@as techObject]]
+gen.original.aMathematics             = civ.getTech(49) --[[@as techObject]]
+gen.original.aMedicine                = civ.getTech(50) --[[@as techObject]]
+gen.original.aMetallurgy              = civ.getTech(51) --[[@as techObject]]
+gen.original.aMiniaturization         = civ.getTech(52) --[[@as techObject]]
+gen.original.aMobileWarfare           = civ.getTech(53) --[[@as techObject]]
+gen.original.aMonarchy                = civ.getTech(54) --[[@as techObject]]
+gen.original.aMonotheism              = civ.getTech(55) --[[@as techObject]]
+gen.original.aMysticism               = civ.getTech(56) --[[@as techObject]]
+gen.original.aNavigation              = civ.getTech(57) --[[@as techObject]]
+gen.original.aNuclearFission          = civ.getTech(58) --[[@as techObject]]
+gen.original.aNuclearPower            = civ.getTech(59) --[[@as techObject]]
+gen.original.aPhilosophy              = civ.getTech(60) --[[@as techObject]]
+gen.original.aPhysics                 = civ.getTech(61) --[[@as techObject]]
+gen.original.aPlastics                = civ.getTech(62) --[[@as techObject]]
+gen.original.aPlumbing                = civ.getTech(63) --[[@as techObject]]
+gen.original.aPolytheism              = civ.getTech(64) --[[@as techObject]]
+gen.original.aPottery                 = civ.getTech(65) --[[@as techObject]]
+gen.original.aRadio                   = civ.getTech(66) --[[@as techObject]]
+gen.original.aRailroad                = civ.getTech(67) --[[@as techObject]]
+gen.original.aRecycling               = civ.getTech(68) --[[@as techObject]]
+gen.original.aRefining                = civ.getTech(69) --[[@as techObject]]
+gen.original.aRefrigeration           = civ.getTech(70) --[[@as techObject]]
+gen.original.aRepublic                = civ.getTech(71) --[[@as techObject]]
+gen.original.aRobotics                = civ.getTech(72) --[[@as techObject]]
+gen.original.aRocketry                = civ.getTech(73) --[[@as techObject]]
+gen.original.aSanitation              = civ.getTech(74) --[[@as techObject]]
+gen.original.aSeafaring               = civ.getTech(75) --[[@as techObject]]
+gen.original.aSpaceFlight             = civ.getTech(76) --[[@as techObject]]
+gen.original.aStealth                 = civ.getTech(77) --[[@as techObject]]
+gen.original.aSteamEngine             = civ.getTech(78) --[[@as techObject]]
+gen.original.aSteel                   = civ.getTech(79) --[[@as techObject]]
+gen.original.aSuperconductor          = civ.getTech(80) --[[@as techObject]]
+gen.original.aTactics                 = civ.getTech(81) --[[@as techObject]]
+gen.original.aTheology                = civ.getTech(82) --[[@as techObject]]
+gen.original.aTheoryofGravity         = civ.getTech(83) --[[@as techObject]]
+gen.original.aTrade                   = civ.getTech(84) --[[@as techObject]]
+gen.original.aUniversity              = civ.getTech(85) --[[@as techObject]]
+gen.original.aWarriorCode             = civ.getTech(86) --[[@as techObject]]
+gen.original.aWheel                   = civ.getTech(87) --[[@as techObject]]
+gen.original.aWriting                 = civ.getTech(88) --[[@as techObject]]
+gen.original.aFutureTechnology        = civ.getTech(89) --[[@as techObject]]
+gen.original.aUserDefTechA            = civ.getTech(90) --[[@as techObject]]
+gen.original.aUserDefTechB            = civ.getTech(91) --[[@as techObject]]
+gen.original.aUserDefTechC            = civ.getTech(92) --[[@as techObject]]
+gen.original.aExtraAdvance1           = civ.getTech(93) --[[@as techObject]]
+gen.original.aExtraAdvance2           = civ.getTech(94) --[[@as techObject]]
+gen.original.aExtraAdvance3           = civ.getTech(95) --[[@as techObject]]
+gen.original.aExtraAdvance4           = civ.getTech(96) --[[@as techObject]]
+gen.original.aExtraAdvance5           = civ.getTech(97) --[[@as techObject]]
+gen.original.aExtraAdvance6           = civ.getTech(98) --[[@as techObject]]
+gen.original.aExtraAdvance7           = civ.getTech(99) --[[@as techObject]]
+gen.original.uSettlers                = civ.getUnitType(0) --[[@as unitTypeObject]]
+gen.original.uEngineers               = civ.getUnitType(1) --[[@as unitTypeObject]]   --Engineers
+gen.original.uWarriors                = civ.getUnitType(2) --[[@as unitTypeObject]]
+gen.original.uPhalanx                 = civ.getUnitType(3) --[[@as unitTypeObject]]
+gen.original.uArchers                 = civ.getUnitType(4) --[[@as unitTypeObject]]
+gen.original.uLegion                  = civ.getUnitType(5) --[[@as unitTypeObject]]
+gen.original.uPikemen                 = civ.getUnitType(6) --[[@as unitTypeObject]]
+gen.original.uMusketeers              = civ.getUnitType(7) --[[@as unitTypeObject]]
+gen.original.uFanatics                = civ.getUnitType(8) --[[@as unitTypeObject]]
+gen.original.uPartisans               = civ.getUnitType(9) --[[@as unitTypeObject]]
+gen.original.uAlpineTroops            = civ.getUnitType(10) --[[@as unitTypeObject]]
+gen.original.uRiflemen                = civ.getUnitType(11) --[[@as unitTypeObject]]
+gen.original.uMarines                 = civ.getUnitType(12) --[[@as unitTypeObject]]
+gen.original.uParatroopers            = civ.getUnitType(13) --[[@as unitTypeObject]]
+gen.original.uMechInf                 = civ.getUnitType(14) --[[@as unitTypeObject]]
+gen.original.uHorsemen                = civ.getUnitType(15) --[[@as unitTypeObject]]
+gen.original.uChariot                 = civ.getUnitType(16) --[[@as unitTypeObject]]
+gen.original.uElephant                = civ.getUnitType(17) --[[@as unitTypeObject]]
+gen.original.uCrusaders               = civ.getUnitType(18) --[[@as unitTypeObject]]
+gen.original.uKnights                 = civ.getUnitType(19) --[[@as unitTypeObject]]
+gen.original.uDragoons                = civ.getUnitType(20) --[[@as unitTypeObject]]
+gen.original.uCavalry                 = civ.getUnitType(21) --[[@as unitTypeObject]]
+gen.original.uArmor                   = civ.getUnitType(22) --[[@as unitTypeObject]]
+gen.original.uCatapult                = civ.getUnitType(23) --[[@as unitTypeObject]]
+gen.original.uCannon                  = civ.getUnitType(24) --[[@as unitTypeObject]]
+gen.original.uArtillery               = civ.getUnitType(25) --[[@as unitTypeObject]]
+gen.original.uHowitzer                = civ.getUnitType(26) --[[@as unitTypeObject]]
+gen.original.uFighter                 = civ.getUnitType(27) --[[@as unitTypeObject]]
+gen.original.uBomber                  = civ.getUnitType(28) --[[@as unitTypeObject]]
+gen.original.uHelicopter              = civ.getUnitType(29) --[[@as unitTypeObject]]
+gen.original.uStlthFtr                = civ.getUnitType(30) --[[@as unitTypeObject]]
+gen.original.uStlthBmbr               = civ.getUnitType(31) --[[@as unitTypeObject]]
+gen.original.uTrireme                 = civ.getUnitType(32) --[[@as unitTypeObject]]
+gen.original.uCaravel                 = civ.getUnitType(33) --[[@as unitTypeObject]]
+gen.original.uGalleon                 = civ.getUnitType(34) --[[@as unitTypeObject]]
+gen.original.uFrigate                 = civ.getUnitType(35) --[[@as unitTypeObject]]
+gen.original.uIronclad                = civ.getUnitType(36) --[[@as unitTypeObject]]
+gen.original.uDestroyer               = civ.getUnitType(37) --[[@as unitTypeObject]]
+gen.original.uCruiser                 = civ.getUnitType(38) --[[@as unitTypeObject]]
+gen.original.uAEGISCruiser            = civ.getUnitType(39) --[[@as unitTypeObject]]
+gen.original.uBattleship              = civ.getUnitType(40) --[[@as unitTypeObject]]
+gen.original.uSubmarine               = civ.getUnitType(41) --[[@as unitTypeObject]]
+gen.original.uCarrier                 = civ.getUnitType(42) --[[@as unitTypeObject]]
+gen.original.uTransport               = civ.getUnitType(43) --[[@as unitTypeObject]]
+gen.original.uCruiseMsl               = civ.getUnitType(44) --[[@as unitTypeObject]]
+gen.original.uNuclearMsl              = civ.getUnitType(45) --[[@as unitTypeObject]]   --Nuclear Msl
+gen.original.uDiplomat                = civ.getUnitType(46) --[[@as unitTypeObject]]
+gen.original.uSpy                     = civ.getUnitType(47) --[[@as unitTypeObject]]   --Spy
+gen.original.uCaravan                 = civ.getUnitType(48) --[[@as unitTypeObject]]
+gen.original.uFreight                 = civ.getUnitType(49) --[[@as unitTypeObject]]   --Freight
+gen.original.uExplorer                = civ.getUnitType(50) --[[@as unitTypeObject]]
+gen.original.uExtraLand               = civ.getUnitType(51) --[[@as unitTypeObject]]
+gen.original.uExtraShip               = civ.getUnitType(52) --[[@as unitTypeObject]]
+gen.original.uExtraAir                = civ.getUnitType(53) --[[@as unitTypeObject]]
+gen.original.iNothing                 = civ.getImprovement(0) --[[@as improvementObject]]
+gen.original.iPalace                  = civ.getImprovement(1) --[[@as improvementObject]]
+gen.original.iBarracks                = civ.getImprovement(2) --[[@as improvementObject]]
+gen.original.iGranary                 = civ.getImprovement(3) --[[@as improvementObject]]
+gen.original.iTemple                  = civ.getImprovement(4) --[[@as improvementObject]]
+gen.original.iMarketPlace             = civ.getImprovement(5) --[[@as improvementObject]]
+gen.original.iLibrary                 = civ.getImprovement(6) --[[@as improvementObject]]
+gen.original.iCourthouse              = civ.getImprovement(7) --[[@as improvementObject]]
+gen.original.iCityWalls               = civ.getImprovement(8) --[[@as improvementObject]]
+gen.original.iAqueduct                = civ.getImprovement(9) --[[@as improvementObject]]
+gen.original.iBank                    = civ.getImprovement(10) --[[@as improvementObject]]
+gen.original.iCathedral               = civ.getImprovement(11) --[[@as improvementObject]]
+gen.original.iUniversity              = civ.getImprovement(12) --[[@as improvementObject]]
+gen.original.iMassTransit             = civ.getImprovement(13) --[[@as improvementObject]]
+gen.original.iColosseum               = civ.getImprovement(14) --[[@as improvementObject]]
+gen.original.iFactory                 = civ.getImprovement(15) --[[@as improvementObject]]
+gen.original.iManufacturingPlant      = civ.getImprovement(16) --[[@as improvementObject]]
+gen.original.iSDIDefense              = civ.getImprovement(17) --[[@as improvementObject]]
+gen.original.iRecyclingCenter         = civ.getImprovement(18) --[[@as improvementObject]]
+gen.original.iPowerPlant              = civ.getImprovement(19) --[[@as improvementObject]]
+gen.original.iHydroPlant              = civ.getImprovement(20) --[[@as improvementObject]]
+gen.original.iNuclearPlant            = civ.getImprovement(21) --[[@as improvementObject]]
+gen.original.iStockExchange           = civ.getImprovement(22) --[[@as improvementObject]]
+gen.original.iSewerSystem             = civ.getImprovement(23) --[[@as improvementObject]]
+gen.original.iSupermarket             = civ.getImprovement(24) --[[@as improvementObject]]
+gen.original.iSuperhighways           = civ.getImprovement(25) --[[@as improvementObject]]
+gen.original.iResearchLab             = civ.getImprovement(26) --[[@as improvementObject]]
+gen.original.iSAMMissileBattery       = civ.getImprovement(27) --[[@as improvementObject]]
+gen.original.iCoastalFortress         = civ.getImprovement(28) --[[@as improvementObject]]
+gen.original.iSolarPlant              = civ.getImprovement(29) --[[@as improvementObject]]
+gen.original.iHarbor                  = civ.getImprovement(30) --[[@as improvementObject]]
+gen.original.iOffshorePlatform        = civ.getImprovement(31) --[[@as improvementObject]]
+gen.original.iAirport                 = civ.getImprovement(32) --[[@as improvementObject]]
+gen.original.iPoliceStation           = civ.getImprovement(33) --[[@as improvementObject]]
+gen.original.iPortFacility            = civ.getImprovement(34) --[[@as improvementObject]]
+gen.original.iTransporter             = civ.getImprovement(35) --[[@as improvementObject]]
+gen.original.wPyramids                = civ.getWonder(0) --[[@as wonderObject]]
+gen.original.wHangingGardens          = civ.getWonder(1) --[[@as wonderObject]]
+gen.original.wColossus                = civ.getWonder(2) --[[@as wonderObject]]
+gen.original.wLighthouse              = civ.getWonder(3) --[[@as wonderObject]]
+gen.original.wGreatLibrary            = civ.getWonder(4) --[[@as wonderObject]]
+gen.original.wOracle                  = civ.getWonder(5) --[[@as wonderObject]]
+gen.original.wGreatWall               = civ.getWonder(6) --[[@as wonderObject]]
+gen.original.wSunTzusWarAcademy       = civ.getWonder(7) --[[@as wonderObject]]
+gen.original.wKingRichardsCrusade     = civ.getWonder(8) --[[@as wonderObject]]
+gen.original.wMarcoPolosEmbassy       = civ.getWonder(9) --[[@as wonderObject]]
+gen.original.wMichelangelosChapel     = civ.getWonder(10) --[[@as wonderObject]]
+gen.original.wCopernicusObservatory   = civ.getWonder(11) --[[@as wonderObject]]
+gen.original.wMagellansExpedition     = civ.getWonder(12) --[[@as wonderObject]]
+gen.original.wShakespearesTheatre     = civ.getWonder(13) --[[@as wonderObject]]
+gen.original.wLeonardosWorkshop       = civ.getWonder(14) --[[@as wonderObject]]
+gen.original.wJSBachsCathedral        = civ.getWonder(15) --[[@as wonderObject]]
+gen.original.wIsaacNewtonsCollege     = civ.getWonder(16) --[[@as wonderObject]]
+gen.original.wAdamSmithsTradingCo     = civ.getWonder(17) --[[@as wonderObject]]
+gen.original.wDarwinsVoyage           = civ.getWonder(18) --[[@as wonderObject]]
+gen.original.wStatueofLiberty         = civ.getWonder(19) --[[@as wonderObject]]
+gen.original.wEiffelTower             = civ.getWonder(20) --[[@as wonderObject]]
+gen.original.wWomensSuffrage          = civ.getWonder(21) --[[@as wonderObject]]
+gen.original.wHooverDam               = civ.getWonder(22) --[[@as wonderObject]]
+gen.original.wManhattanProject        = civ.getWonder(23) --[[@as wonderObject]]
+gen.original.wUnitedNations           = civ.getWonder(24) --[[@as wonderObject]]
+gen.original.wApolloProgram           = civ.getWonder(25) --[[@as wonderObject]]
+gen.original.wSETIProgram             = civ.getWonder(26) --[[@as wonderObject]]
+gen.original.wCureforCancer           = civ.getWonder(27) --[[@as wonderObject]]
 gen.original.bDesert                  =civ.getBaseTerrain(0,0)  --Drt
 gen.original.bPlains                  =civ.getBaseTerrain(0,1)  --Pln
 gen.original.bGrassland               =civ.getBaseTerrain(0,2)  --Grs
@@ -4562,14 +5548,20 @@ gen.original.tWhales                  =civ.getTerrain(0,10,2) -- Whale Resource
 
 
 -- gen.isTileRevealed(tile,tribe) -> boolean
--- returns true if tile is revealed, false otherwise
+
+-- Returns true if `tile` is revealed to `tribe`, false otherwise.
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param tribe tribeObject
+---@return boolean
 function gen.isTileRevealed(tile,tribe)
     tile = toTile(tile)
     return isBit1(tile.visibility,tribe.id+1)
 end
 
 -- gen.revealTile(tile,tribe) -> void
--- makes tile visible to tribe
+-- makes `tile` visible to `tribe`
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param tribe tribeObject
 function gen.revealTile(tile,tribe)
     tile = toTile(tile)
 ---@diagnostic disable-next-line: assign-type-mismatch
@@ -4578,19 +5570,27 @@ end
 
 -- gen.coverTile(tile,tribe) -> void
 -- covers a tile so it isn't visible to tribe (if it ever was)
+---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param tribe tribeObject
 function gen.coverTile(tile,tribe)
     tile = toTile(tile)
 ---@diagnostic disable-next-line: assign-type-mismatch
     tile.visibility = gen.setBit0(tile.visibility,tribe.id+1)
 end
 
--- gen.isUnitStackVisible(unitOrTile,tribe,emptyTileReturnValue=nil) --> boolean or emptySquareReturnValue
--- if unit provided, returns true if that unit is visible to tribe, and false if not
--- a tribe's units are visible to it (even though unit.visibility doesn't show this)
--- if tile provided, returns true if there are units on the tile and the tribe can see them,
+-- gen.isUnitStackVisible(unitOrTile,tribe,emptyTileReturnValue=nil) --> boolean or emptyTileReturnValue
+
+-- If a unit is provided, returns true if that unit is visible to tribe, and false if not.
+-- Note: a tribe's own units are visible to it (even though unit.visibility doesn't show this).
+-- If a tile is provided, returns true if there are units on the tile and the tribe can see them,
 -- false if units are on the tile and the tribe can't see them, and
--- returns emptyTileReturnValue (default nil) if there are no units on the tile
--- 
+-- returns emptyTileReturnValue (default nil) if there are no units on the tile.
+---@generic emptyTileReturnValue
+---@param unitOrTile tileObject|unitObject 
+---@param tribe tribeObject
+---@param emptyTileReturnValue emptyTileReturnValue Default value is nil.
+---@return boolean|emptyTileReturnValue
+---@overload fun(unitOrTile: unitObject|tileObject, tribe: tribeObject):boolean|nil
 function gen.isUnitStackVisible(unitOrTile,tribe,emptyTileReturnValue)
     if civ.isUnit(unitOrTile) then
         return (unitOrTile.owner == tribe) or isBit1(unitOrTile.visibility,tribe.id+1)
@@ -4607,9 +5607,12 @@ end
 
 
 -- gen.revealUnitStack(unitOrTile,tribe) --> void
--- if unit provided, reveals that unit and all other units on the tile
--- to the tribe
--- if tile, reveals all units on the tile (if any are present)
+
+-- If a unit is provided, reveals that unit and all other units on the tile
+-- to the tribe.
+-- If a tile is provided, reveals all units on the tile to the tribe (if any are present).
+---@param unitOrTile tileAnalog|unitObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param tribe tribeObject
 function gen.revealUnitStack(unitOrTile,tribe)
     local tile = nil
     if civ.isUnit(unitOrTile) then
@@ -4623,8 +5626,11 @@ function gen.revealUnitStack(unitOrTile,tribe)
 end
 
 -- gen.hideUnitStack(unitOrTile,tribe) --> void
--- if unit provided, hides the unit and all other units on the tile from tribe
--- if tile provided, hides all units on the tile (if any are present)
+
+-- If a unit is provided, hides the unit and all other units on the tile from tribe
+-- If a tile is provided, hides all units on the tile (if any are present)
+---@param unitOrTile tileAnalog|unitObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param tribe tribeObject
 function gen.hideUnitStack(unitOrTile,tribe)
     local tile = nil
     if civ.isUnit(unitOrTile) then
@@ -4636,22 +5642,29 @@ function gen.hideUnitStack(unitOrTile,tribe)
         unit.visibility = setBit0(unit.visibility,tribe.id+1)
     end
 end
---
---
---
---
+
+
 -- gen.isCityCharted(city,tribe) --> bool
--- returns true if city is "knownTo" tribe (that is,
--- will appear on the map if the tile is visible), false otherwise
+
+-- Returns true if city is "knownTo" tribe (that is,
+-- will appear on the map if the tile is visible), false otherwise.
+---@param city cityObject
+---@param tribe tribeObject
+---@return boolean
 function gen.isCityCharted(city,tribe)
     return isBit1(city.knownTo,tribe.id+1) and city.sizeForTribe[tribe] ~= 0
 end
 
 -- gen.chartCity(city,tribe,visibleSize=nil) --> void
--- makes city visible to tribe on the map, setting it to visibleSize if provided.
+
+-- Makes city visible to tribe on the map, setting it to visibleSize if provided.
 -- If city.sizeForTribe[tribe] == 0 (the default value) after this, it is set to 1
 -- since a city does not appear if city.sizeForTribe[tribe] == 0
--- does not change the visibility of the tile
+-- does not change the visibility of the tile.
+---@param city cityObject
+---@param tribe tribeObject
+---@param visibleSize? integer 1 by default.
+---@overload fun(city:cityObject, tribe:tribeObject)
 function gen.chartCity(city,tribe,visibleSize)
     if visibleSize then
         city.sizeForTribe[tribe] = visibleSize
@@ -4661,15 +5674,14 @@ function gen.chartCity(city,tribe,visibleSize)
 end
 
 -- gen.unchartCity(city,tribe) --> void
--- makes a city invisible to tribe (but doesn't cover the tile in black)
--- by changing the knownTo field
+
+-- Makes a `city` invisible to `tribe` (but doesn't cover the tile in black)
+-- by changing the knownTo field.
+---@param city any
+---@param tribe any
 function gen.unchartCity(city,tribe) 
     city.knownTo = setBit0(city.knownTo,tribe.id+1)
 end
-
-
-
-
 
 local function buildChartingFunctions(name,bitString)
     gen["is"..name.."Charted"] = function(tile,tribe)
@@ -4691,54 +5703,131 @@ end
 
 
 -- gen.isIrrigationCharted(tile,tribe) --> bool
--- returns true if tribe sees Irrigation on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Irrigation on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isIrrigationCharted(tile,tribe) end
 -- gen.chartIrrigation(tile,tribe) --> void
--- charts Irrigation on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Irrigation on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartIrrigation(tile,tribe) end
 -- gen.unchartIrrigation(tile,tribe) --> void
--- uncharts Irrigation on the tribe's map of tile, if Irrigation has been charted.
--- If Irrigation is not charted, the chart remains unchanged
+
+-- Uncharts Irrigation on the tribe's map of tile, if Irrigation has been charted.
+-- If Irrigation is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartIrrigation(tile,tribe) end
 buildChartingFunctions("Irrigation","hgfe01ba")
 
 -- gen.isMineCharted(tile,tribe) --> bool
--- returns true if tribe sees Mine on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Mine on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isMineCharted(tile,tribe) end
+
 -- gen.chartMine(tile,tribe) --> void
--- charts Mine on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Mine on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartMine(tile,tribe) end
+
 -- gen.unchartMine(tile,tribe) --> void
--- uncharts Mine on the tribe's map of tile, if Mine has been charted.
--- If Mine is not charted, the chart remains unchanged
+
+-- Uncharts Mine on the tribe's map of tile, if Mine has been charted.
+-- If Mine is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartMine(tile,tribe) end
 buildChartingFunctions("Mine","hgfe10ba")
 
 -- gen.isFarmlandCharted(tile,tribe) --> bool
--- returns true if tribe sees Farmland on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Farmland on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isFarmlandCharted(tile,tribe) end
 -- gen.chartFarmland(tile,tribe) --> void
--- charts Farmland on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Farmland on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartFarmland(tile,tribe) end
 -- gen.unchartFarmland(tile,tribe) --> void
--- uncharts Farmland on the tribe's map of tile, if Farmland has been charted.
--- If Farmland is not charted, the chart remains unchanged
+
+-- Uncharts Farmland on the tribe's map of tile, if Farmland has been charted.
+-- If Farmland is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.unchartFarmland(tile,tribe) end
 buildChartingFunctions("Farmland","hgfe11ba")
 
 -- gen.isRoadCharted(tile,tribe) --> bool
--- returns true if tribe sees Road on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Road on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isRoadCharted(tile,tribe) end
+
 -- gen.chartRoad(tile,tribe) --> void
--- charts Road on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Road on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartRoad(tile,tribe) end
+
 -- gen.unchartRoad(tile,tribe) --> void
--- uncharts Road on the tribe's map of tile, if Road has been charted.
--- If Road is not charted, the chart remains unchanged
+
+-- Uncharts Road on the tribe's map of tile, if Road has been charted.
+-- If Road is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartRoad(tile,tribe) end
 buildChartingFunctions("Road","hgf1dcba")
 
 -- gen.isRailroadCharted(tile,tribe) --> bool
--- returns true if tribe sees Railroad on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Railroad on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isRailroadCharted(tile,tribe) end
+
 -- gen.chartRailroad(tile,tribe) --> void
--- charts Railroad on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Railroad on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartRailroad(tile,tribe) end
+
 -- gen.unchartRailroad(tile,tribe) --> void
--- uncharts Railroad on the tribe's map of tile, if Railroad has been charted.
--- If Railroad is not charted, the chart remains unchanged
+
 buildChartingFunctions("Railroad","hg11dcba")
+-- Uncharts Railroad on the tribe's map of tile, if Railroad has been charted.
+-- If Railroad is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
 gen.unchartRailroad = function(tile,tribe)
     tile = toTile(tile)
     if checkBits(tile.visibleImprovements[tribe],"hg11dcba") then
@@ -4746,53 +5835,121 @@ gen.unchartRailroad = function(tile,tribe)
     end
 end
 -- gen.unchartTransportation(tile,tribe) --> void
--- uncharts road and railroad on the tribe's map of tile
+-- Uncharts road and railroad on the tribe's map of tile.
+---@param tile tileObject
+---@param tribe tribeObject
 function gen.unchartTransportation(tile,tribe)
     tile = toTile(tile)
     tile.visibleImprovements[tribe] = setBits(tile.visibleImprovements[tribe],"hg00dcba")
 end
 
 -- gen.isFortressCharted(tile,tribe) --> bool
--- returns true if tribe sees Fortress on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Fortress on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isFortressCharted(tile,tribe) end
+
 -- gen.chartFortress(tile,tribe) --> void
--- charts Fortress on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Fortress on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartFortress(tile,tribe) end
+
 -- gen.unchartFortress(tile,tribe) --> void
--- uncharts Fortress on the tribe's map of tile, if Fortress has been charted.
--- If Fortress is not charted, the chart remains unchanged
+
+-- Uncharts Fortress on the tribe's map of tile, if Fortress has been charted.
+-- If Fortress is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartFortress(tile,tribe) end
 buildChartingFunctions("Fortress","h1fedc0a")
 
 -- gen.isAirbaseCharted(tile,tribe) --> bool
--- returns true if tribe sees Airbase on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Airbase on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isAirbaseCharted(tile,tribe) end
+
 -- gen.chartAirbase(tile,tribe) --> void
--- charts Airbase on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Airbase on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartAirbase(tile,tribe) end
+
 -- gen.unchartAirbase(tile,tribe) --> void
--- uncharts Airbase on the tribe's map of tile, if Airbase has been charted.
--- If Airbase is not charted, the chart remains unchanged
+
+-- Uncharts Airbase on the tribe's map of tile, if Airbase has been charted.
+-- If Airbase is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartAirbase(tile,tribe) end
 buildChartingFunctions("Airbase","h1fedc1a")
 
 -- gen.isPollutionCharted(tile,tribe) --> bool
--- returns true if tribe sees Pollution on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+-- Returns true if tribe sees Pollution on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isPollutionCharted(tile,tribe) end
+
 -- gen.chartPollution(tile,tribe) --> void
--- charts Pollution on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Pollution on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartPollution(tile,tribe) end
+
 -- gen.unchartPollution(tile,tribe) --> void
--- uncharts Pollution on the tribe's map of tile, if Pollution has been charted.
--- If Pollution is not charted, the chart remains unchanged
+
+-- Uncharts Pollution on the tribe's map of tile, if Pollution has been charted.
+-- If Pollution is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartPollution(tile,tribe) end
 buildChartingFunctions("Pollution","1gfedc0a")
 
 -- gen.isTransporterCharted(tile,tribe) --> bool
--- returns true if tribe sees Transporter on the tile, and false otherwise
--- does not consider if tile is revealed to the tribe
+
+-- Returns true if tribe sees Transporter on the tile, and false otherwise.
+-- Does not consider if tile is revealed to the tribe.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isTransporterCharted(tile,tribe) end
+
 -- gen.chartTransporter(tile,tribe) --> void
--- charts Transporter on the tribe's map of tile, uncharting any conflicting improvements
+
+-- Charts Transporter on the tribe's map of tile, uncharting any conflicting improvements.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.chartTransporter(tile,tribe) end
+
 -- gen.unchartTransporter(tile,tribe) --> void
--- uncharts Transporter on the tribe's map of tile, if Transporter has been charted.
--- If Transporter is not charted, the chart remains unchanged
+
+-- Uncharts Transporter on the tribe's map of tile, if Transporter has been charted.
+-- If Transporter is not charted, the chart remains unchanged.
+---@param tile tileObject
+---@param tribe tribeObject
+function gen.unchartTransporter(tile,tribe) end
 buildChartingFunctions("Transporter","1gfedc1a")
 
 -- gen.chartTruthfully(tile,tribe) --> void
+-- Reveals `tile` to `tribe`, and makes visible the tile improvements that actually exist.
+---@param tile tileObject
+---@param tribe tribeObject
 function gen.chartTruthfully(tile,tribe)
     gen.revealTile(tile,tribe)
     if tile.city then
@@ -4815,39 +5972,137 @@ local function buildAdvancedFlags(name,bitNumber)
 end
 
 -- gen.isInvisibleUntilAttack(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isInvisibleUntilAttack(unitType) end
+
 -- gen.giveInvisibleUntilAttack(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveInvisibleUntilAttack(unitType) end
+
 -- gen.removeInvisibleUntilAttack(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeInvisibleUntilAttack(unitType) end
+
 buildAdvancedFlags("InvisibleUntilAttack",1)
 
 -- gen.isNonDisbandable(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isNonDisbandable(unitType) end
+
 -- gen.giveNonDisbandable(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveNonDisbandable(unitType) end
+
 -- gen.removeNonDisbandable(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeNonDisbandable(unitType) end
+
 buildAdvancedFlags("NonDisbandable",2)
 
 -- gen.isZeroRangeAirUnitDamageOverride(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isZeroRangeAirUnitDamageOverride(unitType) end
+
 -- gen.giveZeroRangeAirUnitDamageOverride(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveZeroRangeAirUnitDamageOverride(unitType) end
+
 -- gen.removeZeroRangeAirUnitDamageOverride(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeZeroRangeAirUnitDamageOverride(unitType) end
+
 buildAdvancedFlags("ZeroRangeAirUnitDamageOverride",3)
 
 -- gen.isCannotBuyOffBarbarian(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isCannotBuyOffBarbarian(unitType) end
+
 -- gen.giveCannotBuyOffBarbarian(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveCannotBuyOffBarbarian(unitType) end
+
 -- gen.removeCannotBuyOffBarbarian(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeCannotBuyOffBarbarian(unitType) end
+
 buildAdvancedFlags("CannotBuyOffBarbarian",4)
 
 -- gen.isCanCrossImpassableTerrain(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isCanCrossImpassableTerrain(unitType) end
+
 -- gen.giveCanCrossImpassableTerrain(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveCanCrossImpassableTerrain(unitType) end
+
 -- gen.removeCanCrossImpassableTerrain(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeCanCrossImpassableTerrain(unitType) end
+
 buildAdvancedFlags("CanCrossImpassableTerrain",5)
 
 -- gen.isBarbarianWillNotExpire(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isBarbarianWillNotExpire(unitType) end
+
 -- gen.giveBarbarianWillNotExpire(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveBarbarianWillNotExpire(unitType) end
+
 -- gen.removeBarbarianWillNotExpire(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeBarbarianWillNotExpire(unitType) end
+
 buildAdvancedFlags("BarbarianWillNotExpire",7)
 
 
 -- gen.isOverrideSPR(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isOverrideSPR(unitType) end
+
 -- gen.giveOverrideSPR(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveOverrideSPR(unitType) end
+
 -- gen.removeOverrideSPR(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeOverrideSPR(unitType) end
+
 buildAdvancedFlags("OverrideSPR",8)
 
 local function buildAdvancedSettlerFlags(name,bitNumber)
@@ -4876,30 +6131,79 @@ local function buildAdvancedSettlerFlags(name,bitNumber)
 end
 
 --gen.isReducePopulationWhenBuilt(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isReducePopulationWhenBuilt(unitType) end
+
 --gen.giveReducePopulationWhenBuilt(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveReducePopulationWhenBuilt(unitType) end
+
 --gen.removeReducePopulationWhenBuilt(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeReducePopulationWhenBuilt(unitType) end
+
 buildAdvancedSettlerFlags("ReducePopulationWhenBuilt",10)
 
---gen.isRequiresFoodSupport(unitType) --> bool
---gen.giveRequiresFoodSupport(unitType) --> void
---gen.removeRequiresFoodSupport(unitType) --> void
+-- gen.isRequiresFoodSupport(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isRequiresFoodSupport(unitType) end
+
+-- gen.giveRequiresFoodSupport(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveRequiresFoodSupport(unitType) end
+
+-- gen.removeRequiresFoodSupport(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeRequiresFoodSupport(unitType) end
+
 buildAdvancedSettlerFlags("RequiresFoodSupport",11)
 
 
---gen.isCanFoundCities(unitType) --> bool
---gen.giveCanFoundCities(unitType) --> void
---gen.removeCanFoundCities(unitType) --> void
+-- gen.isCanFoundCities(unitType) --> bool
+
+---@param unitType unitTypeObject
+---@return boolean
+---@diagnostic disable-next-line: missing-return
+function gen.isCanFoundCities(unitType) end
+
+-- gen.giveCanFoundCities(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.giveCanFoundCities(unitType) end
+
+-- gen.removeCanFoundCities(unitType) --> void
+
+---@param unitType unitTypeObject
+function gen.removeCanFoundCities(unitType) end
+
 buildAdvancedSettlerFlags("CanFoundCities",12)
 
 
 -- gen.isCanImproveTiles(unitType)--> bool
+
+---@param unitType unitTypeObject
+---@return boolean
 gen.isCanImproveTiles = function(unitType)
     return unitType.role == 5 and isBit0(unitType.advancedFlags,13)
 end
 -- gen.giveCanImproveTiles(unitType,ignoreError=false) --> void
--- bestows the ability to improve tiles to units with settler role
--- units without settler role produce an error, unless ignoreError
--- is set to true
+
+-- Bestows the ability to improve tiles to units with settler role.
+-- Units without settler role produce an error, unless ignoreError
+-- is set to true.
+---@param unitType unitTypeObject
+---@param ignoreError? boolean Default is false
+---@overload fun(unitType:unitTypeObject)
 gen.giveCanImproveTiles = function(unitType,ignoreError)
     if unitType.role == 5 then
         -- if settler, the functionality is default, so set flag to 0
@@ -4908,10 +6212,15 @@ gen.giveCanImproveTiles = function(unitType,ignoreError)
         error("gen.giveCanImproveTiles: only units with the settler role (unitType.role == 5) can be given the ability to improve tiles.  If you wish to suppress this error and have gen.giveCanImproveTiles simply do nothing when applied to non-settler role units, use\ngen.giveCanImproveTiles(unitType,true)")
     end
 end
+
 -- gen.removeCanImproveTiles(unitType,ignoreError=false) --> void
--- removes the ability to improve tiles from units with settler role
--- units without settler role produce an error, unless ignoreError
--- is set to true
+
+-- Removes the ability to improve tiles from units with settler role.
+-- Units without settler role produce an error, unless ignoreError
+-- is set to true.
+---@param unitType unitTypeObject
+---@param ignoreError? boolean Default is false
+---@overload fun(unitType:unitTypeObject)
 gen.removeCanImproveTiles = function(unitType,ignoreError)
     if unitType.role == 5 then
         -- if settler, the functionality is default, so set flag to 1 to remove it
@@ -4921,12 +6230,38 @@ gen.removeCanImproveTiles = function(unitType,ignoreError)
     end
 end
 
--- gen.makeDataTable(inputTable={},tableName="unnamed data table) --> dataTable
---  makes a 'dataTable', which functions as a table, but with the ability to disable
---  overwriting values for existing keys
---  adding new keys
---  requesting nil values (values for keys that don't exist)
---  this functionality is achieved with a metatable
+--[[A dataTable acts as an ordinary table, but, if desired, you can forbid values from being changed, forbid new key-value pairs from being stored, and forbid trying to access keys with a `nil` value.  These features can make debugging easier by causing an error to happen on the line the mistake is made.
+
+The following functions can be used to control the data table's features:
+
+gen.forbidReplacement(dataTable) --> void
+
+gen.allowReplacement(dataTable) --> void
+
+gen.forbidNewKeys(dataTable) --> void
+
+gen.allowNewKeys(dataTable) --> void
+
+gen.forbidNilValueAccess(dataTable) --> void
+
+gen.allowNilValueAccess(dataTable) --> void
+
+]]
+---@class dataTable:table
+
+-- gen.makeDataTable(inputTable={},tableName="unnamed data table") --> dataTable
+
+--  Makes a 'dataTable', which functions as a table, but with the ability to disable
+--  overwriting values for existing keys,
+--  adding new keys, and
+--  requesting nil values (values for keys that don't exist).
+--  (This functionality is achieved with a metatable.)
+--  The `tableName` is a name for the table when an error is generated.
+---@param inputTable? table The table to be made into a data table.  The table actually transformed, but it is also returned, if that is convenient.  Default is an empty table.
+---@param tableName? string Default is 'unnamed data table'
+---@return dataTable
+---@overload fun(inputTable: table):dataTable
+---@overload fun():dataTable
 function gen.makeDataTable(inputTable,tableName)
     inputTable = inputTable or {}
     tableName = tableName or "unnamed data table"
@@ -4978,6 +6313,9 @@ function gen.makeDataTable(inputTable,tableName)
 end
 
 -- gen.forbidReplacement(dataTable) --> void
+
+--- Changes the `dataTable` so that non-nil values can not be changed.
+---@param dataTable dataTable
 function gen.forbidReplacement(dataTable)
     local mt = getmetatable(dataTable) or {}
     if mt.type ~= "dataTable" then
@@ -4987,6 +6325,9 @@ function gen.forbidReplacement(dataTable)
 end
 
 -- gen.allowReplacement(dataTable) --> void
+
+--- Changes the `dataTable` so that non-nil values can be changed.
+---@param dataTable dataTable
 function gen.allowReplacement(dataTable)
     local mt = getmetatable(dataTable) or {}
     if mt.type ~= "dataTable" then
@@ -4997,6 +6338,9 @@ end
 
 
 -- gen.forbidNewKeys(dataTable) --> void
+
+--- Changes the `dataTable` so that values can't be assigned to keys which currently have a nil value.
+---@param dataTable dataTable
 function gen.forbidNewKeys(dataTable)
     local mt = getmetatable(dataTable) or {}
     if mt.type ~= "dataTable" then
@@ -5006,6 +6350,9 @@ function gen.forbidNewKeys(dataTable)
 end
 
 -- gen.allowNewKeys(dataTable) --> void
+
+--- Changes the `dataTable` so that values can once again be assigned to keys which currently have a nil value.
+---@param dataTable dataTable
 function gen.allowNewKeys(dataTable)
     local mt = getmetatable(dataTable) or {}
     if mt.type ~= "dataTable" then
@@ -5015,6 +6362,9 @@ function gen.allowNewKeys(dataTable)
 end
 
 -- gen.forbidNilValueAccess(dataTable) --> void
+
+--- Changes the `dataTable` so that an error is generated if the program tries to access a key which currently has a nil value.
+---@param dataTable dataTable
 function gen.forbidNilValueAccess(dataTable)
     local mt = getmetatable(dataTable) or {}
     if mt.type ~= "dataTable" then
@@ -5024,6 +6374,9 @@ function gen.forbidNilValueAccess(dataTable)
 end
 
 -- gen.allowNilValueAccess(dataTable) --> void
+
+--- Changes the `dataTable` so that an error is not generated if the program tries to access a key which currently has a nil value.
+---@param dataTable dataTable
 function gen.allowNilValueAccess(dataTable)
     local mt = getmetatable(dataTable) or {}
     if mt.type ~= "dataTable" then
@@ -5035,6 +6388,9 @@ end
 local scenarioDirectory = nil
 
 -- gen.setScenarioDirectory(directoryPath) --> void
+
+--- Registers `directory` as the path to the current scenario's main directory.  This value is returned by `gen.getScenarioDirectory()`.  If you are using the Lua Scenario Template, this is handled in events.lua, and you do not need to worry about it.
+---@param directory string
 function gen.setScenarioDirectory(directory)
     if type(directory) == "string" then
         scenarioDirectory = directory
@@ -5044,6 +6400,9 @@ function gen.setScenarioDirectory(directory)
 end
 
 -- gen.getScenarioDirectory() --> string
+
+---Returns the scenario's main directory.
+---@return string scenarioMainDirectory
 function gen.getScenarioDirectory()
     if scenarioDirectory then
         return scenarioDirectory
@@ -5053,14 +6412,21 @@ function gen.getScenarioDirectory()
 end
 
 -- gen.isStateSavable(item) --> boolean
+
+-- Determines if an item is "state savable" , which is to say that
+-- it can be added to the state table (the table containing the data that persists
+-- after saving and loading) in its current state.
 --  An item is "state savable" if it is either
---  nil
---  a number
---  a string
---  a boolean
---  a table with keys that are numbers or strings
+--  <br>nil
+--  <br>a number
+--  <br>a string
+--  <br>a boolean, or
+--  <br>a table with keys that are numbers or strings
 --    and with values that are also state savable
 --  Note: table can't have a metatable
+---comment
+---@param item any
+---@return boolean
 function gen.isStateSavable(item)
   if type(item) == "table" then
     if getmetatable(item) then
@@ -5089,27 +6455,46 @@ function gen.isStateSavable(item)
 end
 
 -- gen.calculateWeight(item,weightTable,extraArgument=nil) --> number or false
--- weightTable has functions as keys, and numbers or false as values
---      {[keyFunc(item,extraArgument)-->boolean] = number or boolean or string or function(item) -> number}
---      for each key in the weight table, apply keyFunc to the item
---      if keyFunc(item,extraArgument) then
---          if the value is a number, add the number to the weight
---          if the value is a string add item[value] to the weight
---          if the value is a function, add value(item,extraArgument) to the weight
---          if the value is false, return 'false' as the weight
---          if the value is true, do nothing
---      else
---          if the value is a number, do nothing
---          if the value is false, do nothing
---          if the value is a string, do nothing
---          if the value is true, return 'false' as the weight
---      
---      That is, false means that keyFunc must not apply to the item
---      while true means that keyFunc must apply to the item
---
---      default weight is 0
---
-local function calculateWeight(item,weightTable,extraArgument)
+
+--[[
+This function calculates the "weight" of the `item`, taking into account the `extraArgument`, and uses the `weightTable`.  Calculating weights can be a simple way to choose between various options (with a return of `false` meaning not to choose this option).
+
+In practice, you will probably not use this function itself.  There are several functions that use this function to make choices:
+
+    gen.getExtremeWeights
+    gen.getBiggestWeights
+    gen.getSmallestWeights
+
+weightTable has functions as keys, and numbers or false as values
+
+    {[keyFunc(item,extraArgument)->boolean] = number or boolean or string or function(item,extraArgument) -> number|false}
+
+    for each key in the weight table, apply keyFunc to the item and extraArgument
+
+    if keyFunc(item,extraArgument) then
+        if the value is a number, add the number to the weight
+        if the value is a string add item[value] to the weight
+        if the value is a function, add value(item,extraArgument) to the weight
+        if the value is false, return 'false' as the weight
+        if the value is true, do nothing
+    else
+        if the value is a number, do nothing
+        if the value is false, do nothing
+        if the value is a string, do nothing
+        if the value is true, return 'false' as the weight
+
+    That is, false means that keyFunc must not apply to the item
+    while true means that keyFunc must apply to the item
+
+    default weight is 0
+]]
+---@generic weightItem
+---@generic extraArg
+---@param item weightItem
+---@param weightTable table<fun(item:weightItem,extraArgument:extraArg):boolean, boolean|number|fun(item:weightItem, extraArgument:extraArg):(number|false)>
+---@param extraArgument? extraArg Default is nil.
+---@return false|number # If number, the item has this weight.  False means the item was not given a weight.
+function gen.calculateWeight(item,weightTable,extraArgument)
     local defaultWeight = 0
     for keyFunc, value in pairs(weightTable) do
         if keyFunc(item,extraArgument) then
@@ -5137,7 +6522,7 @@ local function calculateWeight(item,weightTable,extraArgument)
     end
     return defaultWeight
 end
-gen.calculateWeight = calculateWeight
+local calculateWeight = gen.calculateWeight
 
 -- takes a new item and a new weight, and sorts them
 -- into the sortedItems and sortedWeights list
@@ -5164,26 +6549,39 @@ end
 
 
 -- gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
---      wrap this to construct
---      gen.getBiggestWeight and gen.getSmallestWeight
---      listOrIterator
---          if iterator, returns the items for consideration
---          if table, each item is a value in the table, and the table consists only of those values
---      weightTableOrWeightFunction
---          if weightTable, use gen.calculateWeight(item,weightTable,extraArgument) as the weight function
---          a weightFunction(item,extraArgument) must return either a number or false.  When false is returned,
---          the item is not considered at all
---      getTopX
---          if absent, the item with the largest weight is returned, or nil if no valid item is found
---          if integer, a table with that number of items is returned, with index 1 associated with the
---          item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
---          items, the corresponding values are nil
---      changeOrder function
---          if changeOrder(weight1,weight2) is true,
---          weight2 should be before weight1
---          changeOrder(nil,weight2) should always be true
---      functionName string
 
+--[[
+This function is wrapped to construct `gen.getBiggestWeight` and `gen.getSmallestWeight`.  You probably want to use one of them.
+
+listOrIterator
+    if iterator, returns the items for consideration
+    if table, each item is a value in the table, and the table consists only of those values
+weightTableOrWeightFunction
+    if weightTable, use gen.calculateWeight(item,weightTable,extraArgument) as the weight function
+    a weightFunction(item,extraArgument) must return either a number or false.  When false is returned,
+    the item is not considered at all
+getTopX
+    if absent, the item with the largest weight is returned, or nil if no valid item is found
+    if integer, a table with that number of items is returned, with index 1 associated with the
+    item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
+    items, the corresponding values are nil
+changeOrder function
+    if changeOrder(weight1,weight2) is true,
+    weight2 should be before weight1
+    changeOrder(nil,weight2) should always be true
+functionName string
+    name of the function being created (since this is designed to be wrapped by another function), for error purposes.
+]]
+---@generic extraArg
+---@generic itemToWeigh
+---@param listOrIterator iterator|table
+---@param weightTableOrWeightFunction table|fun(item:itemToWeigh,extraArgument:extraArg):(false|number)
+---@param getTopX nil|integer
+---@param changeOrder fun(weight1:number|false|nil,weight2:number|false):boolean
+---@param functionName string
+---@param extraArgument extraArg
+---@return itemToWeigh|table<integer,itemToWeigh> # best item, or table of the best items, starting at 1 with the best item.
+---@return number|table<integer,number> # Weight of best item, or table of weights of the best items, starting at 1 with the best weight
 function gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
     local weightFunction = nil 
     if type(weightTableOrWeightFunction) == "table" then
@@ -5221,19 +6619,19 @@ end
 
 
 -- gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
---      listOrIterator
---          if iterator, returns the items for consideration
---          if table, each item is a value in the table, and the table consists only of those values
---      weightTableOrWeightFunction
---          if weightTable, use gen.calculateWeight(item,weightTable) as the weight function
---          a weightFunction must return either a number or false.  When false is returned,
---          the item is not considered at all
---      getTopX
---          if absent, the item with the largest weight is returned, or nil if no valid item is found
---          if integer, a table with that number of items is returned, with index 1 associated with the
---          item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
---          items, the corresponding values are nil
---          as a second return value, a weight or table of weights (or nil) is returned
+
+--[[
+Finds the `getTopX` number items in `listOrIterator` with the highest weights.  
+If `getTopX` is nil, the item with the largest weight, and its weight, are returned as two values.  If `getTopX` is not nil, two tables are returned instead, with items 1 being the largest value, and its weight, 2 the second largest value and its weight, and so on.
+]]
+---@generic itemToWeigh
+---@generic extraArg
+---@param listOrIterator iterator|table<any,itemToWeigh> # <br>If iterator, returns the items for consideration.<br><br>If table, each item is a value in the table, and all the table values are items for consideration.
+---@param weightTableOrWeightFunction table|fun(item:itemToWeigh,extraArgument:extraArg):(false|number) # <br>If a table is provided, `gen.calculateWeight(item,weightTable,extraArgument)` is used to calculate the weight.<br><br>If a function is provided, it is used to calculate the weights.
+---@param getTopX integer|nil # <br> If absent/nil, the item with the largest weight is returned, and the second return value returns its weight. <br><br> If integer, a table (indexed with integers starting at 1) with this many values is returned, with the item having the largest weight being at key 1, the second best item at key 2, and so on.  If there are not `getTopX` valid items, then nil is the value in the table for the relevant keys.  The second return value is a table of the weights of the `getTopX` items.
+---@param extraArgument extraArg|nil # <br> This is an extra piece of data for computing the weights.
+---@return itemToWeigh|table<integer, itemToWeigh>
+---@return number|table<integer,number>
 function gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX,extraArgument)
     local changeFunction = function(weight1,weight2)
         return (type(weight2) == "number") and (weight1 == nil or weight1 < weight2)
@@ -5242,20 +6640,21 @@ function gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTop
     return gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction, getTopX, changeFunction, functionName,extraArgument)
 end
 
+
 -- gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
---      listOrIterator
---          if iterator, returns the items for consideration
---          if table, each item is a value in the table, and the table consists only of those values
---      weightTableOrWeightFunction
---          if weightTable, use gen.calculateWeight(item,weightTable) as the weight function
---          a weightFunction must return either a number or false.  When false is returned,
---          the item is not considered at all
---      getTopX
---          if absent, the item with the smallest weight is returned, or nil if no valid item is found
---          if integer, a table with that number of items is returned, with index 1 associated with the
---          item of the largest weight, 2 the next highest weight and so on.  If there are fewer valid
---          items, the corresponding values are nil
---          as a second return value, a weight or table of weights (or nil) is returned
+
+--[[
+Finds the `getTopX` number items in `listOrIterator` with the smallest weights.  
+If `getTopX` is nil, the item with the smallest weight, and its weight, are returned as two values.  If `getTopX` is not nil, two tables are returned instead, with items 1 being the item with the smallest weight, and its weight, 2 the second largest value and its weight, and so on.
+]]
+---@generic itemToWeigh
+---@generic extraArg
+---@param listOrIterator iterator|table<any,itemToWeigh> # <br>If iterator, returns the items for consideration.<br><br>If table, each item is a value in the table, and all the table values are items for consideration.
+---@param weightTableOrWeightFunction table|fun(item:itemToWeigh,extraArgument:extraArg):(false|number) # <br>If a table is provided, `gen.calculateWeight(item,weightTable,extraArgument)` is used to calculate the weight.<br><br>If a function is provided, it is used to calculate the weights.
+---@param getTopX integer|nil # <br> If absent/nil, the item with the smallest weight is returned, and the second return value returns its weight. <br><br> If integer, a table (indexed with integers starting at 1) with this many values is returned, with the item having the smallest weight being at key 1, the second best item at key 2, and so on.  If there are not `getTopX` valid items, then nil is the value in the table for the relevant keys.  The second return value is a table of the weights of the `getTopX` items.
+---@param extraArgument extraArg|nil # <br> This is an extra piece of data for computing the weights.
+---@return itemToWeigh|table<integer, itemToWeigh>
+---@return number|table<integer,number>
 function gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX,extraArgument)
     local changeFunction = function(weight1,weight2)
         return (type(weight2) == "number") and (weight1 == nil or weight1 > weight2)
@@ -5329,10 +6728,32 @@ local function markExists(tileMarkerInfo)
     return false
 end
 
+
+---@enum markerOptions
+local MARKER_OPTIONS = {
+    ["irrigation"]="irrigation",
+    ["mine"]="mine",
+    ["farmland"]="farmland",
+    ["road"]="road",
+    ["railroad"]="railroad",
+    ["fortress"]="fortress",
+    ["airbase"]="airbase",
+    ["pollution"]="pollution",
+    ["transporter"]="transporter",
+}
+
 -- gen.placeMarker(tile,tribe,markerOption)
+
+--[[Places a "marker" on `tile` for `tribe`.
+
+Placing a marker on a tile changes the visible improvements for that tile, so that the tribe can now see the `markerOption` ("irrigation", "pollution", etc.-- see below for the full list) on the tile.  However, information about the marker is stored in the state table (along with the originally visible improvements), so that the marker can be displayed again if it stops being visible.
+]]
+---@param tile tileObject The tile on which a "marker" will be placed.
+---@param tribe tribeObject The tribe for whom the "marker" is visible.
+---@param markerOption markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.placeMarker(tile,tribe,markerOption)
     markerOption = string.lower(markerOption)
-    local tileID = gen.getTileId(tile)
+    local tileID = gen.getTileId(tile) --[[@as integer]]
     genStateTable.tileMarkerTable[tileID] = genStateTable.tileMarkerTable[tileID] or {}
     local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
     tileMarkerInfo[tribe.id] = tileMarkerInfo[tribe.id] or {["originalChart"]=tile.visibleImprovements[tribe]}
@@ -5347,8 +6768,12 @@ function gen.placeMarker(tile,tribe,markerOption)
 end
 
 
--- removes the markerOption marker for tribe from tile, if it exists
 -- gen.removeMarker(tile,tribe,markerOption) --> void
+
+-- Removes the `markerOption` marker for `tribe` from `tile`, if it exist.
+---@param tile tileObject The tile on which a "marker" will be removed.
+---@param tribe tribeObject The tribe for whom the "marker" is no longer visible.
+---@param markerOption markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.removeMarker(tile,tribe,markerOption)
     markerOption = string.lower(markerOption)
     local tileID = getTileId(tile)
@@ -5376,15 +6801,17 @@ function gen.removeMarker(tile,tribe,markerOption)
     --civ.ui.text(markerOption.." removed, originalChart: "..tileMarkerInfo[tribe.id]["originalChart"])
     -- if removing this eliminates all marks, then clear the data
     if not markExists(tileMarkerInfo) then
-        genStateTable.tileMarkerTable[tileID] = nil
+        genStateTable.tileMarkerTable[tileID--[[@as integer]]] = nil
         return
     end
 end
 
 -- gen.maintainTileMarkerTable() --> void
--- check the marker table for any marker data that can be removed
--- and remove it
+
+-- Checks the marker table for any marker data that can be removed
+-- and remove it.
 function gen.maintainTileMarkerTable()
+---@diagnostic disable-next-line: param-type-mismatch
     for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
         updateTileMarkerTable(tileMarkerInfo,getTileFromId(tileID))
         if not markExists(tileMarkerInfo) then
@@ -5394,8 +6821,12 @@ function gen.maintainTileMarkerTable()
 end
 
 -- gen.removeMarkersFromTile(tile,tribeOrNil) --> void
---      removes all markers on tile for the tribe
---      if tribe is omitted, removes markers for all tribes
+
+--[[
+Removes all markers on tile for the tribe, if tribe is omitted, removes markers for all tribes.]]
+---@param tile tileObject The tile for which all markers will be removed.
+---@param tribe? tribeObject The tribe for which the markers will be removed.  If nil, markers for all tribes are removed.
+---@overload fun(tile:tileObject)
 function gen.removeMarkersFromTile(tile,tribe)
     local tileID = getTileId(tile)
     local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
@@ -5406,21 +6837,24 @@ function gen.removeMarkersFromTile(tile,tribe)
         end
     end
     if not markExists(tileMarkerInfo) then
-        genStateTable.tileMarkerTable[tileID] = nil
+        genStateTable.tileMarkerTable[tileID --[[@as integer]]] = nil
     end
 end
 
 -- gen.removeAllMarkers(tribeOrNil,markerTypeOrNil) --> void
--- removes all markers of markerType for tribe
--- if tribe not specified, removes all markerType markers for all tribes
--- if markerType not specified, removes all markers for tribe
--- if neither specified, removes all markers for all tribes
+
+-- Removes all markers of `markerType` for tribe.
+-- If tribe not specified, removes all markerType markers for all tribes.
+-- If markerType not specified, removes all markers for tribe.
+-- If neither specified, removes all markers for all tribes.
+---@param tribe tribeObject|nil
+---@param markerType markerOptions|nil # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.removeAllMarkers(tribe,markerType)
     markerType = markerType and string.lower(markerType)
-    local tileMarkerTable = genStateTable.tileMarkerTable
+    local tileMarkerTable = genStateTable.tileMarkerTable --[[@as table]]
     if not markerType then
-        for tileID, tileMarkerInfo in pairs(tileMarkerTable) do
-            gen.removeMarkersFromTile(getTileFromId(tileID),tribe)
+        for tileID, tileMarkerInfo in pairs(tileMarkerTable --[[@as table]]) do
+            gen.removeMarkersFromTile(getTileFromId(tileID)--[[@as tileObject]],tribe)
         end
         return
     end
@@ -5429,7 +6863,7 @@ function gen.removeAllMarkers(tribe,markerType)
     end
     if tribe then
         for tileID, tileMarkerInfo in pairs(tileMarkerTable) do
-            gen.removeMarker(getTileFromId(tileID),tribe,markerType)
+            gen.removeMarker(getTileFromId(tileID)--[[@as tileObject]],tribe,markerType)
         end
         return
     end
@@ -5437,7 +6871,7 @@ function gen.removeAllMarkers(tribe,markerType)
         for i=0,7 do
             local t = civ.getTribe(i)
             if t then
-                gen.removeMarker(getTileFromId(tileID),t,markerType)
+                gen.removeMarker(getTileFromId(tileID)--[[@as tileObject]],t,markerType)
             end
         end
     end
@@ -5468,14 +6902,18 @@ end
 
 
 -- gen.showAllMarkersOnTile(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
--- reapplies the charting functions for all markers
+
+-- Reapplies the charting functions for all markers
 -- on the tile for all players.  If topMarkerType isnt
 -- nil, that marker type is applied again last, in case
--- there are conflicting markers
--- the secondMarkerType is applied just before the top marker type
+-- there are conflicting markers.
+-- The secondMarkerType is applied just before the top marker type.
+---@param tile tileObject
+---@param topMarkerType markerOptions|nil # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
+---@param secondMarkerType markerOptions|nil # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.showAllMarkersOnTile(tile,topMarkerType,secondMarkerType)
-    topMarkerType = topMarkerType and string.lower(topMarkerType)
-    secondMarkerType = secondMarkerType and string.lower(topMarkerType)
+    topMarkerType = topMarkerType and string.lower(topMarkerType--[[@as string]])
+    secondMarkerType = secondMarkerType and string.lower(topMarkerType--[[@as string]])
     local tileID = getTileID(tile)
     local tileMarkerInfo = genStateTable.tileMarkerTable[tileID]
     if topMarkerType and (not markerOptions[topMarkerType]) then
@@ -5488,11 +6926,14 @@ function gen.showAllMarkersOnTile(tile,topMarkerType,secondMarkerType)
 end
 
 -- gen.showAllMarkers(topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
--- reapplies the charting functions for all markers
+
+-- Reapplies the charting functions for all markers
 -- on all tiles for all players.  If topMarkerType isn't nil,
 -- that marker type is applied last again, in case there
--- are conflicting markers
--- the secondMarkerType is applied just before the top marker type
+-- are conflicting markers.
+-- The secondMarkerType is applied just before the top marker type.
+---@param topMarkerType markerOptions|nil # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
+---@param secondMarkerType markerOptions|nil # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.showAllMarkers(topMarkerType,secondMarkerType)
     topMarkerType = topMarkerType and string.lower(topMarkerType)
     secondMarkerType = secondMarkerType and string.lower(secondMarkerType)
@@ -5502,14 +6943,18 @@ function gen.showAllMarkers(topMarkerType,secondMarkerType)
     if secondMarkerType and (not markerOptions[secondMarkerType]) then
         error("gen.showAllMarkers: the secondMarkerType \""..tostring(secondMarkerType).."\" id invalid.  "..validMarkerOptionsList)
     end
-    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable--[[@as table]]) do
         local tile = getTileFromId(tileID)
         displayMarks(tile,tileMarkerInfo,topMarkerType,secondMarkerType)
     end
 end
 
 -- gen.hasMarker(tile,tribe,markerType)
--- returns true if tile has a marker of markerType for tribe
+
+-- Returns true if `tile` has a marker of `markerType` for `tribe`.
+---@param tile tileObject 
+---@param tribe tribeObject 
+---@param markerType markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.hasMarker(tile,tribe,markerType)
     markerType = string.lower(markerType)
     if not markerOptions[markerType] then
@@ -5521,7 +6966,11 @@ function gen.hasMarker(tile,tribe,markerType)
 end
 
 -- gen.isMarkerVisible(tile,tribe,markerType)
--- returns true if the tile has the markerType and the markerType is charted, false otherwise
+
+-- Returns true if the `tile` has the `markerType` and the `markerType` is charted, false otherwise.
+---@param tile tileObject 
+---@param tribe tribeObject 
+---@param markerType markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.isMarkerVisible(tile,tribe,markerType)
     markerType = string.lower(markerType)
     if not markerOptions[markerType] then
@@ -5531,9 +6980,13 @@ function gen.isMarkerVisible(tile,tribe,markerType)
 end
 
 -- gen.hideMarker(tile,tribe,markerType)
--- uncharts the marker for the tribe, but does not remove the marker
--- does nothing if the tribe doesn't have that marker
--- or if the marker is already hidden
+
+-- Uncharts the `markerType` marker for the `tribe`, but does not remove the marker.
+-- Does nothing if the tribe doesn't have that marker
+-- or if the marker is already hidden.
+---@param tile tileObject 
+---@param tribe tribeObject 
+---@param markerType markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.hideMarker(tile,tribe,markerType)
     markerType = string.lower(markerType)
     if not markerOptions[markerType] then
@@ -5555,7 +7008,10 @@ function gen.hideMarker(tile,tribe,markerType)
 end
 
 -- gen.hideAllMarkersOnTile(tile,tribe)
--- hides all markers on a given tile for the given tribe
+
+-- Hides all markers on a given tile for the given tribe.
+---@param tile tileObject 
+---@param tribe tribeObject 
 function gen.hideAllMarkersOnTile(tile,tribe)
     for key,_ in pairs(markerOptions) do
         gen.hideMarker(tile,tribe,key)
@@ -5564,27 +7020,29 @@ end
 
 
 -- gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
--- hides all markers of the given type for that tribe
--- if tribe not specified, hides all markers of given type for
--- all tribes
--- if markerType not specified, hides markers of all types
-
+-- Hides all markers of the given type for that tribe.
+-- If tribe not specified, hides all markers of given type for
+-- all tribes.
+-- If markerType not specified, hides markers of all types.
+---comment
+---@param tribeOrNil tribeObject|nil
+---@param markerTypeOrNil nil|markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
-    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable--[[@as table]]) do
         if tribeOrNil then
             if markerTypeOrNil then
-                gen.hideMarker(getTileFromID(tileID),tribeOrNil,markerTypeOrNil)
+                gen.hideMarker(getTileFromID(tileID)--[[@as tileObject]],tribeOrNil,markerTypeOrNil)
             else
-                gen.hideAllMarkersOnTile(getTileFromID(tileID),tribeOrNil)
+                gen.hideAllMarkersOnTile(getTileFromID(tileID)--[[@as tileObject]],tribeOrNil)
             end
         else
             for i=0,7 do
                 local tribe = civ.getTribe(i)
                 if tribe then
                     if markerTypeOrNil then
-                        gen.hideMarker(getTileFromID(tileID),tribe,markerTypeOrNil)
+                        gen.hideMarker(getTileFromID(tileID)--[[@as tileObject]],tribe,markerTypeOrNil)
                     else
-                        gen.hideAllMarkersOnTile(getTileFromID(tileID),tribe)
+                        gen.hideAllMarkersOnTile(getTileFromID(tileID)--[[@as tileObject]],tribe)
                     end
                 end
             end
@@ -5593,16 +7051,24 @@ function gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
 end
 
 -- gen.showMarker(tile,tribe,markerType)
--- shows the markerType for the tribe on the tile, if the marker is on the tile
+
+-- Shows the `markerType` for the `tribe` on the `tile`, if the marker is on the `tile`.
+---@param tile tileObject 
+---@param tribe tribeObject 
+---@param markerType markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.showMarker(tile,tribe,markerType)
     if gen.hasMarker(tile,tribe,markerType) then
         markerOptions[markerType][2](tile,tribe)
     end
 end
 -- gen.showMarkerOnAllTiles(tribe,markerType)
+
+--- Shows the `markerType` to `tribe` on all tiles where it exists.
+---@param tribe tribeObject 
+---@param markerType markerOptions # Valid marker options are "irrigation", "mine", "farmland", "road", "railroad", "fortress", "airbase", "pollution", "transporter".
 function gen.showMarkerOnAllTiles(tribe,markerType)
-    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable) do
-        gen.showMarker(getTileFromID(tileID),tribe,markerType)
+    for tileID, tileMarkerInfo in pairs(genStateTable.tileMarkerTable--[[@as table]]) do
+        gen.showMarker(getTileFromID(tileID)--[[@as tileObject]],tribe,markerType)
     end
 end
 
@@ -5619,13 +7085,22 @@ local outOfRangeMessageFn = function(unit)
 end
 
 -- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
--- if textOrFunction is a string, the text is shown when a unit is 
--- lost due to being out of range, and title is the box title
--- (if this is governed by events and not standard movement)
--- %STRING1 substitutes for the unit type's name
+
+-- This function registers what happens when Lua code causes a
+-- unit to be destroyed because it is 'out of range/fuel'.  This could be
+-- because events expended the last movement points of an aircraft,
+-- or because land/sea units have been given a range using Lua.  
+-- (No code is run when the standard game detects an aircraft to be
+-- out of range)<br><br>
+-- If `textOrFunction` is a string, the text is shown when a unit is 
+-- lost due to being out of range, with %STRING1 substitutes for the unit type's name.  `title` provides the title for the box.
 --
--- if textOrFunction is a function(unit) --> void
--- the function is trusted to generate the loss of fuel message
+-- If `textOrFunction` is a `function(unit) -> void`, the
+-- function is exectued, and is trusted to generate the 
+-- the function is trusted to generate a suitable message.
+-- <br><br> In the Lua Scenario Template, this function is called in `parameters.lua`
+---@param textOrFunction string|fun(unit:unitObject)
+---@param title? string|nil
 function gen.setOutOfRangeMessage(textOrFunction,title)
     if type(textOrFunction) == "string" then
         local function fuelMessage(unit)
@@ -5634,7 +7109,7 @@ function gen.setOutOfRangeMessage(textOrFunction,title)
             end
             local message = string.gsub(textOrFunction,"%%STRING1",unit.type.name)
             local dialog = civ.ui.createDialog()
-            dialog.title = title
+            dialog.title = title or ""
             dialog:addText(message)
             dialog:show()
             return
@@ -5649,7 +7124,10 @@ function gen.setOutOfRangeMessage(textOrFunction,title)
 end
 
 -- gen.outOfRangeMessage(unit) --> void
--- shows the out of range message for a unit
+
+-- Shows the 'out of range' message for `unit`.
+-- The message is registered by `gen.setOutOfRangeMessage`.
+---@param unit unitObject
 function gen.outOfRangeMessage(unit)
     outOfRangeMessageFn(unit)
 end
@@ -5661,16 +7139,16 @@ local restoreRangeFunction = function(unit)
 end
 
 -- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
--- restoreRangeFn(unit) --> bool governs when a unit's range is restored
--- and is checked when entering the tile and also after the unit has been
--- given its last order for the turn (i.e. when the unit has all movement
--- expended and the next unit is activated, or at the end of the turn if it
--- still has movement points e.g. if sleeping).  
--- If true, range is restored, if false it is not
--- By default, range is restored in city squares and on airbases
--- If you want to clear movement points (like for air units) do it in this function
--- Land and Sea units must now abide by range limitations set in rules.txt (if they are not 0)
--- if applyToAI is true, the AI will lose units when it violates these limits
+
+--[[
+This function makes land and sea units obey the range field in the rules.txt (if they are not 0),
+the same way that air units do.  If `applyToAI` is set to true, the AI will lose units as well, but the AI isn't programmed to respect these limitations.
+<br><br>
+In the Lua Scenario Template, this function is ready to use in simpleSettings.lua.
+If you're not using the Template, then this function only works if you've set up the discrete events.
+]]
+---@param restoreRangeFn? nil|fun(unit:unitObject):boolean #<br>This function governs when a unit's range is restored.  It is checked when the unit enters a tile and also after the unit has been given its last order for the turn (i.e. when the unit has all movement expended and the next unit is activated, or at the end of the turn if it still has movement points e.g. if sleeping).  <br>If true, range is restored, if false range is not restored.<br>By default, range is restored in city squares and on airbases.<br>If you want to clear movement points (like for air units) do it in this function.
+---@param applyToAI? nil|boolean # If true, the AI's units are lost if they go beyond their range.
 function gen.activateRangeForLandAndSea(restoreRangeFn,applyToAI)
     if rangeLimitsForLandAndSea then
         print("WARNING gen.activateRangeForLandAndSea: this function appears to have been run more than once, so nothing further was done.  If you don't have range for land and sea, seek help from Prof. Garfield.")
@@ -5681,7 +7159,7 @@ function gen.activateRangeForLandAndSea(restoreRangeFn,applyToAI)
         return
     end
     for i=0, civ.cosmic.numberOfUnitTypes-1 do
-        local unitType = civ.getUnitType(i)
+        local unitType = civ.getUnitType(i) --[[@as unitTypeObject]]
         if unitType.range > 0 and unitType.domain ~= 1 and (unitType.role == 5 or unitType.role == 7) then
             error("gen.activateRangeForLandAndSea: The unit type "..unitType.name.." ("..tostring(i)..") has been assigned a range of "..tostring(unitType.range).." along with a role of "..tostring(unitType.role)..".  However, settler and trade units (roles 5 and 7) can't be given these limitations (since they use domainSpec for their special roles.")
         end
@@ -5756,20 +7234,25 @@ function gen.activateRangeForLandAndSea(restoreRangeFn,applyToAI)
 end
 
 -- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
--- increases the expended movement points of the unit
--- by default, full unit movement points are used, but a different multiplier can be specified
--- e.g. 1 if you want to spend atomic movement points
--- If the unit has a range (either natural or through the land and sea extension) and
+
+-- Increases the expended movement of the `unit` by `points`.
+-- If the unit has a range (either natural or through `gen.activateRangeForLandAndSea`) and
 -- uses up all its movement for the current turn, its domainSpec is incremented by 1
 -- and the unit is killed if it is out of range.
--- (exceptions: if the unit is the currently active unit and is a land or sea unit
+-- (Exceptions: if the unit is the currently active unit and is a land or sea unit
 -- with range, it won't increment domainSpec, since that is caught immediately
--- afterward with onFinalOrderGiven; a unit that has already spent its full movement
--- allowance before the modifier is applied also won't increment)
--- if points is negative, movement is restored to the unit
--- if points is a fraction, math.floor(points*multiplier) is used
--- final move spent is bound between maxSpent and minSpent, which are by default
--- 255 and 0 respectively
+-- afterward with onFinalOrderGiven. A unit that has already spent its full movement allowance before the modifier is applied also won't increment)
+-- By default, 'full' unit movement points are used, but a different `multiplier` can be specified 
+-- e.g. 1 if you want to spend atomic movement points.
+-- If points is negative, movement is restored to the unit.
+-- If points is not an integer, math.floor(points*multiplier) is used.
+-- Final move spent is bound between maxSpent and minSpent, which are by default
+-- 255 and 0 respectively.
+---@param unit unitObject
+---@param points number
+---@param multiplier integer
+---@param maxSpent integer # default is 255
+---@param minSpent integer # default is 0
 function gen.spendMovementPoints(unit,points,multiplier,maxSpent,minSpent)
     maxSpent = maxSpent or 255
     minSpent = minSpent or 0
@@ -5811,9 +7294,21 @@ function gen.spendMovementPoints(unit,points,multiplier,maxSpent,minSpent)
 end
 
 -- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
--- Returns one of "N","S","NW","NE","SW","SE" based on the locations
--- of the compassPoint and compassCentre
--- e.g. gen.getBearing(Madrid,Paris) --> SW
+
+---@alias compassPoints
+---| "N"
+---| "S"
+---| "E"
+---| "W"
+---| "NW"
+---| "NE"
+---| "SW"
+---| "SE"
+---| ""
+
+-- Returns one of "N","S","E","W","NW","NE","SW","SE","" based on the locations
+-- of the compassPoint and compassCentre.  "" is returned if compassPoint and compassCentre are the same tile.<br><br>
+-- e.g. `gen.getBearing(Madrid,Paris) --> SW`
 --      Madrid is South-West of Paris
 --      We're finding the location of Madrid relative to Paris, hence
 --      Paris is at the compass centre and we're looking for the
@@ -5821,7 +7316,10 @@ end
 --      gen.getBearing(Paris,Madrid) --> NE
 --      Paris is North-East of Madrid
 -- compassPoint and compassCentre can be units, cities, or tiles
-
+-- <br><br>Inspired by Pablostuka
+---@param compassPoint tileAnalog|unitObject|cityObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>cityObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@param compassCentre tileAnalog|unitObject|cityObject # Can be:<br><br>tileObject<br><br>unitObject<br><br>cityObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+---@return compassPoints bearing
 function gen.getBearing(compassPoint,compassCentre)
     if type(compassPoint) == "table" then
         compassPoint = toTile(compassPoint)
@@ -5884,7 +7382,9 @@ function gen.getBearing(compassPoint,compassCentre)
 end
 
 -- gen.tableToString(table)
--- returns a string showing values in a table
+-- Returns a string showing values in a table.
+---@param table any # Although this is meant to be used on a table, any kind of value can be provided.  For non-table values, the `tostring` command is used.
+---@return string # A representation of the table.
 function gen.tableToString(table)
     if type(table) == "table" then
         local result = "{"
@@ -5910,8 +7410,9 @@ function gen.tableToString(table)
 end
 
 
--- Data Validator
---  validDataInfo = {
+
+-- Value Specification
+--  valueSpecification = {
 --      ["nil"] = true or nil
 --          if this key is true, the data can be nil
 --      ["boolean"] = true, "true", "false", or nil
@@ -5951,77 +7452,84 @@ function gen.checkValidDataInfo(validDataInfo)
     end
 end
 
---  gen.describeAllowableData(validDataInfo) --> string
---  takes a validDataInfo, and returns a string describing the validData
-function gen.describeAllowableData(validDataInfo)
+--  gen.describeAllowableValues(valueSpecification) --> string
+
+--  Takes a valueSpecification, and returns a string describing the valid values.
+---@param valueSpecification table # A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+---@return string
+function gen.describeAllowableValues(valueSpecification)
     local desc = ""
-    if validDataInfo["nil"] then
+    if valueSpecification["nil"] then
         desc = desc.."nil, "
     end
-    if validDataInfo["boolean"] == true then
+    if valueSpecification["boolean"] == true then
         desc = desc.."boolean, "
-    elseif validDataInfo["boolean"] == "true" then
+    elseif valueSpecification["boolean"] == "true" then
         desc = desc.."true, "
-    elseif validDataInfo["boolean"] == "false" then
+    elseif valueSpecification["boolean"] == "false" then
         desc = desc.."false, "
     end
-    if type(validDataInfo["function"]) == "string" then
-        desc = desc..validDataInfo["function"]..", "
-    elseif validDataInfo["function"] == true then
+    if type(valueSpecification["function"]) == "string" then
+        desc = desc..valueSpecification["function"]..", "
+    elseif valueSpecification["function"] == true then
         desc = desc.."function, "
     end
-    if validDataInfo["number"] == true then
+    if valueSpecification["number"] == true then
         desc = desc.."number, "
-    elseif validDataInfo["number"] then
+    elseif valueSpecification["number"] then
         local number = "number"
-        if validDataInfo["number"].integer then
+        if valueSpecification["number"].integer then
             number = "integer"
         end
-        if validDataInfo["number"].minVal and validDataInfo["number"].maxVal then
-            desc = desc..number.." between "..tostring(validDataInfo["number"].minValue)
-            .." and "..tostring(validDataInfo["number"].maxValue)..", "
-        elseif validDataInfo["number"].minVal then
-            desc = desc..number.." at least "..tostring(validDataInfo["number"].minValue)..", "
-        elseif validDataInfo["number"].maxVal then
-            desc = desc..number.." at most "..tostring(validDataInfo["number"].maxValue)..", "
+        if valueSpecification["number"].minVal and valueSpecification["number"].maxVal then
+            desc = desc..number.." between "..tostring(valueSpecification["number"].minValue)
+            .." and "..tostring(valueSpecification["number"].maxValue)..", "
+        elseif valueSpecification["number"].minVal then
+            desc = desc..number.." at least "..tostring(valueSpecification["number"].minValue)..", "
+        elseif valueSpecification["number"].maxVal then
+            desc = desc..number.." at most "..tostring(valueSpecification["number"].maxValue)..", "
         else
             desc = desc..number..", "
         end
     end
-    if validDataInfo["string"] == true then
+    if valueSpecification["string"] == true then
         desc = desc.."string, "
-    elseif type(validDataInfo["string"]) == "table" then
-        for validString,_ in pairs(validDataInfo["string"]) do
+    elseif type(valueSpecification["string"]) == "table" then
+        for validString,_ in pairs(valueSpecification["string"]) do
             desc = desc..'"'..validString..'", '
         end
     end
-    if validDataInfo["table"] == true then
+    if valueSpecification["table"] == true then
         desc = desc.."table, "
-    elseif type(validDataInfo["table"]) == "string" then
-        desc = desc..validDataInfo["table"]..", "
-    elseif type(validDataInfo["table"]) == "table" then
-        desc = desc..validDataInfo["table"][2]..", "
+    elseif type(valueSpecification["table"]) == "string" then
+        desc = desc..valueSpecification["table"]..", "
+    elseif type(valueSpecification["table"]) == "table" then
+        desc = desc..valueSpecification["table"][2]..", "
     end
-    if type(validDataInfo["userdata"]) == "table" then
-        for dataTypeName,_ in pairs(validDataInfo["userdata"]) do
+    if type(valueSpecification["userdata"]) == "table" then
+        for dataTypeName,_ in pairs(valueSpecification["userdata"]) do
             desc = desc..dataTypeName..", "
         end
     end
     return desc
 end
+gen.describeAllowableData = gen.describeAllowableValues
+
 
 -- gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber, argumentName,validDataInfo,extraInfo=nil) --> void or error
---  This validates a function argument, and provides an error if that is wrong
---      data is the actual argument
---      moduleName is the name of the module the function is in
---      functionName is the name of the function making the error
---      argumentNumber is the place of the argument in the function call
---      validDataInfo is the table determining what is a valid argument
---      extraInfo is any extra information that might be useful for debugging
-function gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber,argumentName,validDataInfo,extraInfo)
-    gen.checkValidDataInfo(validDataInfo)
-    local dataType = type(data)
-    local vDI = validDataInfo[dataType]
+
+--  This validates a function's argument, and provides an error if a bad value is supplied.
+---@param value any The argument passed to the function.
+---@param moduleName string The name of the module the function is in (so generated errors are more informative).
+---@param functionName string The name of the function this function is validating values for (so generated errors are more informative).
+---@param argumentNumber integer The argument which is being validated (so generated errors are more informative).
+---@param argumentName string The name of the argument which is being validated (so generated errors are more informative).
+---@param extraInfo? string|nil Any extra information that might help in debugging, should an error occur.
+---@param valueSpecification table # A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+function gen.validateFunctionArgument(value,moduleName,functionName,argumentNumber,argumentName,valueSpecification,extraInfo)
+    gen.checkValidDataInfo(valueSpecification)
+    local dataType = type(value)
+    local vDI = valueSpecification[dataType]
     local function constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName,
                 extraInfo, tableReturnInfo)
         local tostringResult = tostring(data)
@@ -6035,7 +7543,7 @@ function gen.validateFunctionArgument(data,moduleName,functionName,argumentNumbe
         if extraInfo then
             errorMessage = errorMessage.."; extra information: "..extraInfo.."; "
         end
-        errorMessage = errorMessage.."Expected :"..gen.describeAllowableData(validDataInfo)
+        errorMessage = errorMessage.."Expected :"..gen.describeAllowableData(valueSpecification)
             .."; Received: "..tostringResult
         if tableReturnInfo then
             errorMessage = errorMessage.."; Reported table problem: "..tableReturnInfo
@@ -6043,16 +7551,16 @@ function gen.validateFunctionArgument(data,moduleName,functionName,argumentNumbe
         return errorMessage
     end
     if not vDI then
-        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+        error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo))
     end
     if dataType == "nil" then
         -- if nil isn't allowed, it is caught in not vDI
         return
     elseif dataType == "boolean" then
-        if (vDI == true or tostring(data) == vDI) then
+        if (vDI == true or tostring(value) == vDI) then
             return
         else
-            error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+            error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo))
         end
     elseif dataType == "function" then
         -- The function is not checked beyond the fact that it is a function
@@ -6065,47 +7573,55 @@ function gen.validateFunctionArgument(data,moduleName,functionName,argumentNumbe
         local minVal = vDI.minVal or -math.huge
         local maxVal = vDI.maxVal or math.huge
         local notInteger = not vDI.integer
-        if data >= minVal and data <= maxVal and (notInteger or data == math.floor(data)) then
+        if value >= minVal and value <= maxVal and (notInteger or value == math.floor(value)) then
             return
         end
-        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+        error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo))
     elseif dataType == "string" then
-        if vDI == true or vDI[data] then
+        if vDI == true or vDI[value] then
             return
         end
-        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+        error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo))
     elseif dataType == "table" then
         if vDI == true or type(vDI) == "string" then
             -- don't check anything specific about the table
             return 
         end
-        local errorString = vDI[1](data)
+        local errorString = vDI[1](value)
         if type(errorString) == "string" then
-            error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo,errorString))
+            error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo,errorString))
         end
     elseif dataType == "userdata" then
         for dataTypeName,isDataTypeFn in pairs(vDI) do
-            if isDataTypeFn(data) then
+            if isDataTypeFn(value) then
                 return
             end
         end
-        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+        error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo))
     else
-        error(constructErrorMessage(data,moduleName,functionName,argumentNumber,argumentName, extraInfo))
+        error(constructErrorMessage(value,moduleName,functionName,argumentNumber,argumentName, extraInfo))
     end
 end
 
 -- gen.versionFunctions(moduleTable,versionNumber,fileMod,moduleFileName) -->void
--- provides module with 
---      module:minVersion(vNumber)
---          causes an error if the module's versionNumber is below vNumber
---      module:recommendedVersion(vNumber)
---          prints a warning to the console if the module's versionNumber is below vNumber
---  moduleTable: the table that has the module functions 
---  versionNumber: the module's current version number
---  fileMod: a boolean telling if the file has been modified by the scenario designer
---  moduleFileName: the module's file name
 
+--[[
+Provides module with these methods<br>
+`module:minVersion(vNumber)`<br>
+Causes an error if the module's versionNumber is below vNumber.<br>
+`module:recommendedVersion(vNumber)`<br>
+Prints a warning to the console if the module's versionNumber is below vNumber.
+<br>
+Note: Using these methods will stop Lua Language Server from recognizing a require function.  To avoid this, use ---@module "fileName" on the line above:
+```lua
+---@module "someModuleName"
+local someModule = require("someModuleName"):minVersion(2)
+```
+]]
+---@param moduleTable table The table that has the module functions.
+---@param vNum number the module's current version number
+---@param fileMod boolean A boolean telling if the file has been modified by the scenario designer.  This way, the error can warn the designer that upgrading may remove some work they did.
+---@param moduleFileName string The module's file name.
 function gen.versionFunctions(moduleTable,vNum,fileMod,moduleFileName)
     local minVersion = function(self,minVersion)
         if vNum < minVersion then
@@ -6147,17 +7663,26 @@ end
 gen.versionFunctions(gen,versionNumber,fileModified,"LuaCore".."\\".."generalLibrary.lua")
 
 -- gen.registerEventsLuaVersion(versionNumber,fileMod,regressionNumber)
---  registers version information for the events.lua file
---  versionNumber is the events.lua verison number
---  fileMod is a boolean that should be true if events.lua has been modified by the scenario designer
---  regressionNumber is incremented if events.lua has functionality removed
 local eventsVersion = {}
+
+-- In the Lua Scenario Template, this is called in events.lua, so you do not need to worry about it.
+--  Registers version information for the events.lua file.<br>
+--  versionNumber is the events.lua verison number<br>
+--  fileMod is a boolean that should be true if events.lua has been modified by the scenario designer<br>
+--  regressionNumber is incremented if events.lua has functionality removed<br>
+---@param vNum number
+---@param fileMod boolean
+---@param regressionNumber number
 function gen.registerEventsLuaVersion(vNum,fileMod,regressionNumber)
     eventsVersion.versionNumber = vNum
     eventsVersion.fileModified = fileMod
     eventsVersion.regressionNumber = regressionNumber
 end
 
+-- Checks that the events.lua file is up to date, so all of the module's tie ins to the rest of the code base work properly.
+---@param minVersion number
+---@param regNum number
+---@param fileName string
 function gen.minEventsLuaVersion(minVersion,regNum,fileName)
     if gen.isEmpty(eventsVersion) then
         print("WARNING: "..fileName.." expects to use version "..tostring(minVersion).." of the Lua Scenario Template, but no version of events.lua has been registered.  If you are using the Lua Scenario Template, this means your events.lua file is out of date.  If you are not, you can suppress this warning by adding the following line the first time in your code that you require the general library:\ngen.registerEventsLuaVersion("..minVersion..",false,"..regNum)
@@ -6179,11 +7704,17 @@ function gen.minEventsLuaVersion(minVersion,regNum,fileName)
     end
 end
 
-function gen.validateTableValue(tableDescription,key,value,validDataInfo,extraInfo)
-    gen.checkValidDataInfo(validDataInfo)
+-- Generates an error if the `value` doesn't satisfy the `valueSpec`.  This is a "building block" function, so you probably don't want to use it.
+---@param tableDescription string A description of the table.
+---@param key any The key being evaluated.
+---@param value any The value being evaluated.
+---@param extraInfo? string Extra information that might be useful when debugging.
+---@param valueSpec table # A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+function gen.validateTableValue(tableDescription,key,value,valueSpec,extraInfo)
+    gen.checkValidDataInfo(valueSpec)
     local data = value
     local dataType = type(data)
-    local vDI = validDataInfo[dataType]
+    local vDI = valueSpec[dataType]
     local function constructErrorMessage(data,tableDescription,key,extraInfo, tableReturnInfo)
         local tostringResult = tostring(data)
         if type(data) == "table" then
@@ -6192,7 +7723,7 @@ function gen.validateTableValue(tableDescription,key,value,validDataInfo,extraIn
             tostringResult = 'string<"'..data..'">'
         end
         local errorMessage = tableDescription..": key: "..tostring(key).."; "
-        errorMessage = errorMessage.."Expected :"..gen.describeAllowableData(validDataInfo)
+        errorMessage = errorMessage.."Expected :"..gen.describeAllowableData(valueSpec)
             .."; Received: "..tostringResult
         if tableReturnInfo then
             errorMessage = errorMessage.."; Reported table problem: "..tableReturnInfo
@@ -6262,22 +7793,25 @@ end
 --          creates a function that checks if a value is the dataType
 --      dataTypeMetatable
 --          the metatable for the data type
---
---  dataName = string
---      the name of the data type
---  specificKeyTable={[key] = validDataInfo}
---      gives allowable keys, and the valid kinds of data they can be
---
---  generalKeyTable={[function(possibleKey)-->bool]=validDataInfo}
---      if a key isn't in the specificKeyTable, the key is checked against
---      each key function in this table, and, if there is a match, uses
---      that validDataInfo
---      if no match here or in specificKeyTable, the key is invalid, generating an error
---  defaultValueTable = {[key]=value}
---      when a new dataType is generated, if the key is not specified, use the value in this table
---  fixedKeyTable = {[key] = true}
---      if true, the key can't be changed after the data is created
 
+--[[
+Returns functions necessary to create a basic custom data type.  Such a data type
+is a table, but uses a metatable to restrict the keys that are allowed to be used,
+and the values that can be assigned to those keys.  This way, errors can be
+generated when incorrect key-value pairs are assigned to the data type, rather
+than when later code receives unexpected values.
+<br>Several parameters are defined with "valueSpecification" tables.
+A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+]]
+---@param dataName string #<br>string<br><br> The name of the new data type.
+---@param specificKeyTable table<any,table> #<br>specificKeyTable={[key]=valueSpecification}<br><br>Each `key` is a key that is allowed in the `dataName` data type, and values assigned to the `key` must satisfy the corresponding `valueSpecification`.
+---@param generalKeyTable table<fun(possibleKey:any):boolean,table> #<br>generalKeyTable = {[function(possibleKey)-->boolean] = valueSpecification} <br><br> This table allows for keys of a general form to be used in the data type.  For a `possibleKey`, if any `function(possibleKey)` returns true, a value can be assigned to `possibleKey` as long as it satisfies the valueSpecification.
+---@param defaultValueTable table #<br>defaultValueTable = {[key]=value}<br><br>When a new `dataName` is created, if `key` is not specified, assign the corresponding `value` to it.
+---@param fixedKeyTable table<any,true> #<br>fixedKeyTable = {[key]=true}<br><br> If `key` is in this table, the new `dataName` can't change the value of the key after it is created.
+---@generic newDataType
+---@return fun(table:table):newDataType # Creates a new instance of the `dataName` data type, assigning to it all the table key-value pairs in the `table`.<br>Generates an error if any key-value pairs are invalid.
+---@return fun(item:any):boolean # Checks if `item` is an instance of the `dataName` data type, returns true if it is, and false otherwise.
+---@return table # The [metatable](https://www.tutorialspoint.com/lua/lua_metatables.htm) for the `dataName` data type.  This is available in case you want to make more customizations to the data type.
 function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable)
     specificKeyTable = gen.copyTable(specificKeyTable)
     for key,vDI in pairs(specificKeyTable) do
@@ -6372,11 +7906,16 @@ function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultVal
 end
 
 -- gen.valueSatisfiesValidDataInfo(value,validDataInfo)--> boolean
---  returns true if value satisfies VDI, false otherwise
-function gen.valueSatisfiesValidDataInfo(value,validDataInfo)
+-- gen.valueSatisfiesSpecification(value,valueSpecification)-->boolean
+
+--  Returns true if value satisfies the valueSpecification, false otherwise.
+---@param value any
+---@param valueSpecification table # A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+---@return boolean
+function gen.valueSatisfiesSpecification(value,valueSpecification)
     local data = value
     local dataType = type(data)
-    local vDI = validDataInfo[dataType]
+    local vDI = valueSpecification[dataType]
     if not vDI then
         return false
     end
@@ -6427,18 +7966,24 @@ function gen.valueSatisfiesValidDataInfo(value,validDataInfo)
         return false
     else
         return false
+---@diagnostic disable-next-line: missing-return
     end
 end
+gen.valueSatisfiesValidDataInfo = gen.valueSatisfiesSpecification
 
 
 
 -- gen.tableOfVDI(validDataInfo) --> validDataInfo
---  takes a validDataInfo, and returns a validDataInfo where
+-- gen.tableOfValueSpecification(valueSpecification) --> valueSpecification
+
+--  Takes a valueSpecification, and returns a valueSpecification where
 --  the valid data is a table where all values are of the
---  submitted validDataInfo
-function gen.tableOfVDI(vDI)
-    gen.checkValidDataInfo(vDI)
-    local vDI = gen.copyTable(vDI)
+--  submitted valueSpecification.
+---@param valueSpecification table # A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+---@return table valueSpecification
+function gen.tableOfValueSpecification(valueSpecification)
+    gen.checkValidDataInfo(valueSpecification)
+    local vDI = gen.copyTable(valueSpecification)
     local function analysisFn(table)
         for key,value in pairs(table) do
             if not gen.valueSatisfiesValidDataInfo(value,vDI) then
@@ -6449,17 +7994,22 @@ function gen.tableOfVDI(vDI)
     end
     return {["table"]={analysisFn,"A table with these values "..gen.describeAllowableData(vDI)}}
 end
+gen.tableOfVDI = gen.tableOfValueSpecification
 
 -- gen.vDIOrTableOfVDI(validDataInfo) --> validDataInfo
---  takes a validDataInfo, and returns a validDataInfo
---  that also allows a table with the same validDataInfo fore each value
---  validDataInfo can't include any tables
---
-function gen.vDIOrTableOfVDI(vDI)
-    gen.checkValidDataInfo(vDI)
-    local vDI = gen.copyTable(vDI)
+-- valueSpecificationOrTableOfValueSpecification(valueSpecification) --> valueSpecification
+
+--  Takes a valueSpecification, and returns a newValueSpecification.
+--  The newValueSpecification allow both the original valueSpecification
+--  and tables where values are the original valueSpecification.<br><br>
+--  Limiation: the valueSpecification can't have a any tables as valid value types.  If you need that, consider `gen.tableOfValueSpecification` or writing a custom valueSpecification.
+---@param valueSpecification table # A valueSpecification is a table with the following keys and values:<br><br>["nil"] = true or nil<br>If this key is true, the specified value can be nil.<br><br>["boolean"] = true, "true", "false", or nil<br>If this key is true (boolean value), the specified value can be a boolean.<br>If this key is "true" (string), then the specified value can be true, but not false.<br>If this key is "false" (string), then the specified value can be false, but not true.<br>If this key is nil, the specified value can't be a boolean.<br><br>["function"] = true, string, or nil<br>if this key is true or string, the specified value can be a function.<br>If string, the string describes the function, e.g. `function(unit)-->number`.  Value specification checks do not check if the function actually matches the description, only that it is a function.<br>If this key is nil, the specified value can't be a function.<br><br>["number"] = true or nil or {minVal=number/nil, maxVal=number/nil, integer=true/nil}<br>If true, the specified value can be any number.  If nil, the specified value can't be a number.<br>If table, any number must also be larger than the `minVal` (if specified) and smaller than the `maxVal` (if specified).  If the `integer` key is true, the value must also be an integer.<br><br>["string"] = true or {[validString] = truthy} or nil<br>If this key is true, any string is allowed.<br>If it is a table, any string value must be a key in that table, with a truthy (anything other than false/nil) associated value.<br>If nil, the value can't be a string.<br><br>["table"]=string, true, nil, or {[1]=function(table)->true or string, [2]=string}<br>If the key is a string, any table is accepted, and the string describes the kind of table needed.<br>If true, any table is accepted, and a generated description will be 'table'.<br>If the key is a table, the table's value for `1` is a function, which returns true if specified value is an acceptable table, and a string describing the problem if it is not.  The value for `2` is a string describing the required table, for generated descriptions/errors.<br>If nil, the specified value can't be a table.<br><br>["userdata"] = {[dataTypeName]=isDataTypeFn} or nil<br>The keys to this table are strings that describe acceptable userdata, and the values are functions which return true if the specified value matches the type, and false otherwise.<br>E.g.<br>`{["unitTypeObject"] = civ.isUnitType, ["cityObject"] = civ.isCity}`<br>Allows unitTypeObjects and cityObjects, but not other kinds of userdata.
+---@return table newValueSpecification
+function gen.valueSpecificationOrTableOfValueSpecification(valueSpecification)
+    gen.checkValidDataInfo(valueSpecification)
+    local vDI = gen.copyTable(valueSpecification)
     if vDI["table"] then
-        error("gen.vDIOrTableOfVDI: validDataInfo has a table as a kind of valid data.  This is invalid for this function.  You can use gen.tableOfVDI, or write a custom vDI.")
+        error("gen.valueSpecificationOrTableOfValueSpecification: valueSpecification has a table as a kind of valid data.  This is invalid for this function.  You can use gen.tableOfValueSpecification, or write a custom valueSpecification.")
     end
     local function analysisFn(table)
         for key,value in pairs(table) do
@@ -6473,6 +8023,8 @@ function gen.vDIOrTableOfVDI(vDI)
     vDICopy["table"]={analysisFn,"A table with these values "..gen.describeAllowableData(vDI)}
     return vDICopy
 end
+gen.vDIOrTableOfVDI = gen.valueSpecificationOrTableOfValueSpecification
+gen.valueSpecOrTable = gen.valueSpecificationOrTableOfValueSpecification
 
 
 -- stack data type
@@ -6489,8 +8041,17 @@ end
 --      stack.size --> integer
 --          returns the number of items in the stack
 
--- gen.newEmptyStack() --> stack
---      creates a stack with no values
+--[[A "stack" is a data structure where you can 'push' a value onto the top of the stack, or you can 'pop' a value off the top of the stack.  The popped value is returned, but is no longer on the stack.  This implementation of the stack also lets you find the ith element in the stack, starting from the top, and lets you see the size of the stack.  See: [Wikipedia: Stack](https://en.wikipedia.org/wiki/Stack_(abstract_data_type))
+<br><br> `stack.push = function(value:any)-->void` <br><br> When called, adds `value` to the top of the stack.<br>`stack.push(5)` adds `5` to the top of the stack.
+<br><br> `stack.pop = function()-->any` <br><br> When called, removes the top item of the stack, and returns it.<br><br>If the stack is formed by<br>`stack.push(1)`<br>`stack.push(2)`<br>`stack.push(3)`<br>then<br>`stack.pop()`-->`3`<br>`stack.pop()`-->`2`<br>`stack.pop()`-->`1`<br>`stack.pop()`-->`nil`
+<br><br> `stack.size = integer` <br><br> Returns the current size of the stack.
+<br><br> `stack[i] = any` <br><br>`stack[i]` returns the ith value in the stack, counting from the top, or nil if there aren't `i` values in the stack. The stack remains unchanged.<br><br>If the stack is formed by `stack.push(1)`<br>`stack.push(2)`<br>`stack.push(3)`<br>then<br>`stack[1]`-->`3`<br>`stack[2]`-->`2`<br>`stack[3]`-->`1`<br>`stack[4]`-->`nil`]]
+---@class stack
+---@field push fun(value:any) # When called, adds `value` to the top of the stack.<br>`stack.push(5)` adds `5` to the top of the stack.
+---@field pop fun():any # When called, removes the top item of the stack, and returns it.<br><br>If the stack is formed by `stack.push(1)`<br>`stack.push(2)`<br>`stack.push(3)`<br>then<br>`stack.pop()`-->`3`<br>`stack.pop()`-->`2`<br>`stack.pop()`-->`1`<br>`stack.pop()`-->`nil`
+---@field size integer # Returns the current size of the stack.
+---@field [integer] any # <br>`stack[i]` returns the ith value in the stack, counting from the top, or nil if there aren't `i` values in the stack. The stack remains unchanged.<br><br>If the stack is formed by `stack.push(1)`<br>`stack.push(2)`<br>`stack.push(3)`<br>then<br>`stack[1]`-->`3`<br>`stack[2]`-->`2`<br>`stack[3]`-->`1`<br>`stack[4]`-->`nil`
+
 local stackDataKey = {}
 local stackUnusedIndexKey = {}
 local stackMT = {
@@ -6533,6 +8094,10 @@ local stackMT = {
         return output
     end,
 }
+-- gen.newEmptyStack() --> stack
+
+-- Creates a stack with no values.
+---@return stack
 function gen.newEmptyStack()
     local stack = {[stackDataKey] = {},[stackUnusedIndexKey] = 1}
     setmetatable(stack,stackMT)
@@ -6540,12 +8105,15 @@ function gen.newEmptyStack()
 end
 
 -- gen.newStack(table = {}) --> stack
---      generates a new stack, with integer
---      values in the table pushed onto the stack
---      starting from the smallest integer value
---      (smallest value will be at the bottom of the stack)
---      All other keys (including non-integer keys) and values are ignored
-function gen.newStack(table) --> stack
+
+--generates a new stack, with integer
+--values in the table pushed onto the stack
+--starting from the smallest integer value
+--(smallest value will be at the bottom of the stack).
+--All other keys (including non-integer keys) and values are ignored.
+---@param table? any # Default is an empty table.
+---@return stack
+function gen.newStack(table)
     local smallestNumber = math.huge
     local largestNumber = -math.huge
     table = table or {}
@@ -6568,14 +8136,20 @@ function gen.newStack(table) --> stack
 end
 
 -- gen.isStack(item) --> boolean
---      returns true if the item is a stack (created by gen.newStack/newEmptyStack)
---      and false otherwise
+
+--Returns `true` if the item is a stack (created by gen.newStack/newEmptyStack)
+--and `false` otherwise.
+---@param item any
+---@return boolean
 function gen.isStack(item)
     return type(item) == "table" and getmetatable(item) == stackMT
 end
     
 -- gen.isInteger(item) --> boolean
---      returns true if the item is an integer, and false otherwise
+
+-- Returns true if the item is an integer, and false otherwise.
+---@param item any
+---@return boolean
 function gen.isInteger(item)
     return type(item) == "number" and math.floor(item) == item
 end

@@ -11,6 +11,7 @@ local munitions = require("munitions")
 
 local munitionSettings = {}
 local object = require("object")
+---@module "generalLibrary"
 local gen = require("generalLibrary"):minVersion(1)
 gen.versionFunctions(munitionSettings,versionNumber,fileModified,"MechanicsFiles".."\\".."munitionsSettings.lua")
 

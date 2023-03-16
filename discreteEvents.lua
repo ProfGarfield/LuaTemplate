@@ -155,7 +155,6 @@ discreteEvents.onTurn(function(turn)
     --civ.ui.text("discrete on turn event 4")
 end)
 
-
 discreteEvents.onCityProcessingComplete(function(turn,tribe) 
     if _global.eventTesting then
         civ.ui.text("discreteEvents.onCityProcessingComplete for "..tribe.name.." on turn "..tostring(turn))

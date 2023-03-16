@@ -65,6 +65,12 @@ simpleSettings.enableCustomUnitSelection = false
 -- provide an alternate weight function for selecting the next
 -- active unit
 -- see gen.selectNextActiveUnit
+-- customWeightFn(unit,activeUnit)-->integer
+-- gives 'weight' to each unit, and the unit with the lowest weight will
+-- be activated next
+-- By default, weight is +1 if unit is not same type as active unit
+-- + 2 per square for distance between activeUnit and unit
+-- + 10000 if on different maps
 simpleSettings.customWeightFunction = nil
 
 -- prevents AI Text archives from being deleted.
