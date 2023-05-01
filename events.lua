@@ -1,6 +1,6 @@
 -- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -203,6 +203,8 @@ local supplementalData = require("supplementalData"):minVersion(1)
 local unitData = require("unitData"):minVersion(1)
 local cityData = require("cityData"):minVersion(1)
 require("registerFiles"):minVersion(1)
+local customCosmic = require("customCosmic")
+require("customCosmicSettings")
 
 
 
@@ -503,6 +505,7 @@ local activateUnitBackstopMostRecent = false
 local previousUnitActivationTime = os.time()+os.clock()
 local function doOnUnitActivation(unit,source,repeatMove)
     executeOnEnterTile(unit)
+    customCosmic.changeEphemeralForUnit(unit)
     humanUnitActive = unit.owner.isHuman
     if (unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionHuman)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
@@ -801,6 +804,7 @@ registeredInThisFile["onCityDestroyed"] = true
 civ.scen.onScenarioLoaded(function ()
     suppressActivateUnitBackstop = true
     doOnChooseSeason()
+    customCosmic.changeEphemeralForTribe(civ.getCurrentTribe())
     discreteEvents.performOnScenarioLoaded()
     consolidated.onScenarioLoaded()
     eventsFiles.onScenarioLoaded()
@@ -904,6 +908,7 @@ registeredInThisFile["onCityFounded"] = true
 local function doBeforeProduction(turn,tribe)
     suppressActivateUnitBackstop = true
     supplementalData.onTribeTurnBegin(turn,tribe)
+    customCosmic.changeEphemeralForTribe(tribe)
     consolidated.beforeProduction(turn,tribe)
     consolidated.onTribeTurnBegin(turn,tribe)
     discreteEvents.performOnBeforeProduction(turn,tribe)
@@ -968,7 +973,9 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
         state.processedCities[city.id] = true
         doOnCityProcessed(city)
     end
-
+    
+    customCosmic.changeEphemeralForTribe(city.owner)
+    customCosmic.changeEphemeralForCity(city)
     -- if doBeforeProduction 
     local fCh,sChBW,sChAW,tChBC,tChAC = cityYield.onCalculateCityYield(city,food,shields,trade)
     --return fCh+extraFood,sChBW+extraShields,sChAW,tChBC+extraTrade,tChAC

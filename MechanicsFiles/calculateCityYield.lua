@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -14,6 +14,7 @@ local cityYield = {}
 gen.versionFunctions(cityYield,versionNumber,fileModified,"MechanicsFiles".."\\".."calculateCityYield.lua")
 local baseProduction = gen.computeBaseProduction
 local strategicTargetsAvailable, strat = gen.requireIfAvailable("strategicTargets")
+local changeRules = require("changeRules")
 
 function cityYield.onCalculateCityYield(city,food,shields,trade)
     local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
@@ -27,15 +28,15 @@ function cityYield.onCalculateCityYield(city,food,shields,trade)
     
     -- verify strategic targets, in case terrain changes or something
     if strategicTargetsAvailable then
-      for target in strat.iterateTargets(city) do
-        strat.verifyTarget(target)
-      end
+        for target in strat.iterateTargets(city) do
+            strat.verifyTarget(target)
+        end
     end
     
 
 
     -- Any changes to terrain production should be before this line
-    local correctFood,correctShields,correctTrade = baseProduction(city)
+    local correctFood,correctShields,correctTrade = baseProduction(city,true)
     extraFood = correctFood-food
     food = correctFood
     extraShields = correctShields - shields
@@ -48,6 +49,7 @@ function cityYield.onCalculateCityYield(city,food,shields,trade)
     -- You can take out the lines even if you have a beforeProduction event
     -- that changes terrain production, since that has been compensated for
     -- in the events.lua file
+
 
     -- After this point, the variables food, shields, and trade will refer to their
     -- 'correct' values, even if you've changed terrain production values

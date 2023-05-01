@@ -47,7 +47,7 @@ local recommendedVersion = function(self,recVersion)
     local vNum = versionNumber
     if vNum < recVersion then
         local message = "WARNING: The "..moduleFileName.." is out of date.  It is version "..tostring(vNum)..
-        ", but one of your files recommends version "..tostring(minVersion).." or later.  "
+        ", but one of your files recommends version "..tostring(recVersion).." or later.  "
         if fileModified then
             message = message.."\nIMPORTANT WARNING: it appears you've changed this file for your scenario."
             .."  Replacing this file will remove those changes.  This is not a mandatory update, so you (probably) don't have to make any changes.  However, you may still wish to bring code in from the new file for extra features."

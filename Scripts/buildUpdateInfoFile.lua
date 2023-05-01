@@ -25,6 +25,7 @@ local files = {
     ["cityData"] = false,
     ["civilopedia"] = 2,
     ["combatCalculator"] = 4,
+    ["changeRules"] = false,
     ["consolidator"] = false,
     ["context"] = false,
     ["counter"] = false,
@@ -77,7 +78,9 @@ local files = {
     ["registerFiles"]=false,
     ["leaderBonus"] = false,
     ["leaderBonusSettings"]= false,
-    ["textSettings"]=true
+    ["textSettings"]=true,
+    ["customCosmic"]=false,
+    ["customCosmicSettings"]=false,
 }
 
 local outputString = [==[

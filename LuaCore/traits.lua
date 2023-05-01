@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -756,8 +756,7 @@ function traits.makeItemTraitListAssociation(isItemTypeFn, getItemID, itemTypeNa
             scenarioLoadedNotRun = false
         end
     end
-
-
+    return getAssociatedList,addAssociation
 end
 
 

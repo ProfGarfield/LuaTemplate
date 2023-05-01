@@ -53,16 +53,16 @@ local fileModified = false -- set this to true if you change this file for your 
 --
 -- changeRules.changeTechRules(rulesTable)
 --      if rulesTable is a string, readRules.readRules is first applied to get a rules table
---      changes tech objects to correspond to the rules that the rulesTable provies
+--      changes tech objects to correspond to the rules that the rulesTable provides
 --      updates changeRules.currentlyAppliedRules["@CIVILIZE"]
 --      updates changeRules.currentlyAppliedRules["@CIVILIZE2"]
 --      updates changeRules.authoritativeDefaultRules[techObject]
 --      (Note: a tech with a 'no' prereq can't be added to the tech tree via Lua,
---      however, the techOjbect and authoritativeDefaultRules will still be changed)
+--      however, the techObject and authoritativeDefaultRules will still be changed)
 --
 -- changeRules.changeTerrainRules(rulesTable)
 --      if rulesTable is a string, readRules.readRules is first applied to get a rules table
---      changes terrain and baseTerrain objects to correspond to the rules that the rulesTable provies
+--      changes terrain and baseTerrain objects to correspond to the rules that the rulesTable provides
 --      updates changeRules.currentlyAppliedRules["@TERRAIN"]
 --      updates changeRules.currentlyAppliedRules["@TERRAIN1"]/["@TERRAIN2"]/["@TERRAIN3"]
 --      updates changeRules.authoritativeDefaultRules[baseTerrain]/[terrain]
@@ -1211,6 +1211,7 @@ local function lcm(a,b)
 end
 
 local function computeLCM(road,river,rail,alpine)
+    road,river,rail,alpine = math.max(road,1),math.max(river,1),math.max(rail,1),math.max(alpine,1)
     return lcm(lcm(road,river),lcm(rail,alpine))
 end
 
@@ -1310,9 +1311,20 @@ local function initializeRoadTrade()
                 error("changeRules.authoritativeDefaultRules: 'totpp.roadTrade': The key must be a map id for a map in this game, or a map object.  Received: "..tostring(k))
             end
         end,
-    }
-    setmetatable(roadTradeTable,mt)
-    return roadTradeTable
+    } setmetatable(roadTradeTable,mt) return roadTradeTable 
+end 
+
+local function initialiseMapTransportRelationships() 
+    local transportRules = changeRules.currentlyAppliedRules["@MAP_TRANSPORT_RELATIONSHIPS"]
+    local relationships = {}
+    for i=0,15 do
+        if transportRules[i] and transportRules[i][0] and transportRules[i][1] then
+            relationships[i+1] = {tonumber(transportRules[i][0]),tonumber(transportRules[i][1])}
+        else
+            relationships[i+1] = {0,0}
+        end
+    end
+    return relationships
 end
 
 
@@ -1330,6 +1342,7 @@ changeRules.authoritativeDefaultRules = {
     ["totpp.roadTrade"] = initializeRoadTrade(),
     ["totpp.movementMultipliers"] = initializeMovementMultipliers(),
     ["cosmic2"] = initialCosmic2,
+    ["map_transport_relationships"] = initialiseMapTransportRelationships(),
 }
 
 -- These variables make the first object check
@@ -1375,6 +1388,7 @@ local aDRMetatable = {
 setmetatable(changeRules.authoritativeDefaultRules,aDRMetatable)
 
 console.defaults = changeRules.authoritativeDefaultRules
+gen.registerAuthoritativeDefaultRules(changeRules.authoritativeDefaultRules)
 --[[
 local defaults = console.defaults
 local unit10 = civ.getUnitType(10)

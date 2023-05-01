@@ -62,6 +62,12 @@ fixed bug in leaderBonus.lua
 
 added "menuRecords" to text.lua
 
+added customCosmic module
+
+updated generalLibrary to integrate with changeRules and customCosmic,
+if these modules are available, but it should work if they are absent.
+Some new generalLibrary functions are also made available, and
+the general library has a constants table, too.
 
 last update
 

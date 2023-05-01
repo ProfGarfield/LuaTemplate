@@ -88,7 +88,7 @@ local fileModified = false -- set this to true if you change this file for your 
 
 
 local gen = require("generalLibrary"):minVersion(4)
-local traits = require("traits"):minVersion(2)
+local traits = require("traits"):minVersion(3)
 local combatMod = require("combatModifiers"):minVersion(1)
 local unitData = require("unitData"):minVersion(1)
 require("setTraits")

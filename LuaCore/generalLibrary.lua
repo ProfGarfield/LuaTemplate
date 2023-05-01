@@ -1,4 +1,4 @@
-local versionNumber = 5
+local versionNumber = 6
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -34,6 +34,71 @@ local gen = require("generalLibrary")
 ```]]
 ---@class gen
 local gen = {}
+
+---@enum gen.constants
+gen.constants = {
+    maxTribes = 8,
+    maxTribeID = 7,
+    maxUnitTypes = 189,
+    maxUnitTypeID = 188,
+    domainLand = 0,
+    domainAir = 1,
+    domainSea = 2,
+    maxMoveSpent = 255,
+    maxImprovements = 40,
+    maxImprovementID = 39,
+    maxWonders = 28,
+    maxWonderID = 27,
+    maxBaseTerrains = 64,
+    maxBaseTerrainID = 63,
+    maxBaseTerrainPerMap = 16,
+    maxBaseTerrainType = 15,
+    maxTerrains = 192,
+    maxTerrainID = 191,
+    maxMaps = 4,
+    maxMapID = 3,
+    roleAttack = 0,
+    roleDefend = 1,
+    roleNavalSuperiority = 2,
+    roleAirSuperiority = 3,
+    roleSeaTransport = 4,
+    roleSettle = 5,
+    roleDiplomacy = 6,
+    roleTrade = 7,
+    epochAncient = 0,
+    epochRenaissance = 1,
+    epochIndustrialRevolution = 2,
+    epochModern = 3,
+    categoryMilitary = 0,
+    categoryEconomic = 1,
+    categorySocial = 2,
+    categoryAcademic = 3,
+    categoryApplied = 4,
+    govtAnarchy = 0,
+    govtDespotism = 1,
+    govtMonarchy = 2,
+    govtCommunism = 3,
+    govtFundamentalism = 4,
+    govtRepublic = 5,
+    govtDemocracy = 6,
+    resourceNone = 0,
+    resourceFish = 1,
+    resourceWhale = 2,
+    grasslandType = 2,
+    leaderAggressive = 1,
+    leaderRational = -1,
+    leaderExpansionist = 1,
+    leaderPerfectionist = -1,
+    leaderCivilized = 1,
+    leaderMilitaristic = -1,
+    leaderNeutral = 0,
+    cityStyleBronzeAge = 0,
+    cityStyleClassical = 1,
+    cityStyleFarEast = 2,
+    cityStyleMedieval = 3,
+}
+gen.c = gen.constants
+
 
 -- gen.requireIfAvailable(fileName) --> boolean, modulePrefix
 
@@ -161,7 +226,7 @@ end
 --#gen.giveIgnoreZOC(unitType)-->void
 --#gen.removeIgnoreZOC(unitType)-->void
 --#gen.isAmphibious(unitType)-->boolean
---#gen.giveAmpibious(unitType)-->void
+--#gen.giveAmphibious(unitType)-->void
 --#gen.removeAmphibious(unitType)-->void
 --#gen.isSubmarine(unitType)-->boolean
 --#gen.giveSubmarine(unitType)-->void
@@ -173,7 +238,7 @@ end
 --#gen.giveCoastal(unitType)-->void
 --#gen.removeCoastal(unitType)-->void
 --#gen.isIgnoreWalls(unitType)-->boolean
---#gen.giveIngoreWalls(unitType)-->void
+--#gen.giveIgnoreWalls(unitType)-->void
 --#gen.removeIgnoreWalls(unitType)-->void
 --#gen.isCarryAir(unitType)-->boolean
 --#gen.giveCarryAir(unitType)-->void
@@ -478,11 +543,60 @@ end
 -- gen.newStack(table = {}) --> stack
 -- gen.isStack(item) --> boolean
 -- gen.isInteger(item) --> boolean
---
---
---
+-- gen.valueSpecForCustomData(isItemFn, failureDescription, itemDescription) --> valueSpecification
+-- gen.iterateUnitTypes() --> iterator
+-- gen.iterateImprovements() --> iterator
+-- gen.iterateWonders() --> iterator
+-- gen.iterateBaseTerrain() --> iterator
+-- gen.iterateTerrain() --> iterator
+-- gen.isRoadTradeBonus(baseTerrain) --> boolean
+-- gen.giveRoadTradeBonus(baseTerrain) -->boolean
+-- gen.removeRoadTradeBonus(baseTerrain) --> boolean
+-- gen.getMapTransportFlagNumber(map1, map2, all?, functionName?) --> boolean|integer|table
+-- gen.isTransportBetweenMaps(map1, map2, transportBitmask, functionName?) --> boolean
+-- gen.isNativeTransportBetweenMaps(unitType, map1, map2) --> boolean
+-- gen.isBuildTransportBetweenMaps(unitType, map1, map2) --> boolean
+-- gen.isUseTransportBetweenMaps(unitType, map1, map2) --> boolean
+-- gen.giveTransportBetweenMaps(map1, map2, transportBitmask, suppressFailureError?, functionName?) --> bitmask
+-- gen.giveNativeTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.giveBuildTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.giveUseTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.removeTransportBetweenMaps(map1, map2, transportBitmask, suppressFailureError?, functionName?) --> bitmask
+-- gen.removeNativeTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.removeBuildTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.removeUseTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.getNumberOfTerrainTypes(map) --> integer
+-- gen.getBaseTerrainID(baseTerrain) --> integer
+-- gen.getBaseTerrainFromID(id) --> baseTerrain
+-- gen.getTerrainID(terrain) --> integer
+-- gen.getTerrainFromID(id) --> terrain
+-- gen.copyTableWithMetatable(table) --> table
+
 -- FUNCTION IMPLEMENTATIONS
 --
+
+---@type table|boolean
+local authoritativeDefaultRules = false
+
+--[[This function is used to register the authoritativeDefaultRules
+table from changeRules.lua to be used in the General Library.
+All functions in the General Library will function appropriately
+even if the authoritativeDefaultRules are never registered.]]
+---@param aDRTable table
+function gen.registerAuthoritativeDefaultRules(aDRTable)
+    authoritativeDefaultRules = aDRTable
+end
+
+---@module customCosmic
+local customCosmic = {}
+
+--[[ This function is used to register the customCosmic functions,
+so that some generalLibrary functions can use the information
+registered by the customCosmic module.]]
+---@param cc table # The table for the customCosmic module.
+function gen.registerCustomCosmic(cc)
+    customCosmic = cc
+end
 
 
 -- gen.checkBits(integer,string)-->boolean
@@ -495,7 +609,7 @@ end
 -- binary representation should also have a 0. Any other
 -- character in the string means the integer can have a
 -- 0 or a 1.  If the integer representation is longer than
--- the string, the string is alligned with the smallest
+-- the string, the string is aligned with the smallest
 -- part of the integer.
 --[[
 ```lua
@@ -1887,12 +2001,13 @@ function gen.isAmphibious(unitType)
     return isBit1(unitType.flags,3)
 end
 
--- gen.giveAmpibious(unitType)-->void
+-- gen.giveAmphibious(unitType)-->void
 
 ---@param unitType unitTypeObject
-function gen.giveAmpibious(unitType) 
+function gen.giveAmphibious(unitType) 
     unitType.flags = setBit1(unitType.flags,3)
 end
+gen.giveAmpibious = gen.giveAmphibious -- backwards compatibility typo
 
 -- gen.removeAmphibious(unitType)-->void
 
@@ -1975,12 +2090,13 @@ function gen.isIgnoreWalls(unitType)
     return isBit1(unitType.flags,7)
 end
 
--- gen.giveIngoreWalls(unitType)-->void
+-- gen.giveIgnoreWalls(unitType)-->void
 
 ---@param unitType unitTypeObject
-function gen.giveIngoreWalls(unitType) 
+function gen.giveIgnoreWalls(unitType) 
     unitType.flags = setBit1(unitType.flags,7)
 end
+gen.giveIngoreWalls = gen.giveIgnoreWalls
 
 -- gen.removeIgnoreWalls(unitType)-->void
 
@@ -2948,6 +3064,9 @@ end
 ---@param unit unitObject
 ---@return integer atomicMovementPoints
 function gen.wonderModifiedMoves(unit)
+    if customCosmic.fullHealthMovementAllowance and customCosmic.isEnabled() then
+        return customCosmic.fullHealthMovementAllowance(unit)
+    end
     local fullHpMove = unit.type.move
     if unit.type.domain == 2 then
         -- apply nuclear power
@@ -2964,6 +3083,7 @@ function gen.wonderModifiedMoves(unit)
     end
     return fullHpMove
 end
+gen.fullHealthMovementAllowance = gen.wonderModifiedMoves
 
 -- maxMoves(unit)--> integer
 -- gen.maxMoves(unit) --> integer
@@ -2975,6 +3095,9 @@ end
 ---@param unit unitObject
 ---@return integer atomicMovementPoints
 function gen.maxMoves(unit)
+    if customCosmic.computeMovementAllowance and customCosmic.isEnabled() then
+        return customCosmic.computeMovementAllowance(unit)
+    end
     local fullHpMove = unit.type.move
     if unit.type.domain == 2 then
         -- apply nuclear power
@@ -3329,18 +3452,22 @@ function gen.cityCanSupportAnotherUnit(city)
         end
     end
 	local freeSupport = 0
+    local supportSource = civ.cosmic
+    if customCosmic.getFreeSupport and customCosmic.isEnabled() then
+        supportSource = customCosmic.getFreeSupport(city.owner)
+    end
 	local govtNumber = city.owner.government
 	if govtNumber <= 1 then
 		-- anarchy or despotism
 		freeSupport = city.size
 	elseif govtNumber == 2 then
 		-- monarchy
-		freeSupport = civ.cosmic.supportMonarchy
+		freeSupport = supportSource.supportMonarchy
 	elseif govtNumber == 3 then
 		-- communism
-		freeSupport = civ.cosmic.supportCommunism
+		freeSupport = supportSource.supportCommunism
 	elseif govtNumber == 4 then
-		freeSupport = civ.cosmic.supportFundamentalism
+		freeSupport = supportSource.supportFundamentalism
 	end
 	return (freeSupport+city.totalShield - unitsSupported) > 0 
 end
@@ -3362,6 +3489,10 @@ function gen.rehomeUnitsInCapturedCity(city,defender)
 			citySupportTable[unit.homeCity.id] = citySupportTable[unit.homeCity.id]+1
 		end
 	end
+    local supportSource = civ.cosmic
+    if customCosmic.getFreeSupport and customCosmic.isEnabled() then
+        supportSource = customCosmic.getFreeSupport(city.owner)
+    end
 	local function canSupportAnotherUnit(city)
 		local freeSupport = 0
 		local govtNumber = city.owner.government
@@ -3370,12 +3501,12 @@ function gen.rehomeUnitsInCapturedCity(city,defender)
 			freeSupport = city.size
 		elseif govtNumber == 2 then
 			-- monarchy
-			freeSupport = civ.cosmic.supportMonarchy
+			freeSupport = supportSource.supportMonarchy
 		elseif govtNumber == 3 then
 			-- communism
-			freeSupport = civ.cosmic.supportCommunism
+			freeSupport = supportSource.supportCommunism
 		elseif govtNumber == 4 then
-			freeSupport = civ.cosmic.supportFundamentalism
+			freeSupport = supportSource.supportFundamentalism
 		end
 		-- make sure citySupportTable has an entry for this city
 		citySupportTable[city.id] = citySupportTable[city.id] or 0
@@ -3482,10 +3613,10 @@ end
 The line should be
 `gen.selectNextActiveUnit(unit,source,customWeightFn)`
 (note: if the arguments to function(unit,source)
-arent called 'unit' and 'source', use the actual name)]]
+aren't called 'unit' and 'source', use the actual name)]]
 ---@param activeUnit unitObject
 ---@param source boolean
----@param customWeightFn fun(unit: unitObject, activeUnit:unitObject):integer returns the "weight" of each possbile unit, and selects the lowest weight to be active next
+---@param customWeightFn fun(unit: unitObject, activeUnit:unitObject):integer returns the "weight" of each possible unit, and selects the lowest weight to be active next
 function gen.selectNextActiveUnit(activeUnit,source,customWeightFn)
     if  (not civ.getCurrentTribe().isHuman) then
         -- If the AI is playing, we don't want to interfere
@@ -3662,7 +3793,117 @@ gen.getTileFromId = gen.getTileFromID
 local getTileFromId = gen.getTileFromId
 local getTileFromID = gen.getTileFromId
 
+---Returns an id number for the `baseTerrain` object.  This is different from `baseTerrain.type`, since `baseTerrain.type` is 0-15 for all maps, while this id changes for larger maps.
+---@param baseTerrain baseTerrainObject
+---@return integer
+function gen.getBaseTerrainID(baseTerrain)
+    return 16*baseTerrain.map+baseTerrain.type
+end
+gen.getBaseTerrainId = gen.getBaseTerrainID
 
+--- nil, or a table containing the number of terrain types for each map
+--- to be used for gen.getNumberOfTerrainTypes(map)
+---@type nil|table
+local numberOfTerrainTypes = nil
+
+function gen.getNumberOfTerrainTypes(map)
+    if civ.isMap(map) then
+        map = map.id
+    end
+    local function numTerrain()
+        local _,_,maps = civ.getAtlasDimensions()
+        local resultTable = {}
+        if authoritativeDefaultRules then
+            resultTable = gen.copyTable(authoritativeDefaultRules["cosmic2"]["NumberOfTerrainTypes"])
+        else
+            for z = 0,maps-1 do
+                for t=15,0,-1 do
+                    local worked,_ = pcall(civ.getBaseTerrain,z,t)
+                    if worked then
+                        resultTable[z] = t+1
+                        break
+                    end
+                end
+                error("gen.getNumberOfTerrainTypes: map "..tostring(z)
+                .." appears to have no terrain types.  Something is wrong.")
+            end
+        end
+        for i=maps, gen.constants.maxMapID do
+            resultTable[i] = 0
+        end
+        return resultTable
+    end
+    numberOfTerrainTypes = numberOfTerrainTypes or numTerrain()
+    return numberOfTerrainTypes[map]
+end
+
+
+
+
+---Given an baseTerrain id, returns the corresponding baseTerrain object.
+---@param id integer
+---@return baseTerrainObject|nil
+function gen.getBaseTerrainFromID(id)
+    local w,h,maps = civ.getAtlasDimensions()
+    local z = id//16
+    local terrainType = id % 16
+    if authoritativeDefaultRules then
+        local numTerrain = authoritativeDefaultRules["cosmic2"]["NumberOfTerrainTypes"][z]
+        if z > (maps-1) or terrainType > (numTerrain-1) then
+            return nil
+        end
+        return civ.getBaseTerrain(z,terrainType)
+    else
+        local worked,result = pcall(civ.getBaseTerrain,z,terrainType)
+        if worked then
+            return result
+        else
+            return nil
+        end
+    end
+end
+gen.getBaseTerrainFromId = gen.getBaseTerrainFromID
+
+
+---Returns an id number for the `terrain` object.  This is different from `terrain.type`, since `terrain.type` is 0-15, based on the underlying baseTerrain type.  This id number is different for each terrain type on each map.
+---@param terrain terrainObject
+---@return integer
+function gen.getTerrainID(terrain)
+    return 16*3*terrain.map+3*terrain.type+terrain.resource
+end
+gen.getTerrainId = gen.getTerrainID
+
+---Returns a terrainObject from the corresponding id number created by gen.getTerrainID.
+---@param id integer
+---@return terrainObject|nil
+function gen.getTerrainFromID(id)
+    if id < 0 then
+        return nil
+    end
+    local w,h,maps = civ.getAtlasDimensions()
+    local z = id //(16*3)
+    local terrainType = id % (16*3)
+    terrainType = terrainType // 3
+    local res = id % 3
+    if authoritativeDefaultRules then
+        local numTerrain = authoritativeDefaultRules["@COSMIC2"]["NumberOfTerrainTypes"][z]
+        if z > (maps-1) or terrainType > (numTerrain-1) then
+            return nil
+        end
+        if terrainType == 2 and res > 0 then
+            return nil
+        end
+        return civ.getTerrain(z,terrainType,res)
+    else
+        local worked,result = pcall(civ.getTerrain,z,terrainType,res)
+        if worked then
+            return result
+        else
+            return nil
+        end
+    end
+end
+gen.getTerrainFromId = gen.getTerrainFromID
 
 --gen.unitTypeOnTile(tile,unitTypeOrTableOfUnitType)-->bool
 
@@ -3928,7 +4169,7 @@ end
 -- Constructs (and returns) a new table with the same keys as the input.
 -- Tables within the table are also copied.
 -- Note: although this is meant for copying tables, 
--- the way the function is contructed, any value can be input and
+-- the way the function is constructed, any value can be input and
 -- returned.
 ---@param table any
 ---@return any
@@ -3944,6 +4185,26 @@ local function copyTable(table)
 end
 gen.copyTable = copyTable
 
+-- Constructs (and returns) a new table with the same keys as the input, 
+-- as well as the same metatables. (The metatable is not copied, so that
+-- customData is still recognised as the correct data.)
+-- Tables within the table are also copied (along with their metatables).
+-- Note: although this is meant for copying tables, 
+-- the way the function is constructed, any value can be input and
+-- returned.
+---@param table any
+---@return any
+function gen.copyTableWithMetatable(table)
+    if type(table) ~= "table" then
+        return table
+    end
+    local newTable = {}
+    setmetatable(newTable,getmetatable(table))
+    for key,value in pairs(table) do
+        newTable[key] = gen.copyTableWithMetatable(value)
+    end
+    return newTable
+end
 
 --#gen.errorForNilKey(table,tableName)-->void
 
@@ -4162,7 +4423,7 @@ function gen.getTilesInRadius(centre,radius,minRadius,maps)
         error("gen.getTilesInRadius: radius (argument 2) must be an integer.  Received: "..tostring(radius))
     end
     if type(minRadius) ~= "number" or math.floor(minRadius) ~= minRadius then
-        error("gen.getTilesInminRadius: minRadius (argument 2) must be an integer.  Received: "..tostring(minRadius))
+        error("gen.getTilesInMinRadius: minRadius (argument 2) must be an integer.  Received: "..tostring(minRadius))
     end
     local doMap = {}
     if type(maps) == "number" then
@@ -4327,7 +4588,7 @@ local musicFolder = ""
 -- Plays music from `fileName`, found in the folder set by
 -- gen.setMusicDirectory (in Lua Scenario Template, this is <MainScenarioDirectory>\Sound).
 --
--- gen.playMusic stops any currently plaing game music in order
+-- gen.playMusic stops any currently playing game music in order
 -- to play music, and the music won't play if the "music" is disabled in the menu.  This is different from playing a sound with civ.playSound, which doesn't stop any existing music.
 function gen.playMusic(fileName)
     civ.playMusic(musicFolder.."\\"..fileName)
@@ -4701,7 +4962,7 @@ end
 --`distance` is the number of squares away that you can search.
 --`allowedTiles` is either a table of integers such that a tile is acceptable if
 --`possibleTile.baseTerrain.type` appears as a value in the table
---or a function `allowedtiles(possibletile)-->bool`
+--or a function `allowedTiles(possibleTile)-->bool`
 --that returns true if the tile is allowed, and false if not.
 --If `nil` is entered, all terrain is allowed.
 ---@param centerTile tileAnalog
@@ -4731,7 +4992,7 @@ end
 --`distance` is the number of squares away that you can search.
 --`allowedTiles` is either a table of integers such that a tile is acceptable if
 --`possibleTile.baseTerrain.type` appears as a value in the table
---or a function `allowedtiles(possibletile)-->bool`
+--or a function `allowedTiles(possibleTile)-->bool`
 --that returns true if the tile is allowed, and false if not.
 --If `nil` is entered, all terrain is allowed.
 ---@param centerTile tileAnalog
@@ -4766,7 +5027,7 @@ end
 --`distance` is the number of squares away that you can search.
 --`allowedTiles` is either a table of integers such that a tile is acceptable if
 --`possibleTile.baseTerrain.type` appears as a value in the table
---or a function `allowedtiles(possibletile)-->bool`
+--or a function `allowedTiles(possibleTile)-->bool`
 --that returns true if the tile is allowed, and false if not.
 --If `nil` is entered, all terrain is allowed.
 --`tribe` the tribe that is searching for open tiles.
@@ -4800,7 +5061,7 @@ end
 --`distance` is the number of squares away that you can search.
 --`allowedTiles` is either a table of integers such that a tile is acceptable if
 --`possibleTile.baseTerrain.type` appears as a value in the table
---or a function `allowedtiles(possibletile)-->bool`
+--or a function `allowedTiles(possibleTile)-->bool`
 --that returns true if the tile is allowed, and false if not.
 --If `nil` is entered, all terrain is allowed.
 --`tribe` the tribe that is searching for open tiles.
@@ -4974,17 +5235,27 @@ end
 -- Doesn't check if that city is actually working the tile.
 ---@param tile tileAnalog
 ---@param city cityObject
+---@param ignoreCustomCosmic? boolean # If true, do not use the customCosmic city customisation to get production, refer to the current settings of terrain, baseTerrain and roadTrade.  If false or nil, refer to customCosmic module if it is available (otherwise, refer to current settings of terrain, baseTerrain and roadTrade).
 ---@return integer foodProduction
 ---@return integer shieldProduction
 ---@return integer tradeProduction
-function gen.getTileProduction(tile,city)
+function gen.getTileProduction(tile,city,ignoreCustomCosmic)
     tile = toTile(tile)
-    local terrain = tile.terrain
-    local baseTerrain = tile.baseTerrain
-    local trade = terrain.trade
-    local shields = terrain.shields
-    local food = terrain.food
-    if baseTerrain.type == 10 then
+
+    local terrainData = tile.terrain
+    local baseTerrainData = tile.baseTerrain
+    local roadTradeData = totpp.roadTrade
+    if customCosmic.getCustomisedTerrainInfo and 
+    (not ignoreCustomCosmic) and
+    customCosmic.isEnabled()
+    then
+        baseTerrainData, terrainData, roadTradeData =
+        customCosmic.getCustomisedTerrainInfo(tile,city)
+    end
+    local trade = terrainData.trade
+    local shields = terrainData.shields
+    local food = terrainData.food
+    if baseTerrainData.type == 10 then
         -- the ocean has a different computation than
         -- other terrain in several areas
         -- road and river don't add trade to ocean
@@ -5079,7 +5350,7 @@ function gen.getTileProduction(tile,city)
         -- or if totpp.roadTrade says it should (baseTerrain.type+1, since id starts counting
         -- at 0, but isBit1 starts counting from 1
         -- Oceans don't get +1 road trade, ever
-        if (gen.hasRoad(tile) or tile.city) and (isBit1(totpp.roadTrade[tile.z],baseTerrain.type+1) or trade > 0) then 
+        if (gen.hasRoad(tile) or tile.city) and (isBit1(roadTradeData[tile.z],baseTerrainData.type+1) or trade > 0) then 
             trade = trade+1
         end
         -- apply colossus
@@ -5122,12 +5393,12 @@ function gen.getTileProduction(tile,city)
         --shields
         -- Apply mine bonus.  
         -- A city gives the mine bonus only if the irrigation bonus is 0
-        if gen.hasMine(tile) or (tile.city and baseTerrain.irrigateBonus == 0)  then
-            shields = shields + baseTerrain.mineBonus
+        if gen.hasMine(tile) or (tile.city and baseTerrainData.irrigateBonus == 0)  then
+            shields = shields + baseTerrainData.mineBonus
         end
         -- grasslands without shields don't produce shields, except with KRC, which gives +1
         -- Or, the 1 shield minimum from being on a city square
-        if baseTerrain.type == 2 and not tile.grasslandShield then
+        if baseTerrainData.type == 2 and not tile.grasslandShield then
             shields = 0
         end
         -- cities (except on ocean) guarantee 1 shield of production
@@ -5159,7 +5430,7 @@ function gen.getTileProduction(tile,city)
         -- tiles with city or irrigation get the irrigation bonus, regardless of whether
         -- the tile can actually be irrigated
         if tile.city or gen.hasIrrigation(tile) then
-            food = food + baseTerrain.irrigateBonus
+            food = food + baseTerrainData.irrigateBonus
         end
         -- don't need refrigeration tech to take advantage of farm production, just supermarket
         -- city tile counts as farmland even without refrigeration
@@ -5193,12 +5464,13 @@ local getTileProduction = gen.getTileProduction
 -- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
 
 -- Computes the resources harvested by the city from the terrain.
--- Includes superhighway/supermarket/railroad bonus, but not factories/powerplants.
+-- Includes superhighway/supermarket/railroad bonus, but not factories/power plants.
 ---@param city cityObject
+---@param ignoreCustomCosmic? boolean # If true, do not use the customCosmic city customisation to get production, refer to the current settings of terrain, baseTerrain and roadTrade.  If false or nil, refer to customCosmic module if it is available (otherwise, refer to current settings of terrain, baseTerrain and roadTrade).
 ---@return integer foodProduction
 ---@return integer shieldProduction
 ---@return integer tradeProduction
-function gen.computeBaseProduction(city)
+function gen.computeBaseProduction(city,ignoreCustomCosmic)
     local tileList = gen.cityRadiusTiles(city)
     local cityWorkers = city.workers
     local foodTotal = 0
@@ -5206,7 +5478,7 @@ function gen.computeBaseProduction(city)
     local tradeTotal = 0
     for workerIndex,tile in pairs(tileList) do
         if isBit1(cityWorkers,workerIndex) then
-            local tileFood,tileShields,tileTrade = getTileProduction(tile,city)
+            local tileFood,tileShields,tileTrade = getTileProduction(tile,city,ignoreCustomCosmic)
             foodTotal = foodTotal+tileFood
             shieldTotal = shieldTotal+tileShields
             tradeTotal = tradeTotal+tileTrade
@@ -5298,6 +5570,7 @@ gen.original.aCeremonialBurial        = civ.getTech(9) --[[@as techObject]]
 gen.original.aChemistry               = civ.getTech(10) --[[@as techObject]]
 gen.original.aChivalry                = civ.getTech(11) --[[@as techObject]]
 gen.original.aCodeofLaws              = civ.getTech(12) --[[@as techObject]]
+gen.original.aCodeOfLaws              = civ.getTech(12) --[[@as techObject]]
 gen.original.aCombinedArms            = civ.getTech(13) --[[@as techObject]]
 gen.original.aCombustion              = civ.getTech(14) --[[@as techObject]]
 gen.original.aCommunism               = civ.getTech(15) --[[@as techObject]]
@@ -5369,6 +5642,7 @@ gen.original.aSuperconductor          = civ.getTech(80) --[[@as techObject]]
 gen.original.aTactics                 = civ.getTech(81) --[[@as techObject]]
 gen.original.aTheology                = civ.getTech(82) --[[@as techObject]]
 gen.original.aTheoryofGravity         = civ.getTech(83) --[[@as techObject]]
+gen.original.aTheoryOfGravity         = civ.getTech(83) --[[@as techObject]]
 gen.original.aTrade                   = civ.getTech(84) --[[@as techObject]]
 gen.original.aUniversity              = civ.getTech(85) --[[@as techObject]]
 gen.original.aWarriorCode             = civ.getTech(86) --[[@as techObject]]
@@ -6246,6 +6520,7 @@ gen.forbidNilValueAccess(dataTable) --> void
 
 gen.allowNilValueAccess(dataTable) --> void
 
+gen.restrictValues(dataTable,isValidValueFn,makeValidValueFn) --> void
 ]]
 ---@class dataTable:table
 
@@ -6278,18 +6553,28 @@ function gen.makeDataTable(inputTable,tableName)
     metatable.forbidReplacement = false
     metatable.forbidNilValueAccess = false
     metatable.forbidNewKeys = false
+    metatable.isValidValueFn = function(value) return true end
+    metatable.makeValidValueFn = function(value) return value end
     metatable.__newindex = function(inputTbl,key,value)
         if metatable.dataRecord[key] ~= nil then
             if metatable.forbidReplacement then
                 error("gen.makeDataTable: the table "..tableName.." can't have the values for existing keys reassigned.  The key "..tostring(key).." has already been assigned a value of "..tostring(metatable.dataRecord[key]).." and is now being assigned the value of "..tostring(value).." .")
             else
-                metatable.dataRecord[key] = value
+                if metatable.isValidValueFn(value) then
+                    metatable.dataRecord[key] = value
+                else
+                    metatable.dataRecord[key] = metatable.makeValidValueFn(value)
+                end
             end
         else
             if metatable.forbidNewKeys then
                 error("gen.makeDataTable: the table "..tableName.." can't have values assigned to keys that do not already have values.  The key "..tostring(key).." has not already been assigned a value.")
             else
-                metatable.dataRecord[key] = value
+                if metatable.isValidValueFn(value) then
+                    metatable.dataRecord[key] = value
+                else
+                    metatable.dataRecord[key] = metatable.makeValidValueFn(value)
+                end
             end
         end
     end
@@ -6384,6 +6669,21 @@ function gen.allowNilValueAccess(dataTable)
     end
     mt.forbidNilValueAccess = false
 end
+
+
+--[[Changes the `dataTable` so that only 'valid' values can be assigned to the dataTable.  If `isValidValueFunction(value)` returns true for a `value` assigned to the table, that value is added to the table.  Otherwise, `makeValidValueFunction(value)` is assigned to the dataTable (unless an error is generated).]]
+---@param dataTable dataTable
+---@param isValidValueFunction fun(value:any):boolean
+---@param makeValidValueFunction fun(value:any):any
+function gen.restrictValues(dataTable,isValidValueFunction,makeValidValueFunction)
+    local mt = getmetatable(dataTable) or {}
+    if mt.type ~= "dataTable" then
+        error("gen.restrictValues: argument is not a data table.  Use gen.makeDataTable first.")
+    end
+    mt.isValidValueFn = isValidValueFunction
+    mt.makeValidValueFn = makeValidValueFunction
+end
+
 
 local scenarioDirectory = nil
 
@@ -7250,13 +7550,17 @@ end
 -- 255 and 0 respectively.
 ---@param unit unitObject
 ---@param points number
----@param multiplier integer
----@param maxSpent integer # default is 255
----@param minSpent integer # default is 0
+---@param multiplier? integer
+---@param maxSpent? integer # default is 255
+---@param minSpent? integer # default is 0
 function gen.spendMovementPoints(unit,points,multiplier,maxSpent,minSpent)
     maxSpent = maxSpent or 255
     minSpent = minSpent or 0
-    multiplier = multiplier or totpp.movementMultipliers.aggregate
+    if customCosmic.getMovementMultipliers and customCosmic.isEnabled() then
+        multiplier = customCosmic.getMovementMultipliers(unit).aggregate
+    else
+        multiplier = multiplier or totpp.movementMultipliers.aggregate
+    end
 	local actualMoveSpent = unit.moveSpent
 	if actualMoveSpent < 0 then
 		actualMoveSpent = actualMoveSpent + 256
@@ -7410,6 +7714,8 @@ function gen.tableToString(table)
 end
 
 
+local vDIKeys = {["nil"]=true,["boolean"]=true,["function"]=true,["number"]=true,
+    ["string"]=true,["table"]=true,["userdata"]=true,}
 
 -- Value Specification
 --  valueSpecification = {
@@ -7442,8 +7748,6 @@ end
 --          key being the name, and the function checking if it is that type
 --          being the value
 --  }
-local vDIKeys = {["nil"]=true,["boolean"]=true,["function"]=true,["number"]=true,
-    ["string"]=true,["table"]=true,["userdata"]=true,}
 function gen.checkValidDataInfo(validDataInfo)
     for key,val in pairs(validDataInfo) do
         if not vDIKeys[key] then
@@ -7482,8 +7786,8 @@ function gen.describeAllowableValues(valueSpecification)
             number = "integer"
         end
         if valueSpecification["number"].minVal and valueSpecification["number"].maxVal then
-            desc = desc..number.." between "..tostring(valueSpecification["number"].minValue)
-            .." and "..tostring(valueSpecification["number"].maxValue)..", "
+            desc = desc..number.." between "..tostring(valueSpecification["number"].minVal)
+            .." and "..tostring(valueSpecification["number"].maxVal)..", "
         elseif valueSpecification["number"].minVal then
             desc = desc..number.." at least "..tostring(valueSpecification["number"].minValue)..", "
         elseif valueSpecification["number"].maxVal then
@@ -7808,24 +8112,27 @@ A valueSpecification is a table with the following keys and values:<br><br>["nil
 ---@param generalKeyTable table<fun(possibleKey:any):boolean,table> #<br>generalKeyTable = {[function(possibleKey)-->boolean] = valueSpecification} <br><br> This table allows for keys of a general form to be used in the data type.  For a `possibleKey`, if any `function(possibleKey)` returns true, a value can be assigned to `possibleKey` as long as it satisfies the valueSpecification.
 ---@param defaultValueTable table #<br>defaultValueTable = {[key]=value}<br><br>When a new `dataName` is created, if `key` is not specified, assign the corresponding `value` to it.
 ---@param fixedKeyTable table<any,true> #<br>fixedKeyTable = {[key]=true}<br><br> If `key` is in this table, the new `dataName` can't change the value of the key after it is created.
+---@param aliasKeyTable? nil|table<any,any>|fun(aliasKey:any):any #<br>aliasKeyTable = {[aliasKey] = key} or<br>fun(aliasKey)->key<br><br>If table, and the aliasKey is a key in the aliasKeyTable, then the associated key is used for indexing or assigning instead.<br>If function, all keys have the function applied to them, and the returned value is used as a key instead.
 ---@generic newDataType
 ---@return fun(table:table):newDataType # Creates a new instance of the `dataName` data type, assigning to it all the table key-value pairs in the `table`.<br>Generates an error if any key-value pairs are invalid.
 ---@return fun(item:any):boolean # Checks if `item` is an instance of the `dataName` data type, returns true if it is, and false otherwise.
 ---@return table # The [metatable](https://www.tutorialspoint.com/lua/lua_metatables.htm) for the `dataName` data type.  This is available in case you want to make more customizations to the data type.
-function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable)
-    specificKeyTable = gen.copyTable(specificKeyTable)
+function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable,aliasKeyTable)
+    aliasKeyTable = aliasKeyTable or {}
+    local aliasKeyFunction = nil
+    specificKeyTable = gen.copyTableWithMetatable(specificKeyTable)
     for key,vDI in pairs(specificKeyTable) do
         gen.checkValidDataInfo(vDI)
     end
-    generalKeyTable = gen.copyTable(generalKeyTable)
+    generalKeyTable = gen.copyTableWithMetatable(generalKeyTable)
     for key,vDI in pairs(generalKeyTable) do
         gen.checkValidDataInfo(vDI)
         if not vDI["nil"] then
             error("gen.createDataType: (creating "..dataName..") keys defined by the generalKeyTable must be allowed to have nil values.")
         end
     end
-    defaultValueTable = gen.copyTable(defaultValueTable)
-    fixedKeyTable = gen.copyTable(fixedKeyTable)
+    defaultValueTable = gen.copyTableWithMetatable(defaultValueTable)
+    fixedKeyTable = gen.copyTableWithMetatable(fixedKeyTable)
     local function validDataInfoForKey(key)
         if specificKeyTable[key] then
             return specificKeyTable[key]
@@ -7836,6 +8143,21 @@ function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultVal
             end
         end
         return false
+    end
+    if type(aliasKeyTable) == "table" then
+        aliasKeyTable = gen.copyTableWithMetatable(aliasKeyTable)
+        for aliasKey,key in pairs(aliasKeyTable) do
+            if not validDataInfoForKey(key) then
+            error("gen.createDataType: (creating "..dataName..") The aliasKey "..tostring(aliasKey).." is translated to "..tostring(key)..", but that is not a valid key for this data type.")
+            end
+        end
+        aliasKeyFunction = function(aliasKey)
+            return aliasKeyTable[aliasKey] or aliasKey
+        end
+    elseif type(aliasKeyTable) == "function" then
+        aliasKeyFunction = aliasKeyTable
+    else
+        error("gen.createDataType: arg#6 is supposed to be a table or a function (or nil).  Instead received: "..tostring(aliasKeyTable))
     end
     for key,value in pairs(defaultValueTable) do
         local vDI = validDataInfoForKey(key)
@@ -7853,20 +8175,22 @@ function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultVal
     local uniqueTableForDataType = {}
     local mt = {}
     mt.trueTableKey = uniqueTableForDataType
-    mt.__index = function(t,key)
+    mt.__index = function(t,aliasKey)
+        local key = aliasKeyFunction(aliasKey)
         if validDataInfoForKey(key) then
             return t[uniqueTableForDataType][key]
         else
-            error(dataName..".index: the key "..tostring(key).." is not a valid key for "..dataName)
+            error(dataName..".index: the key "..tostring(key).." (aliasKey: "..tostring(aliasKey)..") is not a valid key for "..dataName)
         end
     end
-    mt.__newindex = function(t,key,value)
+    mt.__newindex = function(t,aliasKey,value)
+        local key = aliasKeyFunction(aliasKey)
         local vDI = validDataInfoForKey(key)
         if not vDI then
-            error(dataName..".index: the key "..tostring(key).." is not a valid key for "..dataName)
+            error(dataName..".index: the key "..tostring(key).." (aliasKey:"..tostring(aliasKey)..") is not a valid key for "..dataName)
         end
         if fixedKeyTable[key] then
-            error(dataName..".newIndex: the key "..tostring(key).." can't be changed after the "..dataName.." is created.")
+            error(dataName..".newIndex: the key "..tostring(key).." (aliasKey:"..tostring(aliasKey)..") can't be changed after the "..dataName.." is created.")
         end
         gen.validateTableValue(dataName,key,value,vDI)
         t[uniqueTableForDataType][key] = value
@@ -7883,10 +8207,11 @@ function gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultVal
         for key,value in pairs(defaultValueTable) do
             newData[uniqueTableForDataType][key] = value
         end
-        for key,value in pairs(table) do
+        for aliasKey,value in pairs(table) do
+            local key = aliasKeyFunction(aliasKey)
             local vDI = validDataInfoForKey(key)
             if not vDI then
-                error("new "..dataName..": the key "..tostring(key).." is invalid.")
+                error("new "..dataName..": the key "..tostring(key).." (aliasKey:"..tostring(aliasKey)..") is invalid.")
             end
             gen.validateTableValue("new "..dataName,key,value,vDI)
             newData[uniqueTableForDataType][key] = value
@@ -8026,6 +8351,18 @@ end
 gen.vDIOrTableOfVDI = gen.valueSpecificationOrTableOfValueSpecification
 gen.valueSpecOrTable = gen.valueSpecificationOrTableOfValueSpecification
 
+---Creates a value specification for custom data created by `gen.createDataType` (or any other data type that uses a table as the base).
+---@param isItemFn fun(item:any):boolean # A function that returns true if the item is the appropriate data type, and false otherwise.
+---@param failureDescription string # A message explaining that the item is not the appropriate data type.
+---@param itemDescription string # A description of the data type.
+---@return table
+function gen.valueSpecForCustomData(isItemFn,failureDescription,itemDescription)
+    local itemCheckFn = function(item)
+        return isItemFn(item) or failureDescription
+    end
+    return {["table"]={itemCheckFn,itemDescription}}
+end
+
 
 -- stack data type
 --      stack.push(value) --> void
@@ -8154,13 +8491,378 @@ function gen.isInteger(item)
     return type(item) == "number" and math.floor(item) == item
 end
 
-            
+---Returns an iterator for all unitType objects.
+---@return iterator
+function gen.iterateUnitTypes()
+---@diagnostic disable-next-line: return-type-mismatch
+    return coroutine.wrap(function()
+        for id = 0,civ.cosmic.numberOfUnitTypes-1 do
+            coroutine.yield(civ.getUnitType(id))
+        end
+    end)
+end
+
+---Returns an iterator for all improvement objects.
+---@return iterator
+function gen.iterateImprovements()
+---@diagnostic disable-next-line: return-type-mismatch
+    return coroutine.wrap(function()
+        for id = 0,gen.constants.maxImprovementID do
+            coroutine.yield(civ.getImprovement(id))
+        end
+    end)
+end
+
+---Returns an iterator for all wonder objects.
+---@return iterator
+function gen.iterateWonders()
+---@diagnostic disable-next-line: return-type-mismatch
+    return coroutine.wrap(function()
+        for id = 0,gen.constants.maxWonderID do
+            coroutine.yield(civ.getWonder(id))
+        end
+    end)
+end
+
+---Returns an iterator for all baseTerrain objects (for maps that are
+--in the game).
+---@return iterator
+function gen.iterateBaseTerrain()
+    local _,_,maps = civ.getAtlasDimensions()
+---@diagnostic disable-next-line: return-type-mismatch
+    return coroutine.wrap(function()
+        for z=0,maps-1 do
+            for t=0,gen.getNumberOfTerrainTypes(z)-1 do
+                coroutine.yield(civ.getBaseTerrain(z,t))
+            end
+        end
+    end)
+end
+
+---Returns an iterator for all terrain objects (for maps that
+--are in the game).
+---@return iterator
+function gen.iterateTerrain()
+    local _,_,maps = civ.getAtlasDimensions()
+    local noResource = gen.constants.resourceNone
+    local fishResource = gen.constants.resourceFish
+    local whaleResource = gen.constants.resourceWhale
+    local grasslandType = gen.constants.grasslandType
+---@diagnostic disable-next-line: return-type-mismatch
+    return coroutine.wrap(function()
+        for z=0,maps-1 do
+            for t=0,gen.getNumberOfTerrainTypes(z)-1 do
+                coroutine.yield(civ.getTerrain(z,t,noResource))
+                if t ~= grasslandType then
+                    coroutine.yield(civ.getTerrain(z,t,fishResource))
+                    coroutine.yield(civ.getTerrain(z,t,whaleResource))
+                end
+            end
+        end
+    end)
+end
+
+---Checks if the `baseTerrain` gets +1 trade production from a road.
+---@param baseTerrain baseTerrainObject
+function gen.isRoadTradeBonus(baseTerrain)
+    return isBit1(totpp.roadTrade[baseTerrain.map],baseTerrain.type+1)
+end
+
+---Gives the `baseTerrain` +1 trade production from a road.
+---@param baseTerrain baseTerrainObject
+function gen.giveRoadTradeBonus(baseTerrain)
+    local z = baseTerrain.map
+    totpp.roadTrade[z] = setBit1(totpp.roadTrade[z],baseTerrain.type+1)
+end
+
+---Removes the +1 trade production from a road for `baseTerrain`.
+---@param baseTerrain baseTerrainObject
+function gen.removeRoadTradeBonus(baseTerrain)
+    local z = baseTerrain.map
+    totpp.roadTrade[z] = setBit0(totpp.roadTrade[z],baseTerrain.type+1)
+end
+
+-- mapTransportRelationships[map1ID][map2ID] = tableOfnumber or false
+-- if false, there is no transport relationship between the maps
+-- if tableOfNumber, each number corresponds to a flag position for
+-- that transport relationship for nativeTransport, buildTransport,
+-- useTransport.  (rightmost flag is 1, not 0)
+---@type boolean|table
+local mapTransportRelationships = false
+
+local function registerMapTransportRelationships(callingFunctionName)
+    if not authoritativeDefaultRules then
+        error("The authoritativeDefaultRules (part of changeRules.lua) have not been registered with generalLibrary.lua.  "..callingFunctionName.." is therefore not available.")
+    end
+    local mTRs = {}
+    for a=0,gen.c.maxMapID do
+        mTRs[a] = {}
+        for b=0,gen.c.maxMapID do
+            mTRs[a][b] = false
+        end
+    end
+    local list = authoritativeDefaultRules["map_transport_relationships"]
+    for i=1,16 do
+        local r = list[i]
+        if r and r[1] and r[2] then
+            mTRs[r[1]][r[2]] = mTRs[r[1]][r[2]] or {}
+            mTRs[r[1]][r[2]][1+#mTRs[r[1]][r[2]]] = i
+            mTRs[r[2]][r[1]] = mTRs[r[1]][r[2]] or {}
+            mTRs[r[2]][r[1]][1+#mTRs[r[2]][r[1]]] = i
+        end
+    end
+    return mTRs
+end
+
+---Finds the number of a map transporter relationship 
+-- (or a table of all relationships, if `all` is true) which allows
+-- transporter travel between `map1` and `map2`, with the first
+-- relationship in @MAP_TRANSPORT_RELATIONSHIPS being represented
+-- by 1.  If `map1` and `map2` are the same map, return `true`, even
+-- if there is a relationship for that.  If there is no transport
+-- relationship between the two maps, false is returned.
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param all? boolean # If true, return a table of all eligible relationship numbers (unless maps are the same, or there are none).
+---@param functionName? string # If present, passes along a functionName to be displayed in case of error (particularly if changeRules.lua module is not found)
+---@return boolean|integer|table
+function gen.getMapTransportFlagNumber(map1,map2,all,functionName)
+    functionName = functionName or "gen.getMapTransportFlagNumber"
+    if civ.isMap(map1) then
+        map1 = map1.id
+    end
+    if civ.isMap(map2) then
+        map2 = map2.id
+    end
+    if map1 == map2 then
+        return true
+    end
+    mapTransportRelationships = mapTransportRelationships
+        or registerMapTransportRelationships(functionName)
+    if all or type(mapTransportRelationships[map1][map2]) ~="table" then
+        return mapTransportRelationships[map1][map2]
+    else
+        return mapTransportRelationships[map1][map2][1]
+    end
+end
+
+---Returns true if the supplied bitmask indicates that transportation
+-- can take place between `map1` and `map2` (or if they are the same map),
+-- and false otherwise.
+---@param map1 mapObject|integer
+---@param map2 mapObject|integer
+---@param transportBitmask bitmask
+---@param functionName? string # Carries through the function name for the error if changeRules.lua is not available.
+---@return boolean
+function gen.isTransportBetweenMaps(map1,map2,transportBitmask,functionName)
+    functionName = functionName or "gen.isTransportBetweenMaps"
+    local mTFN = gen.getMapTransportFlagNumber(map1,map2,true,functionName)
+    if type(mTFN) == "table" then
+        for _,bitNumber in pairs(mTFN) do
+            if isBit1(transportBitmask,bitNumber) then
+                return true
+            end
+        end
+        return false
+    end
+    ---@cast mTFN boolean -- at this point, it can't be a table
+    return mTFN
+end
+
+---Returns true if `unitType` can natively teleport between `map1` and `map2`, and false otherwise.
+--Always returns true if `map1` and `map2` are the same.
+---@param unitType unitTypeObject
+---@param map1 mapObject|integer
+---@param map2 mapObject|integer
+---@return boolean
+function gen.isNativeTransportBetweenMaps(unitType,map1,map2)
+    return gen.isTransportBetweenMaps(map1, map2, unitType.nativeTransport, "gen.isNativeTransportBetweenMaps")
+end
+
+---Returns true if `unitType` can build transporters between `map1` and `map2`, and false otherwise.
+--Always returns true if `map1` and `map2` are the same.
+---@param unitType unitTypeObject
+---@param map1 mapObject|integer
+---@param map2 mapObject|integer
+---@return boolean
+function gen.isBuildTransportBetweenMaps(unitType,map1,map2)
+    return gen.isTransportBetweenMaps(map1, map2, unitType.buildTransport, "gen.isBuildTransportBetweenMaps")
+end
+
+---Returns true if `unitType` can build transporters between `map1` and `map2`, and false otherwise.
+--Always returns true if `map1` and `map2` are the same.
+---@param unitType unitTypeObject
+---@param map1 mapObject|integer
+---@param map2 mapObject|integer
+---@return boolean
+function gen.isUseTransportBetweenMaps(unitType,map1,map2)
+    return gen.isTransportBetweenMaps(map1, map2, unitType.useTransport, "gen.isUseTransportBetweenMaps")
+end
+
+---Takes the `transportBitmask` for nativeTransport, buildTransport, useTransport,
+--- and changes an appropriate bit to 1 so that transport exists
+--- between the maps.  (If there are multiple map relationships
+--- between `map1` and `map2`, there is no guarantee which one will
+--- be enabled, and, in fact, one may be enabled even if another one
+--- already grants the relationship.  If such details are important,
+--- write a function manually.)
+--- Returns the new bitmask.
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the original bitmask is returned.
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param transportBitmask bitmask
+---@param suppressFailureError? boolean # set to true so that invalid map pairs do nothing instead of causing errors.
+---@param functionName? string
+---@return bitmask
+function gen.giveTransportBetweenMaps(map1,map2,transportBitmask, suppressFailureError, functionName)
+    functionName = functionName or "gen.giveTransportBetweenMaps"
+    local mTFN = gen.getMapTransportFlagNumber(map1,map2,false,functionName)
+    if type(mTFN) == "boolean" then
+        if suppressFailureError then
+            return transportBitmask
+        end
+        error(functionName..": The maps "..tostring(map1).." and "..tostring(map2).." are either the same map or have no transportation relationship between them.  You can disable this message and allow invalid map relationships to be ignored by setting argument #4 to true.")
+    end
+    return setBit1(transportBitmask,mTFN --[[@as integer]])
+end
+
+---Changes the `unitType`'s nativeTransport field so that the
+--- unit can teleport between `map1` and `map2`.
+--- (If there are multiple map relationships
+--- between `map1` and `map2`, there is no guarantee which one will
+--- be enabled, and, in fact, one may be enabled even if another one
+--- already grants the relationship.  If such details are important,
+--- write a function manually.)
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the nativeTransport field is unchanged.
+---@param unitType unitTypeObject
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param suppressFailureError? boolean # if true, invalid map combinations do nothing instead of causing an error.
+function gen.giveNativeTransportBetweenMaps(unitType,map1,map2,suppressFailureError)
+    unitType.nativeTransport = gen.giveTransportBetweenMaps(map1,map2,
+    unitType.nativeTransport,suppressFailureError,"gen.giveNativeTransportBetweenMaps")
+end
 
 
+---Changes the `unitType`'s buildTransport field so that the
+--- unit can build teleporters between `map1` and `map2`.
+--- (If there are multiple map relationships
+--- between `map1` and `map2`, there is no guarantee which one will
+--- be enabled, and, in fact, one may be enabled even if another one
+--- already grants the relationship.  If such details are important,
+--- write a function manually.)
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the buildTransport field is unchanged.
+---@param unitType unitTypeObject
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param suppressFailureError? boolean # if true, invalid map combinations do nothing instead of causing an error.
+function gen.giveBuildTransportBetweenMaps(unitType,map1,map2,suppressFailureError)
+    unitType.buildTransport = gen.giveTransportBetweenMaps(map1,map2,
+    unitType.buildTransport,suppressFailureError,"gen.giveBuildTransportBetweenMaps")
+end
+
+---Changes the `unitType`'s useTransport field so that the
+--- unit can use teleporters between `map1` and `map2`.
+--- (If there are multiple map relationships
+--- between `map1` and `map2`, there is no guarantee which one will
+--- be enabled, and, in fact, one may be enabled even if another one
+--- already grants the relationship.  If such details are important,
+--- write a function manually.)
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the useTransport field is unchanged.
+---@param unitType unitTypeObject
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param suppressFailureError? boolean # if true, invalid map combinations do nothing instead of causing an error.
+function gen.giveUseTransportBetweenMaps(unitType,map1,map2,suppressFailureError)
+    unitType.useTransport = gen.giveTransportBetweenMaps(map1,map2,
+    unitType.useTransport,suppressFailureError,"gen.giveUseTransportBetweenMaps")
+end
+
+---Takes the `transportBitmask` for nativeTransport, buildTransport, useTransport,
+--- and changes all appropriate bit to 0 so that transport no longer exists
+--- between the maps.  
+--- Returns the new bitmask.
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the original bitmask is returned.
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param transportBitmask bitmask
+---@param suppressFailureError? boolean # set to true so that invalid map pairs do nothing instead of causing errors.
+---@param functionName? string
+---@return bitmask
+function gen.removeTransportBetweenMaps(map1,map2,transportBitmask, suppressFailureError, functionName)
+    functionName = functionName or "gen.removeTransportBetweenMaps"
+    local mTFN = gen.getMapTransportFlagNumber(map1,map2,true,functionName)
+    if type(mTFN) == "boolean" then
+        if suppressFailureError then
+            return transportBitmask
+        end
+        error(functionName..": The maps "..tostring(map1).." and "..tostring(map2).." are either the same map or have no transportation relationship between them.  You can disable this message and allow invalid map relationships to be ignored by setting argument #4 to true.")
+    end
+    local returnBitmask = transportBitmask
+    for _,bit in pairs(mTFN --[[@as table]]) do
+        returnBitmask = setBit0(returnBitmask,bit)
+    end
+    return returnBitmask
+end
+
+---Changes the `unitType`'s nativeTransport field so that the
+--- unit can't teleport between `map1` and `map2`.
+--- (If there are multiple map relationships
+--- between `map1` and `map2`, all will be removed.)
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the nativeTransport field is unchanged.
+---@param unitType unitTypeObject
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param suppressFailureError? boolean # if true, invalid map combinations do nothing instead of causing an error.
+function gen.removeNativeTransportBetweenMaps(unitType,map1,map2,suppressFailureError)
+    unitType.nativeTransport = gen.removeTransportBetweenMaps(map1,map2,
+    unitType.nativeTransport,suppressFailureError,"gen.removeNativeTransportBetweenMaps")
+end
 
 
+---Changes the `unitType`'s buildTransport field so that the
+--- unit can't build teleporters between `map1` and `map2`.
+--- (If there are multiple map relationships
+--- between `map1` and `map2`, all will be set to 0.)
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the buildTransport field is unchanged.
+---@param unitType unitTypeObject
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param suppressFailureError? boolean # if true, invalid map combinations do nothing instead of causing an error.
+function gen.removeBuildTransportBetweenMaps(unitType,map1,map2,suppressFailureError)
+    unitType.buildTransport = gen.removeTransportBetweenMaps(map1,map2,
+    unitType.buildTransport,suppressFailureError,"gen.removeBuildTransportBetweenMaps")
+end
 
-
+---Changes the `unitType`'s useTransport field so that the
+--- unit can't use teleporters between `map1` and `map2`.
+--- (If there are multiple map relationships
+--- between `map1` and `map2`, all will be set to 0)
+--- If the maps are the same, or there is no possible transportation
+--- between them, an error is thrown, unless `suppressFailureError`
+--- is `true`, in which case the useTransport field is unchanged.
+---@param unitType unitTypeObject
+---@param map1 integer|mapObject
+---@param map2 integer|mapObject
+---@param suppressFailureError? boolean # if true, invalid map combinations do nothing instead of causing an error.
+function gen.removeUseTransportBetweenMaps(unitType,map1,map2,suppressFailureError)
+    unitType.useTransport = gen.removeTransportBetweenMaps(map1,map2,
+    unitType.useTransport,suppressFailureError,"gen.removeUseTransportBetweenMaps")
+end
 if rawget(_G,"console") then
     _G["console"].gen = gen
 end
