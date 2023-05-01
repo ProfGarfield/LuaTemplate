@@ -33,3 +33,4 @@ LuaCore/_leaderBonus.lua
 NotUsed/*
 Units.bmp
 UnitsA.bmp
+.gitignore
