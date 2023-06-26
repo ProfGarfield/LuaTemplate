@@ -1,6 +1,6 @@
 -- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 5
+local versionNumber = 6
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -457,14 +457,17 @@ local function executeOnEnterTile(currentActiveUnit)
 end
 
 
+---&autoDoc onSave
 local function doOnSave() --> string
     discreteEvents.performOnSave()
     -- compress the text representation of the state table, so saved game files are smaller
     return lualzw.compress(civlua.serialize(state))
 end
+---&endAutoDoc
 civ.scen.onSave(doOnSave)
 registeredInThisFile["onSave"]=true
 
+---&autoDoc onLoad
 local function doOnLoad(buffer)-->void
     -- if buffer is compressed, it is decompressed, otherwise the
     -- buffer itself is used
@@ -474,6 +477,7 @@ local function doOnLoad(buffer)-->void
     --linkStateTableToModules()
     print("Enter console.commands() to see a list of keys in the console table.  Some give access to functions in modules, others will run event code.")
 end
+---&endAutoDoc
 civ.scen.onLoad(doOnLoad)
 registeredInThisFile["onLoad"]=true
 
@@ -933,6 +937,11 @@ registeredInThisFile["onCityProcessed"] = true
 
 local function doOnTribeTurnEnd(turn,tribe)
     activateUnitBackstop()
+    for unit in civ.iterateUnits() do
+        if unit.owner == tribe and gen.moveRemaining(unit) > 0 then
+            onFinalOrderGiven(unit)
+        end       
+    end
     discreteEvents.performOnTribeTurnEnd(turn,tribe)
     consolidated.onTribeTurnEnd(turn,tribe)
     eventsFiles.onTribeTurnEnd(turn,tribe)

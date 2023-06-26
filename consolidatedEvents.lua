@@ -46,7 +46,6 @@ local flag = require("flag")
 local counter = require("counter")
 local civlua = require("civluaModified")
 
-
 local events = {}
 
 
@@ -75,25 +74,29 @@ end
 --      from consolidator.lua in the LuaCore directory
 
 
-
+---&autoDoc onActivateUnit
 -- Unit Activation
 --Registers a function to be called every time a unit is activated. The callback takes the unit activated as a parameter, and the source of unit activation. `source` is `true` if activated by keyboard or mouse click, `false` if activated by the game itself. `repeatMove` is `true` if it's a repeat activation caused by moving, `false` otherwise.
 function events.onActivateUnit(unit,source,repeatMove)
     --civ.ui.text("Unit activation consolidated test")
 
 end
+---&endAutoDoc
 
 
+---&autoDoc onBribeUnit
 -- On Unit Bribery
 function events.onBribeUnit(unit,previousOwner)
     --civ.ui.text("Bribe unit consolidated test")
 
 end
+---&endAutoDoc
 
 -- On calculate City Yield not included here
 
 -- On Can Build not included here
 
+---&autoDoc onCentauriArrival
 -- On Centauri Arrival
 -- This is available with games started as an extended original game,
 -- but not with games started as a standard game (I think, this hasn't been looked at too closely)
@@ -101,13 +104,17 @@ function events.onCentauriArrival(tribe)
     --civ.ui.text(tribe.name.." has reached Alpha Centauri.")
 
 end
+---&endAutoDoc
 
+
+---&autoDoc onCityDestroyed
 -- City destruction
 function events.onCityDestroyed(city)
     --civ.ui.text("City destroyed consolidated test")
 
 end
-
+---&endAutoDoc
+---&autoDoc onCityFounded
 -- On City Founded
 function events.onCityFounded(city)
     if _global.eventTesting then
@@ -123,29 +130,33 @@ function events.onCityFounded(city)
     end
     return cityCancelled
 end
-
+---&endAutoDoc
+---&autoDoc onCityProcessed
 -- On City Processed
 function events.onCityProcessed(city)
     --civ.ui.text(city.name.." processed")
 
 end
-
+---&endAutoDoc
+---&autoDoc onCityProduction
 -- On city production (when a city produces a unit/improvement/wonder)
 function events.onCityProduction(city,prod)
     --civ.ui.text(city.name.." has procuded something.")
 
 end
-
+---&endAutoDoc
+---&autoDoc onCityTaken
 -- On City Taken
 -- (get conqueror by using city.owner)
 function events.onCityTaken(city,defender)
     --civ.ui.text(city.name.." captured from the "..defender.name.." by the "..city.owner.name..". Consolidated Events.")
 
 end
+---&endAutoDoc
 
 
 -- On Initiate Combat not included here 
-
+---&autoDoc onKeyPress
 -- On key press
 function events.onKeyPress(keyCode)
     --if keyCode == keyboard.backspace then
@@ -153,13 +164,15 @@ function events.onKeyPress(keyCode)
     --end
 
 end
-
+---&endAutoDoc
+---&autoDoc onScenarioLoaded
 -- On Scenario Loaded
 function events.onScenarioLoaded()
     --civ.ui.text("Scenario Loaded consolidated event")
 
 end
-
+---&endAutoDoc
+---&autoDoc onNegotiation
 -- On Negotiation 
 -- Return true if the talker can contact the listener,
 -- and false otherwise.
@@ -170,8 +183,9 @@ function events.onNegotiation(talker,listener)
 
     return true
 end
+---&endAutoDoc
 
-
+---&autoDoc onSchism
 -- On Schism 
 -- Return true (default) if the tribe can schism,
 -- and false otherwise.
@@ -182,26 +196,35 @@ function events.onSchism(tribe)
 
     return true
 end
-
+---&endAutoDoc
+---&autoDoc onTurn
 -- Between Turns
 function events.onTurn(turn)
     --civ.ui.text("The turn is "..tostring(turn)..".")
 
 end
-
+---&endAutoDoc
+---&autoDoc onUnitKilled
 -- On unit killed in combat
 function events.onUnitKilled(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     --civ.ui.text("A "..loser.type.name.." has been defeated by a "..winner.type.name..".")
 
 end
+---&endAutoDoc
+
+
+
+
+---&autoDoc onUnitDefeated
 -- On unit defeated in combat or by some other event
 function events.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     --civ.ui.text("unit defeated consolidated test")
 
 end
+---&endAutoDoc
 
 
-
+---&autoDoc onCityProcessingComplete
 -- After Production
 function events.onCityProcessingComplete(turn,tribe)
     if _global.eventTesting then
@@ -209,6 +232,10 @@ function events.onCityProcessingComplete(turn,tribe)
     end
 
 end
+---&endAutoDoc
+
+
+---&autoDoc onTribeTurnBegin
 -- Before Production
 function events.onTribeTurnBegin(turn,tribe)
     if _global.eventTesting then
@@ -216,14 +243,16 @@ function events.onTribeTurnBegin(turn,tribe)
     end
 
 end
-
+---&endAutoDoc
+---&autoDoc onTribeTurnEnd
 function events.onTribeTurnEnd(turn,tribe)
     if _global.eventTesting then
         civ.ui.text("consolidated.onTribeTurnEnd for turn "..tostring(turn).." and tribe "..tribe.name)
     end
 
 end
-
+---&endAutoDoc
+---&autoDoc onGameEnds
 -- On Game Ends
 -- Return true if the game ends as normal,
 -- and false otherwise.
@@ -246,7 +275,8 @@ function events.onGameEnds(reason)
 
     return true
 end
-
+---&endAutoDoc
+---&autoDoc onCanFoundCity
 -- Checking if a unit can found a city
 -- Return true if the unit can found a city
 -- return false if it can't
@@ -265,8 +295,9 @@ function events.onCanFoundCity(unit,advancedTribe)
     end
     return true
 end
+---&endAutoDoc
 
-
+---&autoDoc onEnterTile
 -- onEnterTile(unit,previousTile,previousDomainSpec)
 -- executes when a unit successfully enters a tile (so not when it attacks
 -- a unit or fails to enter a tile because it lacks movement points)
@@ -275,8 +306,9 @@ function events.onEnterTile(unit,previousTile,previousDomainSpec)
         civ.ui.text("consolidated.onEnterTile: "..unit.type.name.." has entered tile ("..text.coordinates(unit.location)..") from tile ("..text.coordinates(previousTile)..").")
     end
 end
+---&endAutoDoc
 
-
+---&autoDoc onFinalOrderGiven
 -- onFinalOrderGiven(unit)
 -- executes when a unit has been given its final order for the turn.
 -- that is, when a new unit is active and the previous unit has spent
@@ -286,6 +318,7 @@ function events.onFinalOrderGiven(unit)
         civ.ui.text("consolidated.onFinalOrderGiven: "..unit.type.name.." has been given its order.")
     end
 end
+---&endAutoDoc
 
 
 

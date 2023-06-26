@@ -637,11 +637,11 @@ function navy.onEnterTile(unit,previousTile,previousDomainSpec)
         end
     end
 end
-function navy.linkState(stateTable)
-    if type(stateTable) == "table" then
-        canUnload = stateTable
+function navy.linkState(canUnloadTableFromState)
+    if type(canUnloadTableFromState) == "table" then
+        canUnload = canUnloadTableFromState
     else
-        error("navy.linkState: table expected as argument.  Received: "..tostring(stateTable))
+        error("navy.linkState: table expected as argument.  Received: "..tostring(canUnloadTableFromState))
     end
 end
 
@@ -653,7 +653,8 @@ function navy.onTurnMaintenance(turn)
     end
 end
 
-function discreteEvents.linkStateToModules(state,stateTableKeys)
+
+discreteEvents.linkStateToModules( function(state,stateTableKeys)
     local keyName = "navyModuleState"
     if stateTableKeys[keyName] then
         error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
@@ -663,7 +664,7 @@ function discreteEvents.linkStateToModules(state,stateTableKeys)
     -- link the state table to the module
     state[keyName] = state[keyName] or {}
     navy.linkState(state[keyName])
-end
+end)
 
 function discreteEvents.onActivateUnit(unit,source,repeatMove)
     navy.unitActivationSetCarrierStatus(unit,source,repeatMove)

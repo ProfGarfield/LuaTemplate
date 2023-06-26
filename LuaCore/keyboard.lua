@@ -1,3 +1,4 @@
+---@class keyboard
 local keyboard = {}
 
 keyboard.a = 65

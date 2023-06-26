@@ -39,6 +39,7 @@ local defaultModuleName = "events.lua"
 local initializeFlagList = {}
 
 -- table of flag functions to be returned with the module
+---@class flag
 local flag = {}
 local gen = require("generalLibrary"):minVersion(1)
 gen.versionFunctions(flag,versionNumber,fileModified,"LuaCore".."\\".."flag.lua")

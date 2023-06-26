@@ -2,6 +2,10 @@
 local register = {}
 local text = require("text")
 local gen = require("generalLibrary")
+
+
+
+---&autoDoc onEnterTile
 -- onEnterTile(unit,previousTile,previousDomainSpec)
 -- executes when a unit successfully enters a tile (so not when it attacks
 -- a unit or fails to enter a tile because it lacks movement points)
@@ -17,5 +21,6 @@ function register.onEnterTile(unit,previousTile,previousDomainSpec)
     --gen.original.uParatroopers.domain = 2
 
 end
+---&endAutoDoc
 
 return register

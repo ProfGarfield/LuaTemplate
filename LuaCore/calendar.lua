@@ -9,7 +9,7 @@ local fileModified = false -- set this to true if you change this file for your 
 -- contains functionality for dealing with 
 -- calendar dates and turns
 
-
+---@class calendar
 local calendar ={}
 local gen = require("generalLibrary"):minVersion(1)
 gen.versionFunctions(calendar,versionNumber,fileModified,"LuaCore".."\\".."calendar.lua")

@@ -41,44 +41,6 @@ text.setVeteranTitle("Veteran")
 text.setShortVeteranTitle("Vet")
 -- sets the string that is returned by text.getShortVeteranTitle()
 
---[[ This eventTools functionality has been replaced by the activateUnitBackstop
---      in events.lua that was made available by onGetFormatted date
---      and by the civ.scen.onCityProcessingComplete
---      This code hasn't been removed yet, just in case something breaks and 
---      eventTools still needed
-
--- The event tools have functionality to guarantee that a tribe
--- will have an active unit.  This ensures that after production
--- events and promotions to new unit types work properly
--- (and, maybe, other stuff too).
--- The unit that is guaranteeing unit activation will be deleted
--- as soon as it is activated.
--- Make sure to choose a unit type that has more than 0 movement points
--- Also, change activationLocations below
---
-eventTools.setGuaranteeUnitActivationType(nil)
--- these locations are used for creating units that will
--- guarantee unit activation
--- If possible, choose an out of the way area of the map
--- if none is available, you'll have to write a function
--- to find a place
-local activationLocations = {
-[0] = civ.getTile(0,0,0) ,
-[1] = civ.getTile(0,0,0),
-[2] = civ.getTile(0,0,0),
-[3] = civ.getTile(0,0,0),
-[4] = civ.getTile(0,0,0),
-[5] = civ.getTile(0,0,0),
-[6] = civ.getTile(0,0,0),
-[7] = civ.getTile(0,0,0),
-}
-local function activationLocationFunction(tribe)
-    return activationLocations[tribe.id]
-end
-eventTools.setGuaranteeActivationUnitLocationFunction(activationLocationFunction)
-
--- This is the end of the eventTools code for this file
---]]
 
 
 function discreteEvents.onScenarioLoaded()

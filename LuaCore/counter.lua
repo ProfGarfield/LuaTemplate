@@ -65,6 +65,7 @@ local initializeCounterList = {}
 
 -- table of counter functions to be returned with the module
 local gen = require("generalLibrary"):minVersion(1)
+---@class counter
 local counter = {}
 gen.versionFunctions(counter,versionNumber,fileModified,"LuaCore".."\\".."counter.lua")
 

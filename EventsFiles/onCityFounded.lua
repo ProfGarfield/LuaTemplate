@@ -1,6 +1,7 @@
 -- this file can be deleted if it is not necessary
 local register = {}
 
+---&autoDoc onCityFounded
 function register.onCityFounded(city)
     if _global.eventTesting then
         civ.ui.text("separate file onCityFounded for "..city.name)
@@ -15,5 +16,6 @@ function register.onCityFounded(city)
     end
     return cityCancelled
 end
+---&endAutoDoc
 
 return register

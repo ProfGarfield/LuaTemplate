@@ -11,6 +11,7 @@ local fileModified = false -- set this to true if you change this file for your 
 local gen = require("generalLibrary"):minVersion(1)
 local text = require("text")
 
+---&autoDoc useCustomMusic
 -- By default, custom music is disabled
 -- If you don't plan to use custom music, you
 -- may wish to delete @PICKMUSICTOT from Game.txt,
@@ -19,10 +20,12 @@ local text = require("text")
 -- which benefits from modifying @PICKMUSICTOT, and which this
 -- module will supersede if active
 local useCustomMusic = false
+---&endAutoDoc
 
 if useCustomMusic and totpp.patches.DirectShowMusic then
     -- do everything else in this file
 
+---&autoDoc trackList
 local trackList = {}
 
 -- These are the files played for each of the options in
@@ -54,6 +57,7 @@ trackList[12] = "The Dome.mp3"
 -- Failure will also be silent if a file called missingmusic.txt
 -- is in the music directory
 -- Otherwise, an error will be thrown detailing the missing tracks.
+---&endAutoDoc
 
 
 

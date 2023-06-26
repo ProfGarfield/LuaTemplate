@@ -161,6 +161,8 @@ local function tileHasCarrierUnit(tile)
     return false
 end
 local domain = {ground = 0, air = 1, sea = 2}
+
+---&autoDoc defenderValueModifier
 -- use this function to add to (or subtract from) the calculated
 -- defender value in order to change onChooseDefender
 -- e.g. if you add 1e8 (100 million) to all air in air protected stacks
@@ -186,32 +188,8 @@ local function defenderValueModifier(defender,tile,attacker)
     end
     return 0
 end
---[[
--- a sample function for making fighters attack air protected
--- stacks first.  Replaces above function if simpleSettings
--- key is set to true
-if simpleSettings.fightersAttackAirFirst then
-    local function tileHasCarrierUnit(tile)
-        for unit in tile.units do
-            if gen.isCarryAir(unit.type) then
-                return true
-            end
-        end
-        return false
-    end
-    defenderValueModifier = function(defender,tile,attacker)
-        if gen.isAttackAir(attacker.type) and defender.type.domain == 1 
-            and defender.type.range >= 2 and
-            not gen.hasAirbase(tile) and not tile.city and
-            not tileHasCarrierUnit(tile) then
-            return 1e8
-        else
-            return 0
-        end
+---&endAutoDoc
 
-    end
-end
---]]
 
 
 -- register.onChooseDefender
@@ -224,6 +202,7 @@ end
 --followed by combat. This function is also called by the AI to determine its 
 --goals, in which case `isCombat` is false.
 
+---&autoDoc onChooseDefender
 function register.onChooseDefender(defaultFunction,tile,attacker,isCombat)
     local bestDefenderValue = -math.huge
     local bestDefender = nil
@@ -250,8 +229,10 @@ function register.onChooseDefender(defaultFunction,tile,attacker,isCombat)
     return bestDefender
     --return defaultFunction(tile,attacker)
 end
+---&endAutoDoc
 
 
+---&autoDoc onInitiateCombatMakeCoroutine
 function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,attackerPower,defenderDie,defenderPower,isSneakAttack)
 
     leaderBonus.updateCommander(attacker)
@@ -282,7 +263,7 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
         end
     end
     -- %Report Combat Strength%
-    civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
+    --civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
             
     return coroutine.create(function()
         local round = 0
@@ -330,6 +311,7 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
         -- once we get here, combat stops
     end)
 end
+---&endAutoDoc
 
 
 return register

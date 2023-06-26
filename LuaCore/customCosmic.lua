@@ -49,6 +49,7 @@ unitSpecCondition["function"] = "function(unit)-->boolean"
 local citySpecCondition = gen.valueSpecOrTable({["userdata"]={tribeObject=civ.isTribe},["string"] = traits.allTraits()})
 citySpecCondition["nil"] = true
 citySpecCondition["function"] = "function(city)-->boolean"
+---@class customCosmic
 local customCosmic = {}
 gen.versionFunctions(customCosmic, versionNumber, fileModified, "LuaCore\\CustomCosmic.lua")
 gen.minEventsLuaVersion(5, 1,"LuaCore\\CustomCosmic.lua")

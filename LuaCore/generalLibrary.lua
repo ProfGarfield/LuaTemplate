@@ -1,4 +1,4 @@
-local versionNumber = 6
+local versionNumber = 7
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -27,6 +27,14 @@ local fileModified = false -- set this to true if you change this file for your 
 --
 
 
+--[[
+---&autoDoc generalLibrary
+The General Library offers a variety of tools to make it easier to build events. To access functions from the General Library, you should include the following line at the top of your file:
+```lua
+local gen = require("generalLibrary")
+```
+---&endAutoDoc
+]]
 
 --[[The General Library offers a variety of tools to make it easier to build events. To access functions from the General Library, you should include the following line at the top of your file:
 ```lua
@@ -34,6 +42,15 @@ local gen = require("generalLibrary")
 ```]]
 ---@class gen
 local gen = {}
+
+--[[
+---&autoDoc genConstants
+The gen.constants table provides numbers which are hard coded into the
+game so that you don't need to have "magic numbers" in your code.  The
+table `gen.c` is a copy of this table, for a slightly more compact
+reference.
+---&endAutoDoc
+]]
 
 ---@enum gen.constants
 gen.constants = {
@@ -128,304 +145,6 @@ function gen.requireIfAvailable(fileName)
     end
 end
 --
---gen.checkBits(integer,string)-->boolean
---gen.setBits(integer,string)-->integer
---gen.printBits(integer,numOfBits or nil) --> string
---gen.isBit1(integer,bitNumber)--> boolean
---gen.isBit0(integer,bitNumber)--> boolean
---gen.setBit1(integer,bitNumber)-->integer
---gen.setBit0(integer,bitNumber)-->integer
---gen.makeThresholdTable(table or nil)-->thresholdTable
---applyWonderBonus(wonderObject or integer,tribeObject or integer)-->boolean
---gen.isWonderActiveForTribe(wonderObject or integer,tribeObject or integer)-->boolean
---#gen.toTile(tile or table)-->tile
---#gen.isMapFlat()-->boolean
---#gen.isMapRound()-->boolean
---#gen.declareMapFlat()-->void
---#gen.declareMapRound()-->void
---#gen.tileDist(locA,locB,zDist=0)-->integer
---#gen.distance(tileUnitCityA,tileUnitCityB,zDist=0)-->integer
---gen.hasIrrigation(tile)-->boolean
---gen.placeIrrigation(tile)-->void
---gen.removeIrrigation(tile)-->void
---#gen.hasMine(tile)-->boolean
---#gen.placeMine(tile)-->void
---#gen.placeMineUnderCity(tile)-->void
---#gen.removeMine(tile)-->void
---#gen.removeMineUnderCity(tile)-->void
---#gen.hasFarmland(tile)-->boolean
---#gen.placeFarmland(tile)-->void
---#gen.removeFarmland(tile)-->void
---#gen.hasAgriculture(tile)--> boolean
---#gen.improveAgriculture(tile) --> void
---#gen.degradeAgriculture(tile) --> void
---#gen.removeAgriculture(tile)--> void
---#gen.hasRoad(tile)-->boolean
---#gen.placeRoad(tile)-->void
---#gen.removeRoad(tile)-->void
---#gen.hasRailroad(tile)-->boolean
---#gen.placeRailroad(tile)-->void
---#gen.removeRailroad(tile)-->void
---#gen.hasTransportation(tile) --> boolean
---#gen.upgradeTransportation(tile) --> void
---#gen.degradeTransportation(tile) --> void
---#gen.removeTransportation(tile) -->void
---#gen.hasFortress(tile)-->boolean
---#gen.placeFortress(tile)-->void
---#gen.placeFortressForce(tile)-->void
---#gen.removeFortress(tile)-->void
---#gen.hasAirbase(tile)-->boolean
---#gen.placeAirbase(tile)-->void
---#gen.placeAirbaseForce(tile)-->void
---#gen.removeAirbase(tile)-->void
---#gen.hasPollution(tile)-->boolean
---#gen.placePollution(tile)-->void
---#gen.removePollution(tile)-->void
---#gen.removePollutionForce(tile)-->void
---#gen.hasTransporter(tile)-->boolean
---# NOTE: Can't placeTransporter
---#gen.removeTransporter(tile)-->void
---#gen.setTerrainType(tile,terrain)-->void
---#gen.isFortifying(unit)-->boolean
---#gen.setToFortifying(unit)-->void
---#gen.isFortified(unit)-->boolean
---#gen.setToFortified(unit)-->void
---#gen.isSleeping(unit)-->boolean
---#gen.setToSleeping(unit)-->void
---#gen.isBuildingFortress(unit) --> boolean
---#gen.setToBuildingFortress(unit)-->void
---#gen.isBuildingRoad(unit) --> boolean
---#gen.setToBuildingRoad(unit)-->void
---#gen.isIrrigating(unit)-->boolean
---#gen.setToIrrigating(unit)-->void
---#gen.isMining(unit)-->boolean
---#gen.setToMining(unit)-->void
---#gen.isTransformingTerrain(unit)-->boolean
---#gen.setToTransformingTerrain(unit)-->void
---#gen.isBuildingAirbase(unit)-->boolean
---#gen.setToBuildingAirbase(unit)-->void
---#gen.isBuildingTransporter(unit)-->boolean
---#gen.setToBuildingTransporter(unit)-->void
---#gen.isGoingTo(unit)-->boolean
---#gen.setToGoingTo(unit,tile)-->void
---#gen.isNoOrder(unit)-->boolean
---#gen.setToNoOrders(unit)-->void
---#gen.isWaiting(unit)-->bool
---#gen.setToWaiting(unit)-->void
---#gen.clearWaiting(unit)-->void
---#gen.isParadropped(unit)-->void
---#gen.setParadropped(unit)-->void
---#gen.clearParadropped(unit)-->void
---#gen.isMoved(unit)-->boolean
---#gen.setMoved(unit)-->void
---#gen.clearMoved(unit)-->void
---#gen.isSeeTwoSpaces(unitType)-->boolean
---#gen.giveSeeTwoSpaces(unitType)-->void
---#gen.removeSeeTwoSpaces(unitType)-->void
---#gen.isIgnoreZOC(unitType)-->boolean
---#gen.giveIgnoreZOC(unitType)-->void
---#gen.removeIgnoreZOC(unitType)-->void
---#gen.isAmphibious(unitType)-->boolean
---#gen.giveAmphibious(unitType)-->void
---#gen.removeAmphibious(unitType)-->void
---#gen.isSubmarine(unitType)-->boolean
---#gen.giveSubmarine(unitType)-->void
---#gen.removeSubmarine(unitType)-->void
---#gen.isAttackAir(unitType)-->boolean
---#gen.giveAttackAir(unitType)-->void
---#gen.removeAttackAir(unitType)-->void
---#gen.isCoastal(unitType)-->boolean
---#gen.giveCoastal(unitType)-->void
---#gen.removeCoastal(unitType)-->void
---#gen.isIgnoreWalls(unitType)-->boolean
---#gen.giveIgnoreWalls(unitType)-->void
---#gen.removeIgnoreWalls(unitType)-->void
---#gen.isCarryAir(unitType)-->boolean
---#gen.giveCarryAir(unitType)-->void
---#gen.removeCarryAir(unitType)-->void
---#gen.isParadrop(unitType)-->boolean
---#gen.giveParadrop(unitType)-->void
---#gen.removeParadrop(unitType)-->void
---#gen.isAlpine(unitType)-->boolean
---#gen.giveAlpine(unitType)-->void
---#gen.removeAlpine(unitType)-->void
---#gen.isBonusAgainstHorse(unitType)-->boolean
---#gen.giveBonusAgainstHorse(unitType)-->void
---#gen.removeBonusAgainstHorse(unitType)-->void
---#gen.isFreeSupportUnderFundamentalism(unitType)-->boolean
---#gen.giveFreeSupportUnderFundamentalism(unitType)-->void
---#gen.removeFreeSupportUnderFundamentalism(unitType)-->void
---#gen.isDestroyedAfterAttacking(unitType)-->boolean
---#gen.giveDestroyedAfterAttacking(unitType)-->void
---#gen.removeDestroyedAfterAttacking(unitType)-->void
---#gen.isBonusAgainstAir(unitType)-->boolean
---#gen.giveBonusAgainstAir(unitType)-->void
---#gen.removeBonusAgainstAir(unitType)-->void
---#gen.isSpotSubmarines(unitType)-->boolean
---#gen.giveSpotSubmarines(unitType)-->void
---#gen.removeSpotSubmarines(unitType)-->void
---
---#gen.isCivilDisorder(city)-->boolean
---#gen.setCivilDisorder(city)-->void
---#gen.clearCivilDisorder(city)-->void
---#gen.isWeLoveTheKing(city)-->boolean
---#gen.setWeLoveTheKing(city)-->void
---#gen.clearWeLoveTheKing(city)-->void
---#gen.isImprovementSold(city)-->boolean
---#gen.setImprovementSold(city)-->void
---#gen.clearImprovementSold(city)-->void
---#gen.isTechnologyStolen(city)-->boolean
---#gen.setTechnologyStolen(city)-->void
---#gen.clearTechnologyStolen(city)-->void
---#gen.isAutoBuild(city)-->boolean
---#gen.setAutoBuild(city)-->void
---#gen.clearAutoBuild(city)-->void
---#gen.isAttribute6(city)-->boolean
---#gen.setAttribute6(city)-->void
---#gen.clearAttribute6(city)-->void
---#gen.isAttribute7(city)-->boolean
---#gen.setAttribute7(city)-->void
---#gen.clearAttribute7(city)-->void
---#gen.isBuildCoastal(city)-->boolean
---#gen.setBuildCoastal(city)-->void
---#gen.clearBuildCoastal(city)-->void
---#gen.isAttribute9(city)-->boolean
---#gen.setAttribute9(city)-->void
---#gen.clearAttribute9(city)-->void
---#gen.isAttribute10(city)-->boolean
---#gen.setAttribute10(city)-->void
---#gen.clearAttribute10(city)-->void
---#gen.isAttribute11(city)-->boolean
---#gen.setAttribute11(city)-->void
---#gen.clearAttribute11(city)-->void
---#gen.isBuildHydroPlant(city)-->boolean
---#gen.setBuildHydroPlant(city)-->void
---#gen.clearBuildHydroPlant(city)-->void
---#gen.isAttribute13(city)-->boolean
---#gen.setAttribute13(city)-->void
---#gen.clearAttribute13(city)-->void
---#gen.isAttribute14(city)-->boolean
---#gen.setAttribute14(city)-->void
---#gen.clearAttribute14(city)-->void
---#gen.isAttribute15(city)-->boolean
---#gen.setAttribute15(city)-->void
---#gen.clearAttribute15(city)-->void
---#gen.isAttribute16(city)-->boolean
---#gen.setAttribute16(city)-->void
---#gen.clearAttribute16(city)-->void
---#gen.isUsedAirport(city)-->boolean
---#gen.setUsedAirport(city)-->void
---#gen.clearUsedAirport(city)-->void
---#gen.isAttribute18(city)-->boolean
---#gen.setAttribute18(city)-->void
---#gen.clearAttribute18(city)-->void
---#gen.isAttribute19(city)-->boolean
---#gen.setAttribute19(city)-->void
---#gen.clearAttribute19(city)-->void
---#gen.isAttribute20(city)-->boolean
---#gen.setAttribute20(city)-->void
---#gen.clearAttribute20(city)-->void
---#gen.isAttribute21(city)-->boolean
---#gen.setAttribute21(city)-->void
---#gen.clearAttribute21(city)-->void
---#gen.isBuildShips(city)-->boolean
---#gen.setBuildShips(city)-->void
---#gen.clearBuildShips(city)-->void
---#gen.isCityInvestigated(city)-->boolean
---#gen.setCityInvestigated(city)-->void
---#gen.clearCityInvestigated(city)-->void
---#gen.isAttribute24(city)-->boolean
---#gen.setAttribute24(city)-->void
---#gen.clearAttribute24(city)-->void
---#gen.isMilitaryAutoBuild(city)-->boolean
---#gen.setMilitaryAutoBuild(city)-->void
---#gen.clearMilitaryAutoBuild(city)-->void
---#gen.isDomesticAutoBuild(city)-->boolean
---#gen.setDomesticAutoBuild(city)-->void
---#gen.clearDomesticAutoBuild(city)-->void
---#gen.isObjective(city)-->boolean
---#gen.setObjective(city)-->void
---#gen.clearObjective(city)-->void
---#gen.isAttribute28(city)-->boolean
---#gen.setAttribute28(city)-->void
---#gen.clearAttribute28(city)-->void
---#gen.isMajorObjective(city)-->boolean
---#gen.setMajorObjective(city)-->void
---#gen.clearMajorObjective(city)-->void
---#gen.isUsedTransporter(city)-->boolean
---#gen.setUsedTransporter(city)-->void
---#gen.clearUsedTransporter(city)-->void
---#gen.isAttribute31(city)-->boolean
---#gen.setAttribute31(city)-->void
---#gen.clearAttribute31(city)-->void
---#gen.isAttribute32(city)-->boolean
---#gen.setAttribute32(city)-->void
---#gen.clearAttribute32(city)-->void
---
---#gen.wonderModifiedMoves(unit)-->integer
---#gen.maxMoves(unit) --> integer
---#gen.moveRemaining(unit) --> integer
---#gen.inPolygon(tile,tableOfCoordinates)-->bool
---  gen.getRandomTileInPolygon(polygonTableOfCoordinates,map=0,maxAttempts=100) -> tile (inspired by Pablostuka)
---#gen.cityCanSupportAnotherUnit(city)-->bool
---#gen.rehomeUnitsInCapturedCity(city,defender) --> void
---#gen.homeToNearestCity(unit)-->void
---#gen.activate(unit)-->void
---#gen.activateWithSource(unit,source)-->void
---#gen.linkActivationFunction(function(unit,source)-->void)-->void
---#gen.getActivationFunction()-->function(unit,source)
---#gen.getTileID(tileObject or int,int or nil,int or nil)-->int (by Knighttime, converts a tile/coordinates to a single integer as an ID number)
---#gen.getTileId(tileObject or int,int or nil,int or nil)-->int (by Knighttime, converts a tile/coordinates to a single integer as an ID number)
--- gen.getTileFromID(tileID) --> tileObject -- undoes gen.getTileID
--- gen.getTileFromId(tileID) --> tileObject -- undoes gen.getTileID
---#gen.unitTypeOnTile(tile,unitTypeOrTableOfUnitType)-->bool
---#gen.getAdjacentTiles(tile)-->tableOfTiles
---#gen.moveUnitAdjacent(unit,destRankFn=suitableDefault)-->tile or bool
---#gen.unprotectTile(tile,isProtectingUnit,isProtectedUnit,isProtectedTile,destRankFn=suitableDefault)-->void
---#gen.clearAirProtection(tile)-->void
---#gen.clearAdjacentAirProtection(unit) -->void clears air protection for tiles adjacent to the unit that are not owned by the unit's owner
---#gen.inTable(object,table)--> bool
---#gen.copyTable(table)-->table
---#gen.errorForNilKey(table,tableName)-->void
---#gen.noNewKey(table,tableName)-->void
---#gen.noGlobal()
---#gen.linkState(stateTable)
---#gen.getState()-->table
---#gen.cityRadiusTiles(cityOrTileOrCoordTable) --> table
---#gen.getTilesInRadius(centre,radius,minRadius=0,maps=nil) --> table
---#gen.clearGapsInArray(table,lowestValue=1)
---#gen.playMusic(fileName)
---#gen.setMusicDirectory(path)
---#gen.getEphemeralTable()-->table
---#gen.linkGeneralLibraryState(stateTable) --> void
---#gen.limitedExecutions(key,maxTimes,limitedFunction)--> void
--- gen.justOnce(key,limitedFunction)-->void
---
---#gen.isSinglePlayerGame() --> boolean
---#gen.tableWrap(item)-->table
---#gen.tableWrap(item,needsWrapFn)-->table
---
---#gen.copyUnitAttributes(parent,child)-->void
---#gen.nearbyUnits(center,radius,maps={0,1,2,3}) --> iterator providing units
---
---#gen.setDeathFunctions(defeatFunction,deathFunction,deletionFunction) --> void
---#gen.defeatUnit(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)-->unit or nil
---#gen.killUnit(dyingUnit)-->void
---#gen.deleteUnit(deletedUnit,replacementUnit=nil)-->void
---#gen.replaceUnit(oldUnit,replacementType)--> unit
---#gen.makeAllowedTerrainFunction(allowedTilesTable) --> function(tile)-->bool
---#gen.nearbyUnoccupiedTiles(tile,distance,allowedTiles) --> table
---#gen.getRandomNearbyUnoccupiedTile(tile,distance,allowedTiles) --> tile
---#gen.isEmpty(table)-->bool
---#gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
---#gen.getRandomNearbyOpenTileForTribe(tile,distance,allowedTiles,tribe) --> tile
---#gen.createUnit(unitType,tribe,locations,options) --> table of units
--- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
--- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
--- gen.persistentRandom(key) --> number between 0 and 1
--- gen.clearPersistentRandom(key) --> void
--- gen.getPersistentRandomTable() --> table
--- gen.mergeTableValues(table,table,...) --> table
 --
 --      Stuff below hasn't been documented on website
 --
@@ -433,144 +152,6 @@ end
 --  the name of the item in the original game
 --
 --
--- gen.isTileRevealed(tile,tribe) -> boolean
--- gen.revealTile(tile,tribe) -> void
--- gen.coverTile(tile,tribe) -> void
--- gen.isCityCharted(city,tribe) --> bool
--- gen.chartCity(city,tribe,visibleSize=nil) --> void
--- gen.unchartCity(city,tribe) --> void
--- gen.isIrrigationCharted(tile,tribe) --> bool
--- gen.chartIrrigation(tile,tribe) --> void
--- gen.unchartIrrigation(tile,tribe) --> void
--- gen.isMineCharted(tile,tribe) --> bool
--- gen.chartMine(tile,tribe) --> void
--- gen.unchartMine(tile,tribe) --> void
--- gen.isFarmlandCharted(tile,tribe) --> bool
--- gen.chartFarmland(tile,tribe) --> void
--- gen.unchartFarmland(tile,tribe) --> void
--- gen.isRoadCharted(tile,tribe) --> bool
--- gen.chartRoad(tile,tribe) --> void
--- gen.unchartRoad(tile,tribe) --> void
--- gen.isRailroadCharted(tile,tribe) --> bool
--- gen.chartRailroad(tile,tribe) --> void
--- gen.unchartRailroad(tile,tribe) --> void
--- gen.unchartTransportation(tile,tribe) --> void
--- gen.isFortressCharted(tile,tribe) --> bool
--- gen.chartFortress(tile,tribe) --> void
--- gen.unchartFortress(tile,tribe) --> void
--- gen.isAirbaseCharted(tile,tribe) --> bool
--- gen.chartAirbase(tile,tribe) --> void
--- gen.unchartAirbase(tile,tribe) --> void
--- gen.isPollutionCharted(tile,tribe) --> bool
--- gen.chartPollution(tile,tribe) --> void
--- gen.unchartPollution(tile,tribe) --> void
--- gen.isTransporterCharted(tile,tribe) --> bool
--- gen.chartTransporter(tile,tribe) --> void
--- gen.unchartTransporter(tile,tribe) --> void
--- gen.chartTruthfully(tile,tribe) --> void
--- gen.isInvisibleUntilAttack(unitType) --> bool
--- gen.giveInvisibleUntilAttack(unitType) --> void
--- gen.removeInvisibleUntilAttack(unitType) --> void
--- gen.isNonDisbandable(unitType) --> bool
--- gen.giveNonDisbandable(unitType) --> void
--- gen.removeNonDisbandable(unitType) --> void
--- gen.isZeroRangeAirUnitDamageOverride(unitType) --> bool
--- gen.giveZeroRangeAirUnitDamageOverride(unitType) --> void
--- gen.removeZeroRangeAirUnitDamageOverride(unitType) --> void
--- gen.isCannotBuyOffBarbarian(unitType) --> bool
--- gen.giveCannotBuyOffBarbarian(unitType) --> void
--- gen.removeCannotBuyOffBarbarian(unitType) --> void
--- gen.isCanCrossImpassableTerrain(unitType) --> bool
--- gen.giveCanCrossImpassableTerrain(unitType) --> void
--- gen.removeCanCrossImpassableTerrain(unitType) --> void
--- gen.isBarbarianWillNotExpire(unitType) --> bool
--- gen.giveBarbarianWillNotExpire(unitType) --> void
--- gen.removeBarbarianWillNotExpire(unitType) --> void
--- gen.isOverrideSPR(unitType) --> bool
--- gen.giveOverrideSPR(unitType) --> void
--- gen.removeOverrideSPR(unitType) --> void
--- gen.isReducePopulationWhenBuilt(unitType) --> bool
--- gen.giveReducePopulationWhenBuilt(unitType) --> void
--- gen.removeReducePopulationWhenBuilt(unitType) --> void
--- gen.isRequiresFoodSupport(unitType) --> bool
--- gen.giveRequiresFoodSupport(unitType) --> void
--- gen.removeRequiresFoodSupport(unitType) --> void
--- gen.isCanFoundCities(unitType) --> bool
--- gen.giveCanFoundCities(unitType) --> void
--- gen.removeCanFoundCities(unitType) --> void
--- gen.isCanImproveTiles(unitType)--> bool
--- gen.giveCanImproveTiles(unitType,ignoreError=false) --> void
--- gen.removeCanImproveTiles(unitType,ignoreError=false) --> void
--- gen.makeDataTable(inputTable={},tableName="unnamed data table") --> dataTable
--- gen.forbidReplacement(dataTable) --> void
--- gen.allowReplacement(dataTable) --> void
--- gen.forbidNewKeys(dataTable) --> void
--- gen.allowNewKeys(dataTable) --> void
--- gen.forbidNilValueAccess(dataTable) --> void
--- gen.allowNilValueAccess(dataTable) --> void
--- gen.setScenarioDirectory(directoryPath) --> void
--- gen.getScenarioDirectory() --> string
--- gen.isStateSavable(item) --> boolean
--- gen.calculateWeight(item,weightTable,extraArgument=nil) --> number or false
--- gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
--- gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
--- gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
--- gen.placeMarker(tile,tribe,markerOption)
--- gen.removeMarker(tile,tribe,markerOption) --> void
--- gen.maintainTileMarkerTable() --> void
--- gen.removeAllMarkers(tribeOrNil,markerTypeOrNil) --> void
--- gen.showAllMarkersOnTile(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
--- gen.showAllMarkers(topMarkerTypeOrNil) --> void
--- gen.hasMarker(tile,tribe,markerType)
--- gen.isMarkerVisible(tile,tribe,markerType)
--- gen.hideMarker(tile,tribe,markerType)
--- gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
--- gen.showMarker(tile,tribe,markerType)
--- gen.showMarkerOnAllTiles(tribe,markerType)
--- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
--- gen.outOfRangeMessage(unit) --> void
--- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
--- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
--- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
--- gen.tableToString(table) --> string
---  gen.describeAllowableData(validDataInfo) --> string
--- gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber, argumentName,validDataInfo,extraInfo=nil) --> void or error
--- gen.versionFunctions(moduleTable,versionNumber,fileMod,moduleFileName) -->void
--- gen.registerEventsLuaVersion(versionNumber,fileMod,regressionNumber)
--- gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable) --> newItemFunction, isDataTypeFunction
--- gen.getRandomTileInPolygon(polygonTableOfCoordinates,map=0,maxAttempts=100)
--- gen.newEmptyStack() --> stack
--- gen.newStack(table = {}) --> stack
--- gen.isStack(item) --> boolean
--- gen.isInteger(item) --> boolean
--- gen.valueSpecForCustomData(isItemFn, failureDescription, itemDescription) --> valueSpecification
--- gen.iterateUnitTypes() --> iterator
--- gen.iterateImprovements() --> iterator
--- gen.iterateWonders() --> iterator
--- gen.iterateBaseTerrain() --> iterator
--- gen.iterateTerrain() --> iterator
--- gen.isRoadTradeBonus(baseTerrain) --> boolean
--- gen.giveRoadTradeBonus(baseTerrain) -->boolean
--- gen.removeRoadTradeBonus(baseTerrain) --> boolean
--- gen.getMapTransportFlagNumber(map1, map2, all?, functionName?) --> boolean|integer|table
--- gen.isTransportBetweenMaps(map1, map2, transportBitmask, functionName?) --> boolean
--- gen.isNativeTransportBetweenMaps(unitType, map1, map2) --> boolean
--- gen.isBuildTransportBetweenMaps(unitType, map1, map2) --> boolean
--- gen.isUseTransportBetweenMaps(unitType, map1, map2) --> boolean
--- gen.giveTransportBetweenMaps(map1, map2, transportBitmask, suppressFailureError?, functionName?) --> bitmask
--- gen.giveNativeTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
--- gen.giveBuildTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
--- gen.giveUseTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
--- gen.removeTransportBetweenMaps(map1, map2, transportBitmask, suppressFailureError?, functionName?) --> bitmask
--- gen.removeNativeTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
--- gen.removeBuildTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
--- gen.removeUseTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
--- gen.getNumberOfTerrainTypes(map) --> integer
--- gen.getBaseTerrainID(baseTerrain) --> integer
--- gen.getBaseTerrainFromID(id) --> baseTerrain
--- gen.getTerrainID(terrain) --> integer
--- gen.getTerrainFromID(id) --> terrain
--- gen.copyTableWithMetatable(table) --> table
 
 -- FUNCTION IMPLEMENTATIONS
 --
@@ -623,7 +204,7 @@ gen.checkBits(0b011110101011,"xx10xwqp")-->true
 ---@param bitmask integer|bitmask the number/bitmask to be checked
 ---@param bitString string specification of bits that should be checked
 ---@return boolean bitsMatch
-local function checkBits(bitmask,bitString)
+function gen.checkBits(bitmask,bitString)
     local strlen = string.len(bitString)
     for i=1,strlen do
         local bitInt = 1<<(i-1)
@@ -638,7 +219,7 @@ local function checkBits(bitmask,bitString)
     -- if we get here, all specified bits match
     return true
 end
-gen.checkBits = checkBits
+local checkBits = gen.checkBits
 
 -- gen.setBits(integer,string)-->integer
 -- Helper function (provided to this library as setBits and gen.setBits)
@@ -3063,7 +2644,7 @@ end
 -- Returns "atomic" movement points (that is, the movement recorded by `unit.moveSpent`, or "regular" movement points * `totpp.movementMultipliers.aggregate`
 ---@param unit unitObject
 ---@return integer atomicMovementPoints
-function gen.wonderModifiedMoves(unit)
+function gen.fullHealthMovementAllowance(unit)
     if customCosmic.fullHealthMovementAllowance and customCosmic.isEnabled() then
         return customCosmic.fullHealthMovementAllowance(unit)
     end
@@ -3083,7 +2664,7 @@ function gen.wonderModifiedMoves(unit)
     end
     return fullHpMove
 end
-gen.fullHealthMovementAllowance = gen.wonderModifiedMoves
+gen.wonderModifiedMoves = gen.fullHealthMovementAllowance
 
 -- maxMoves(unit)--> integer
 -- gen.maxMoves(unit) --> integer
@@ -4137,7 +3718,8 @@ end
 --[[In the Lua Scenario Template, simpleSettings.lua has the following settings:
 ```lua
 simpleSettings.clearAdjacentAirProtectionAI = false
-simpleSettings.clearAdjacentAirProtectionHuman = false```]]
+simpleSettings.clearAdjacentAirProtectionHuman = false
+```]]
 ---@param unit unitObject
 function gen.clearAdjacentAirProtection(unit)
     local tileList = getAdjacentTiles(unit.location)
@@ -4881,7 +4463,9 @@ end
 ---@return unitObject|nil survivingDemotedUnit
 function gen.defeatUnit(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     local survivor = defeatFunction(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
-    deathFunction(loser)
+    if not survivor then
+        deathFunction(loser)
+    end
     deletionFunction(loser,survivor)
 ---@diagnostic disable-next-line: deprecated
     civ.deleteUnit(loser)
@@ -5551,113 +5135,382 @@ function gen.mergeTableValues(...)
     return output
 end
 
+--[[The gen.original table provides a way to refer to game objects using 
+the names that they have in the original game.  This is important, 
+since many game mechanics depend on the specific id number of the object
+in question, and code is much more readable if it uses names
+instead of numbers.
 
--- Not yet documented below here
+Reference: [Test of Time Advance Slot Properties](http://sleague.civfanatics.com/index.php?title=Test_of_Time_Advance_Slot_Properties)
+Credits:
+ - CyberChrist who contributed many clarifications.
+ - Harlan Thompson and Leon Marrick upon whose ground breaking research this tip is founded.
+ - Cam Hills who assisted in the page design.
 
+]]
+---@class gen.original
 gen.original = {}
-
-
+--[[
+]]
 gen.original.aAdvancedFlight          = civ.getTech(0) --[[@as techObject]]
+--[[ Doubles the literacy demographics. This is cumulative with the effects of Writing, University, and Literacy.
+]]
 gen.original.aAlphabet                = civ.getTech(1) --[[@as techObject]]
+--[[
+]]
 gen.original.aAmphibiousWarfare       = civ.getTech(2) --[[@as techObject]]
+--[[
+]]
 gen.original.aAstronomy               = civ.getTech(3) --[[@as techObject]]
+--[[
+]]
 gen.original.aAtomicTheory            = civ.getTech(4) --[[@as techObject]]
-gen.original.aAutomobile              = civ.getTech(5) --[[@as techObject]]   --Automobile
+--[[ Increases population based pollution.
+Automobile works with Electronics to change city pictures to the modern style (6th row in the cities.bmp file).
+
+Automobile works with Electronics to change the look of people to the modern style (4th row in the people.bmp file).
+]]
+gen.original.aAutomobile              = civ.getTech(5) --[[@as techObject]]
+--[[
+]]
 gen.original.aBanking                 = civ.getTech(6) --[[@as techObject]]
-gen.original.aBridgeBuilding          = civ.getTech(7) --[[@as techObject]]   --Bridge Building
+--[[ Allows settlers units to construct roads (and railroads) in river squares.
+]]
+gen.original.aBridgeBuilding          = civ.getTech(7) --[[@as techObject]]  
+--[[
+]]
 gen.original.aBronzeWorking           = civ.getTech(8) --[[@as techObject]]
+--[[ Ceremonial Burial allows temples to make one additional person content. See also Mysticism.
+]]
 gen.original.aCeremonialBurial        = civ.getTech(9) --[[@as techObject]]
+--[[
+]]
 gen.original.aChemistry               = civ.getTech(10) --[[@as techObject]]
+--[[ Changes the types of Barbarians produced by Goody Huts.
+Changes the types of sea-based random Barbarians units produced.
+]]
 gen.original.aChivalry                = civ.getTech(11) --[[@as techObject]]
-gen.original.aCodeofLaws              = civ.getTech(12) --[[@as techObject]]
+--[[
+]]
 gen.original.aCodeOfLaws              = civ.getTech(12) --[[@as techObject]]
+--[[
+]]
+gen.original.aCodeofLaws              = civ.getTech(12) --[[@as techObject]]
+--[[
+]]
 gen.original.aCombinedArms            = civ.getTech(13) --[[@as techObject]]
+--[[
+]]
 gen.original.aCombustion              = civ.getTech(14) --[[@as techObject]]
+--[[ Allows the government type of the same name.
+The discovery of Communism reduces the effect of Cathedrals by one.
+
+Cities produce more partisans.
+]]
 gen.original.aCommunism               = civ.getTech(15) --[[@as techObject]]
+--[[
+]]
 gen.original.aComputers               = civ.getTech(16) --[[@as techObject]]
+--[[ Changes the types of Barbarians produced by Goody Huts.
+]]
 gen.original.aConscription            = civ.getTech(17) --[[@as techObject]]
+--[[ Construction allows settler units to build Fortresses.
+]]
 gen.original.aConstruction            = civ.getTech(18) --[[@as techObject]]
+--[[
+]]
 gen.original.aCorporation             = civ.getTech(19) --[[@as techObject]]
+--[[
+]]
 gen.original.aCurrency                = civ.getTech(20) --[[@as techObject]]
+--[[ Allows the government type of the same name.
+Courthouses make one content citizen happy if the nation is operating under Democracy. However, the Democracy advance is not required for this effect to take place.
+]]
 gen.original.aDemocracy               = civ.getTech(21) --[[@as techObject]]
+--[[
+]]
 gen.original.aEconomics               = civ.getTech(22) --[[@as techObject]]
+--[[
+]]
 gen.original.aElectricity             = civ.getTech(23) --[[@as techObject]]
+--[[ After the discovery of Electronics an additional citizen in each city is made content by coliseums.
+Electronics works with Automobile to change city pictures to the modern style (6th row in the cities.bmp file).
+
+Electronics works with Automobile to change the look of people to the modern style (4th row in the people.bmp file).
+]]
 gen.original.aElectronics             = civ.getTech(24) --[[@as techObject]]
+--[[
+]]
 gen.original.aEngineering             = civ.getTech(25) --[[@as techObject]]
+--[[ Decreases population based pollution.
+]]
 gen.original.aEnvironmentalism        = civ.getTech(26) --[[@as techObject]]
+--[[
+]]
 gen.original.aEspionage               = civ.getTech(27) --[[@as techObject]]
+--[[ Contrary to popular belief, Explosives does NOT inherently allow transformation orders or display the "New Order: Transform" message.
+The ability to transform is inherent to unit in the Engineer slot of the RULES.TXT file. When this unit first becomes available the message will be displayed.
+]]
 gen.original.aExplosives              = civ.getTech(28) --[[@as techObject]]
+--[[
+]]
 gen.original.aFeudalism               = civ.getTech(29) --[[@as techObject]]
+--[[ Reduces by one third the amount of gold and science produced by caravan delivery. This affect is cumulative with all other modifiers.
+]]
 gen.original.aFlight                  = civ.getTech(30) --[[@as techObject]]
+--[[ Allows the government type of the same name.
+The Fundamentalism advance does NOT inherently allow Fanatics to be build. Only nations operating under the Fundamentalism government can build the Fanatics unit once the advance making the Fanatics available has been discovered.
+
+Upon changing government type from Fundamentalism to any other type all cities producing Fanatics will switch to producing the unit in the Riflemen slot whether or not the nation has the prerequisite advance to build this unit.
+]]
 gen.original.aFundamentalism          = civ.getTech(31) --[[@as techObject]]
+--[[ Eliminates the threat of Nuclear Power Plant meltdown.
+Adds 25% to spaceship mass/thrust paradigm.
+]]
 gen.original.aFusionPower             = civ.getTech(32) --[[@as techObject]]
+--[[
+]]
 gen.original.aGeneticEngineering      = civ.getTech(33) --[[@as techObject]]
+--[[ Captured cities produce partisan defenders.
+Changes the types of Barbarians units produced by Goody Huts.
+
+Changes the types of land-based random Barbarians units produced.
+]]
 gen.original.aGuerrillaWarfare        = civ.getTech(34) --[[@as techObject]]
+--[[ Makes obsolete all defensive role units with a defence strength less than that of the unit in the musketeer slot of the RULES.TXT.
+Sells all Barracks when discovered.
+
+Increases Barracks maintenance cost by one (cumulative with Mobile Warfare).
+
+Changes the types of Barbarians produced by Goody Huts.
+
+Changes the types of land-based random Barbarians units produced.
+]]
 gen.original.aGunpowder               = civ.getTech(35) --[[@as techObject]]
+--[[
+]]
 gen.original.aHorsebackRiding         = civ.getTech(36) --[[@as techObject]]
+--[[ Changes city picture to industrial (5th row in cities.bmp) in any non-fantasy game.
+Changes the look of people to industrial (3th row in people.bmp).
+
+Changes the types of land-based random Barbarians units produced.
+
+Increases population based pollution.
+
+Upon discovery the Industrialization advance oil appears as a supplied trade commodity in most cities.
+]]
 gen.original.aIndustrialization       = civ.getTech(37) --[[@as techObject]]
+--[[ Reduces by 50% the amount of gold and science produced by caravan delivery. This modifier is NOT cumulative with Navigation or the Turn 200 effect, but is cumulative with the reductions of Railroad and Flight.
+Free advances can no longer be gained from goody huts.
+
+Invention works with Philosophy to change the citizen look to the Renaissance style (2nd row in the people.bmp file).
+
+''Non-Fan'': Invention changes city pictures to the Renaissance style (7th row in cities.bmp file).
+]]
 gen.original.aInvention               = civ.getTech(38) --[[@as techObject]]
+--[[ Changes the types of Barbarians produced by Goody Huts.
+Changes the types of sea-based random Barbarians units produced.
+]]
 gen.original.aIronWorking             = civ.getTech(39) --[[@as techObject]]
+--[[
+]]
 gen.original.aLaborUnion              = civ.getTech(40) --[[@as techObject]]
+--[[
+]]
 gen.original.aLaser                   = civ.getTech(41) --[[@as techObject]]
+--[[ Changes the types of Barbarians produced by Goody Huts.
+]]
 gen.original.aLeadership              = civ.getTech(42) --[[@as techObject]]
+--[[ Doubles literacy demographics. This is cumulative with the effects of Alphabet, Writing, and University.
+]]
 gen.original.aLiteracy                = civ.getTech(43) --[[@as techObject]]
+--[[
+]]
 gen.original.aMachineTools            = civ.getTech(44) --[[@as techObject]]
+--[[ Changes the vessel type of sea-based random Barbarians.
+]]
 gen.original.aMagnetism               = civ.getTech(45) --[[@as techObject]]
+--[[ Allows civilizations to exchange maps.
+]]
 gen.original.aMapMaking               = civ.getTech(46) --[[@as techObject]]
+--[[
+]]
 gen.original.aMasonry                 = civ.getTech(47) --[[@as techObject]]
+--[[ Increases population based pollution.
+]]
 gen.original.aMassProduction          = civ.getTech(48) --[[@as techObject]]
+--[[
+]]
 gen.original.aMathematics             = civ.getTech(49) --[[@as techObject]]
+--[[ Decreases your people's disease percentage by half.
+]]
 gen.original.aMedicine                = civ.getTech(50) --[[@as techObject]]
+--[[ Changes the types of Barbarians produced by Goody Huts.
+]]
 gen.original.aMetallurgy              = civ.getTech(51) --[[@as techObject]]
+--[[
+]]
 gen.original.aMiniaturization         = civ.getTech(52) --[[@as techObject]]
+--[[ Sells all barracks and increases barracks maintenance cost by one.
+Changes the types of land-based random Barbarians units produced. Ends piracy. Barbarians no longer appear by sea.
+]]
 gen.original.aMobileWarfare           = civ.getTech(53) --[[@as techObject]]
+--[[ Allows the government type of the same name.
+]]
 gen.original.aMonarchy                = civ.getTech(54) --[[@as techObject]]
+--[[Monotheism allows Cathedrals to make three people content. Note that Cathedrals do not function without the discovery of Monotheism or Theology and Mysticism.
+Changes the types of Barbarians produced by Goody Huts.
+]]
 gen.original.aMonotheism              = civ.getTech(55) --[[@as techObject]]
+--[[ Mysticism allows temples to make one additional person content. See also Ceremonial Burial.
+]]
 gen.original.aMysticism               = civ.getTech(56) --[[@as techObject]]
+--[[ Reduces by 50% the amount of gold and science produced by caravan delivery. This modifier is NOT cumulative with Invention or the Turn 200 effect, but is cumulative with the reductions of Railroad and Flight.
+Navigation reduces the chances of triremes floundering.
+
+Changes the vessel type of sea-based random Barbarians.
+]]
 gen.original.aNavigation              = civ.getTech(57) --[[@as techObject]]
+--[[ Upon discovery the Nuclear Fission advance uranium appears as a demanded trade commodity in most cities. Uranium begins appearing as a supplied trade commodity in new founded cities.
+]]
 gen.original.aNuclearFission          = civ.getTech(58) --[[@as techObject]]
+--[[ Nuclear Power increases the movement allowance of ships by one.
+]]
 gen.original.aNuclearPower            = civ.getTech(59) --[[@as techObject]]
+--[[ The civilization that first discovers Philosophy gains a free advance.
+Invention works with Philosophy to change the look of people to the Renaissance style (2nd row in the people.bmp file).
+]]
 gen.original.aPhilosophy              = civ.getTech(60) --[[@as techObject]]
+--[[
+]]
 gen.original.aPhysics                 = civ.getTech(61) --[[@as techObject]]
+--[[ Increases population based pollution.
+]]
 gen.original.aPlastics                = civ.getTech(62) --[[@as techObject]]
+--[[
+]]
 gen.original.aPlumbing                = civ.getTech(63) --[[@as techObject]]
+--[[ Changes the types of Barbarians produced by Goody Huts.
+]]
 gen.original.aPolytheism              = civ.getTech(64) --[[@as techObject]]
+--[[
+]]
 gen.original.aPottery                 = civ.getTech(65) --[[@as techObject]]
+--[[ Radio allows settlers and engineers to construct air bases.
+Makes the Airlift command appear in the Orders menu. You can conduct airlifts without the Radio advance.
+
+The message about Airlifts and Airstrips will be displayed whenever Airports become available and NOT when Radio is invented.
+]]
 gen.original.aRadio                   = civ.getTech(66) --[[@as techObject]]
+--[[ Reduces by one third the amount of gold and science produced by caravan delivery. This affect is cumulative with all other modifiers.
+
+Railroad allows settlers and engineers to build railroads.
+
+All city squares are automatically upgraded to railroad.
+]]
 gen.original.aRailroad                = civ.getTech(67) --[[@as techObject]]
+--[[
+]]
 gen.original.aRecycling               = civ.getTech(68) --[[@as techObject]]
+--[[
+]]
 gen.original.aRefining                = civ.getTech(69) --[[@as techObject]]
+--[[ Allows settlers and engineers to double-irrigate lands.
+All city squares are automatically upgraded to farmland (double-irrigation) when Refrigeration is discovered.
+
+The benefits of double-irrigation, 50% food production bonus, will only be realized once the city has built the Supermarket improvement. Interestingly, the Refrigeration advance is not needed for this to take effect.
+]]
 gen.original.aRefrigeration           = civ.getTech(70) --[[@as techObject]]
+--[[ Allows the government type of the same name.
+]]
 gen.original.aRepublic                = civ.getTech(71) --[[@as techObject]]
+--[[
+]]
 gen.original.aRobotics                = civ.getTech(72) --[[@as techObject]]
+--[[
+]]
 gen.original.aRocketry                = civ.getTech(73) --[[@as techObject]]
+--[[ Decreases population based pollution.
+]]
 gen.original.aSanitation              = civ.getTech(74) --[[@as techObject]]
+--[[ Seafaring reduces the chances of triremes floundering.
+]]
 gen.original.aSeafaring               = civ.getTech(75) --[[@as techObject]]
+--[[
+]]
 gen.original.aSpaceFlight             = civ.getTech(76) --[[@as techObject]]
+--[[
+]]
 gen.original.aStealth                 = civ.getTech(77) --[[@as techObject]]
+--[[
+]]
 gen.original.aSteamEngine             = civ.getTech(78) --[[@as techObject]]
+--[[
+]]
 gen.original.aSteel                   = civ.getTech(79) --[[@as techObject]]
+--[[
+]]
 gen.original.aSuperconductor          = civ.getTech(80) --[[@as techObject]]
+--[[ Changes the types of sea-based random Barbarians units produced.
+]]
 gen.original.aTactics                 = civ.getTech(81) --[[@as techObject]]
+--[[ Theology improves the effectiveness of Cathedrals by one.
+]]
 gen.original.aTheology                = civ.getTech(82) --[[@as techObject]]
-gen.original.aTheoryofGravity         = civ.getTech(83) --[[@as techObject]]
+--[[
+]]
 gen.original.aTheoryOfGravity         = civ.getTech(83) --[[@as techObject]]
+--[[
+]]
+gen.original.aTheoryofGravity         = civ.getTech(83) --[[@as techObject]]
+--[[ Enables the display of demanded trade goods of foreign cities.
+]]
 gen.original.aTrade                   = civ.getTech(84) --[[@as techObject]]
+--[[ Doubles literacy demographics. This is cumulative with the effects of Alphabet, Writing, and Literacy.
+]]
 gen.original.aUniversity              = civ.getTech(85) --[[@as techObject]]
+--[[
+]]
 gen.original.aWarriorCode             = civ.getTech(86) --[[@as techObject]]
+--[[
+]]
 gen.original.aWheel                   = civ.getTech(87) --[[@as techObject]]
+--[[ Doubles the literacy demographics. This is cumulative with the effects of Alphabet, University, and Literacy.
+]]
 gen.original.aWriting                 = civ.getTech(88) --[[@as techObject]]
+--[[ Reoccurring technology.
+Increases game score by five points.
+]]
 gen.original.aFutureTechnology        = civ.getTech(89) --[[@as techObject]]
+--[[
+]]
 gen.original.aUserDefTechA            = civ.getTech(90) --[[@as techObject]]
+--[[ ''Fantasy'': Changes city picture to Modern (6th row in cities.bmp).
+]]
 gen.original.aUserDefTechB            = civ.getTech(91) --[[@as techObject]]
+--[[
+]]
 gen.original.aUserDefTechC            = civ.getTech(92) --[[@as techObject]]
+--[[ ''Fantasy'': Changes city picture to Industrial (5th row in cities.bmp).
+]]
 gen.original.aExtraAdvance1           = civ.getTech(93) --[[@as techObject]]
+--[[ ''Fantasy'': Changes city picture to Alternate Modern (7th row in cities.bmp).
+]]
 gen.original.aExtraAdvance2           = civ.getTech(94) --[[@as techObject]]
+--[[
+]]
 gen.original.aExtraAdvance3           = civ.getTech(95) --[[@as techObject]]
+--[[
+]]
 gen.original.aExtraAdvance4           = civ.getTech(96) --[[@as techObject]]
+--[[
+]]
 gen.original.aExtraAdvance5           = civ.getTech(97) --[[@as techObject]]
+--[[
+]]
 gen.original.aExtraAdvance6           = civ.getTech(98) --[[@as techObject]]
+--[[
+]]
 gen.original.aExtraAdvance7           = civ.getTech(99) --[[@as techObject]]
 gen.original.uSettlers                = civ.getUnitType(0) --[[@as unitTypeObject]]
 gen.original.uEngineers               = civ.getUnitType(1) --[[@as unitTypeObject]]   --Engineers
@@ -5749,6 +5602,10 @@ gen.original.iAirport                 = civ.getImprovement(32) --[[@as improveme
 gen.original.iPoliceStation           = civ.getImprovement(33) --[[@as improvementObject]]
 gen.original.iPortFacility            = civ.getImprovement(34) --[[@as improvementObject]]
 gen.original.iTransporter             = civ.getImprovement(35) --[[@as improvementObject]]
+gen.original.iSSStructural            = civ.getImprovement(36) --[[@as improvementObject]]
+gen.original.iSSComponent             = civ.getImprovement(37) --[[@as improvementObject]]
+gen.original.iSSModule                = civ.getImprovement(38) --[[@as improvementObject]]
+gen.original.iCapitalization          = civ.getImprovement(39) --[[@as improvementObject]]
 gen.original.wPyramids                = civ.getWonder(0) --[[@as wonderObject]]
 gen.original.wHangingGardens          = civ.getWonder(1) --[[@as wonderObject]]
 gen.original.wColossus                = civ.getWonder(2) --[[@as wonderObject]]
@@ -5819,6 +5676,274 @@ gen.original.tFruit                   =civ.getTerrain(0,9,2) -- Whale Resource
 gen.original.tOcean                   =civ.getTerrain(0,10,0)
 gen.original.tFish                    =civ.getTerrain(0,10,1) -- Fish Resource
 gen.original.tWhales                  =civ.getTerrain(0,10,2) -- Whale Resource
+--]=]
+
+--[=[
+gen.original = {
+aAdvancedFlight          = civ.getTech(0) --[[@as techObject]],
+aAlphabet                = civ.getTech(1) --[[@as techObject]],
+aAmphibiousWarfare       = civ.getTech(2) --[[@as techObject]],
+aAstronomy               = civ.getTech(3) --[[@as techObject]],
+aAtomicTheory            = civ.getTech(4) --[[@as techObject]],
+aAutomobile              = civ.getTech(5) --[[@as techObject]],   --Automobile
+aBanking                 = civ.getTech(6) --[[@as techObject]],
+aBridgeBuilding          = civ.getTech(7) --[[@as techObject]],   --Bridge Building
+aBronzeWorking           = civ.getTech(8) --[[@as techObject]],
+aCeremonialBurial        = civ.getTech(9) --[[@as techObject]],
+aChemistry               = civ.getTech(10) --[[@as techObject]],
+aChivalry                = civ.getTech(11) --[[@as techObject]],
+aCodeofLaws              = civ.getTech(12) --[[@as techObject]],
+aCodeOfLaws              = civ.getTech(12) --[[@as techObject]],
+aCombinedArms            = civ.getTech(13) --[[@as techObject]],
+aCombustion              = civ.getTech(14) --[[@as techObject]],
+aCommunism               = civ.getTech(15) --[[@as techObject]],
+aComputers               = civ.getTech(16) --[[@as techObject]],
+aConscription            = civ.getTech(17) --[[@as techObject]],
+aConstruction            = civ.getTech(18) --[[@as techObject]],
+aCorporation             = civ.getTech(19) --[[@as techObject]],
+aCurrency                = civ.getTech(20) --[[@as techObject]],
+aDemocracy               = civ.getTech(21) --[[@as techObject]],
+aEconomics               = civ.getTech(22) --[[@as techObject]],
+aElectricity             = civ.getTech(23) --[[@as techObject]],
+aElectronics             = civ.getTech(24) --[[@as techObject]],
+aEngineering             = civ.getTech(25) --[[@as techObject]],
+aEnvironmentalism        = civ.getTech(26) --[[@as techObject]],
+aEspionage               = civ.getTech(27) --[[@as techObject]],
+aExplosives              = civ.getTech(28) --[[@as techObject]],
+aFeudalism               = civ.getTech(29) --[[@as techObject]],
+aFlight                  = civ.getTech(30) --[[@as techObject]],
+aFundamentalism          = civ.getTech(31) --[[@as techObject]],
+aFusionPower             = civ.getTech(32) --[[@as techObject]],
+aGeneticEngineering      = civ.getTech(33) --[[@as techObject]],
+aGuerrillaWarfare        = civ.getTech(34) --[[@as techObject]],
+aGunpowder               = civ.getTech(35) --[[@as techObject]],
+aHorsebackRiding         = civ.getTech(36) --[[@as techObject]],
+aIndustrialization       = civ.getTech(37) --[[@as techObject]],
+aInvention               = civ.getTech(38) --[[@as techObject]],
+aIronWorking             = civ.getTech(39) --[[@as techObject]],
+aLaborUnion              = civ.getTech(40) --[[@as techObject]],
+aLaser                   = civ.getTech(41) --[[@as techObject]],
+aLeadership              = civ.getTech(42) --[[@as techObject]],
+aLiteracy                = civ.getTech(43) --[[@as techObject]],
+aMachineTools            = civ.getTech(44) --[[@as techObject]],
+aMagnetism               = civ.getTech(45) --[[@as techObject]],
+aMapMaking               = civ.getTech(46) --[[@as techObject]],
+aMasonry                 = civ.getTech(47) --[[@as techObject]],
+aMassProduction          = civ.getTech(48) --[[@as techObject]],
+aMathematics             = civ.getTech(49) --[[@as techObject]],
+aMedicine                = civ.getTech(50) --[[@as techObject]],
+aMetallurgy              = civ.getTech(51) --[[@as techObject]],
+aMiniaturization         = civ.getTech(52) --[[@as techObject]],
+aMobileWarfare           = civ.getTech(53) --[[@as techObject]],
+aMonarchy                = civ.getTech(54) --[[@as techObject]],
+aMonotheism              = civ.getTech(55) --[[@as techObject]],
+aMysticism               = civ.getTech(56) --[[@as techObject]],
+aNavigation              = civ.getTech(57) --[[@as techObject]],
+aNuclearFission          = civ.getTech(58) --[[@as techObject]],
+aNuclearPower            = civ.getTech(59) --[[@as techObject]],
+aPhilosophy              = civ.getTech(60) --[[@as techObject]],
+aPhysics                 = civ.getTech(61) --[[@as techObject]],
+aPlastics                = civ.getTech(62) --[[@as techObject]],
+aPlumbing                = civ.getTech(63) --[[@as techObject]],
+aPolytheism              = civ.getTech(64) --[[@as techObject]],
+aPottery                 = civ.getTech(65) --[[@as techObject]],
+aRadio                   = civ.getTech(66) --[[@as techObject]],
+aRailroad                = civ.getTech(67) --[[@as techObject]],
+aRecycling               = civ.getTech(68) --[[@as techObject]],
+aRefining                = civ.getTech(69) --[[@as techObject]],
+aRefrigeration           = civ.getTech(70) --[[@as techObject]],
+aRepublic                = civ.getTech(71) --[[@as techObject]],
+aRobotics                = civ.getTech(72) --[[@as techObject]],
+aRocketry                = civ.getTech(73) --[[@as techObject]],
+aSanitation              = civ.getTech(74) --[[@as techObject]],
+aSeafaring               = civ.getTech(75) --[[@as techObject]],
+aSpaceFlight             = civ.getTech(76) --[[@as techObject]],
+aStealth                 = civ.getTech(77) --[[@as techObject]],
+aSteamEngine             = civ.getTech(78) --[[@as techObject]],
+aSteel                   = civ.getTech(79) --[[@as techObject]],
+aSuperconductor          = civ.getTech(80) --[[@as techObject]],
+aTactics                 = civ.getTech(81) --[[@as techObject]],
+aTheology                = civ.getTech(82) --[[@as techObject]],
+aTheoryofGravity         = civ.getTech(83) --[[@as techObject]],
+aTheoryOfGravity         = civ.getTech(83) --[[@as techObject]],
+aTrade                   = civ.getTech(84) --[[@as techObject]],
+aUniversity              = civ.getTech(85) --[[@as techObject]],
+aWarriorCode             = civ.getTech(86) --[[@as techObject]],
+aWheel                   = civ.getTech(87) --[[@as techObject]],
+aWriting                 = civ.getTech(88) --[[@as techObject]],
+aFutureTechnology        = civ.getTech(89) --[[@as techObject]],
+aUserDefTechA            = civ.getTech(90) --[[@as techObject]],
+aUserDefTechB            = civ.getTech(91) --[[@as techObject]],
+aUserDefTechC            = civ.getTech(92) --[[@as techObject]],
+aExtraAdvance1           = civ.getTech(93) --[[@as techObject]],
+aExtraAdvance2           = civ.getTech(94) --[[@as techObject]],
+aExtraAdvance3           = civ.getTech(95) --[[@as techObject]],
+aExtraAdvance4           = civ.getTech(96) --[[@as techObject]],
+aExtraAdvance5           = civ.getTech(97) --[[@as techObject]],
+aExtraAdvance6           = civ.getTech(98) --[[@as techObject]],
+aExtraAdvance7           = civ.getTech(99) --[[@as techObject]],
+uSettlers                = civ.getUnitType(0) --[[@as unitTypeObject]],
+uEngineers               = civ.getUnitType(1) --[[@as unitTypeObject]],   --Engineers,
+uWarriors                = civ.getUnitType(2) --[[@as unitTypeObject]],
+uPhalanx                 = civ.getUnitType(3) --[[@as unitTypeObject]],
+uArchers                 = civ.getUnitType(4) --[[@as unitTypeObject]],
+uLegion                  = civ.getUnitType(5) --[[@as unitTypeObject]],
+uPikemen                 = civ.getUnitType(6) --[[@as unitTypeObject]],
+uMusketeers              = civ.getUnitType(7) --[[@as unitTypeObject]],
+uFanatics                = civ.getUnitType(8) --[[@as unitTypeObject]],
+uPartisans               = civ.getUnitType(9) --[[@as unitTypeObject]],
+uAlpineTroops            = civ.getUnitType(10) --[[@as unitTypeObject]],
+uRiflemen                = civ.getUnitType(11) --[[@as unitTypeObject]],
+uMarines                 = civ.getUnitType(12) --[[@as unitTypeObject]],
+uParatroopers            = civ.getUnitType(13) --[[@as unitTypeObject]],
+uMechInf                 = civ.getUnitType(14) --[[@as unitTypeObject]],
+uHorsemen                = civ.getUnitType(15) --[[@as unitTypeObject]],
+uChariot                 = civ.getUnitType(16) --[[@as unitTypeObject]],
+uElephant                = civ.getUnitType(17) --[[@as unitTypeObject]],
+uCrusaders               = civ.getUnitType(18) --[[@as unitTypeObject]],
+uKnights                 = civ.getUnitType(19) --[[@as unitTypeObject]],
+uDragoons                = civ.getUnitType(20) --[[@as unitTypeObject]],
+uCavalry                 = civ.getUnitType(21) --[[@as unitTypeObject]],
+uArmor                   = civ.getUnitType(22) --[[@as unitTypeObject]],
+uCatapult                = civ.getUnitType(23) --[[@as unitTypeObject]],
+uCannon                  = civ.getUnitType(24) --[[@as unitTypeObject]],
+uArtillery               = civ.getUnitType(25) --[[@as unitTypeObject]],
+uHowitzer                = civ.getUnitType(26) --[[@as unitTypeObject]],
+uFighter                 = civ.getUnitType(27) --[[@as unitTypeObject]],
+uBomber                  = civ.getUnitType(28) --[[@as unitTypeObject]],
+uHelicopter              = civ.getUnitType(29) --[[@as unitTypeObject]],
+uStlthFtr                = civ.getUnitType(30) --[[@as unitTypeObject]],
+uStlthBmbr               = civ.getUnitType(31) --[[@as unitTypeObject]],
+uTrireme                 = civ.getUnitType(32) --[[@as unitTypeObject]],
+uCaravel                 = civ.getUnitType(33) --[[@as unitTypeObject]],
+uGalleon                 = civ.getUnitType(34) --[[@as unitTypeObject]],
+uFrigate                 = civ.getUnitType(35) --[[@as unitTypeObject]],
+uIronclad                = civ.getUnitType(36) --[[@as unitTypeObject]],
+uDestroyer               = civ.getUnitType(37) --[[@as unitTypeObject]],
+uCruiser                 = civ.getUnitType(38) --[[@as unitTypeObject]],
+uAEGISCruiser            = civ.getUnitType(39) --[[@as unitTypeObject]],
+uBattleship              = civ.getUnitType(40) --[[@as unitTypeObject]],
+uSubmarine               = civ.getUnitType(41) --[[@as unitTypeObject]],
+uCarrier                 = civ.getUnitType(42) --[[@as unitTypeObject]],
+uTransport               = civ.getUnitType(43) --[[@as unitTypeObject]],
+uCruiseMsl               = civ.getUnitType(44) --[[@as unitTypeObject]],
+uNuclearMsl              = civ.getUnitType(45) --[[@as unitTypeObject]],   --Nuclear Msl,
+uDiplomat                = civ.getUnitType(46) --[[@as unitTypeObject]],
+uSpy                     = civ.getUnitType(47) --[[@as unitTypeObject]],   --Spy,
+uCaravan                 = civ.getUnitType(48) --[[@as unitTypeObject]],
+uFreight                 = civ.getUnitType(49) --[[@as unitTypeObject]],   --Freight,
+uExplorer                = civ.getUnitType(50) --[[@as unitTypeObject]],
+uExtraLand               = civ.getUnitType(51) --[[@as unitTypeObject]],
+uExtraShip               = civ.getUnitType(52) --[[@as unitTypeObject]],
+uExtraAir                = civ.getUnitType(53) --[[@as unitTypeObject]],
+iNothing                 = civ.getImprovement(0) --[[@as improvementObject]],
+iPalace                  = civ.getImprovement(1) --[[@as improvementObject]],
+iBarracks                = civ.getImprovement(2) --[[@as improvementObject]],
+iGranary                 = civ.getImprovement(3) --[[@as improvementObject]],
+iTemple                  = civ.getImprovement(4) --[[@as improvementObject]],
+iMarketPlace             = civ.getImprovement(5) --[[@as improvementObject]],
+iLibrary                 = civ.getImprovement(6) --[[@as improvementObject]],
+iCourthouse              = civ.getImprovement(7) --[[@as improvementObject]],
+iCityWalls               = civ.getImprovement(8) --[[@as improvementObject]],
+iAqueduct                = civ.getImprovement(9) --[[@as improvementObject]],
+iBank                    = civ.getImprovement(10) --[[@as improvementObject]],
+iCathedral               = civ.getImprovement(11) --[[@as improvementObject]],
+iUniversity              = civ.getImprovement(12) --[[@as improvementObject]],
+iMassTransit             = civ.getImprovement(13) --[[@as improvementObject]],
+iColosseum               = civ.getImprovement(14) --[[@as improvementObject]],
+iFactory                 = civ.getImprovement(15) --[[@as improvementObject]],
+iManufacturingPlant      = civ.getImprovement(16) --[[@as improvementObject]],
+iSDIDefense              = civ.getImprovement(17) --[[@as improvementObject]],
+iRecyclingCenter         = civ.getImprovement(18) --[[@as improvementObject]],
+iPowerPlant              = civ.getImprovement(19) --[[@as improvementObject]],
+iHydroPlant              = civ.getImprovement(20) --[[@as improvementObject]],
+iNuclearPlant            = civ.getImprovement(21) --[[@as improvementObject]],
+iStockExchange           = civ.getImprovement(22) --[[@as improvementObject]],
+iSewerSystem             = civ.getImprovement(23) --[[@as improvementObject]],
+iSupermarket             = civ.getImprovement(24) --[[@as improvementObject]],
+iSuperhighways           = civ.getImprovement(25) --[[@as improvementObject]],
+iResearchLab             = civ.getImprovement(26) --[[@as improvementObject]],
+iSAMMissileBattery       = civ.getImprovement(27) --[[@as improvementObject]],
+iCoastalFortress         = civ.getImprovement(28) --[[@as improvementObject]],
+iSolarPlant              = civ.getImprovement(29) --[[@as improvementObject]],
+iHarbor                  = civ.getImprovement(30) --[[@as improvementObject]],
+iOffshorePlatform        = civ.getImprovement(31) --[[@as improvementObject]],
+iAirport                 = civ.getImprovement(32) --[[@as improvementObject]],
+iPoliceStation           = civ.getImprovement(33) --[[@as improvementObject]],
+iPortFacility            = civ.getImprovement(34) --[[@as improvementObject]],
+iTransporter             = civ.getImprovement(35) --[[@as improvementObject]],
+wPyramids                = civ.getWonder(0) --[[@as wonderObject]],
+wHangingGardens          = civ.getWonder(1) --[[@as wonderObject]],
+wColossus                = civ.getWonder(2) --[[@as wonderObject]],
+wLighthouse              = civ.getWonder(3) --[[@as wonderObject]],
+wGreatLibrary            = civ.getWonder(4) --[[@as wonderObject]],
+wOracle                  = civ.getWonder(5) --[[@as wonderObject]],
+wGreatWall               = civ.getWonder(6) --[[@as wonderObject]],
+wSunTzusWarAcademy       = civ.getWonder(7) --[[@as wonderObject]],
+wKingRichardsCrusade     = civ.getWonder(8) --[[@as wonderObject]],
+wMarcoPolosEmbassy       = civ.getWonder(9) --[[@as wonderObject]],
+wMichelangelosChapel     = civ.getWonder(10) --[[@as wonderObject]],
+wCopernicusObservatory   = civ.getWonder(11) --[[@as wonderObject]],
+wMagellansExpedition     = civ.getWonder(12) --[[@as wonderObject]],
+wShakespearesTheatre     = civ.getWonder(13) --[[@as wonderObject]],
+wLeonardosWorkshop       = civ.getWonder(14) --[[@as wonderObject]],
+wJSBachsCathedral        = civ.getWonder(15) --[[@as wonderObject]],
+wIsaacNewtonsCollege     = civ.getWonder(16) --[[@as wonderObject]],
+wAdamSmithsTradingCo     = civ.getWonder(17) --[[@as wonderObject]],
+wDarwinsVoyage           = civ.getWonder(18) --[[@as wonderObject]],
+wStatueofLiberty         = civ.getWonder(19) --[[@as wonderObject]],
+wEiffelTower             = civ.getWonder(20) --[[@as wonderObject]],
+wWomensSuffrage          = civ.getWonder(21) --[[@as wonderObject]],
+wHooverDam               = civ.getWonder(22) --[[@as wonderObject]],
+wManhattanProject        = civ.getWonder(23) --[[@as wonderObject]],
+wUnitedNations           = civ.getWonder(24) --[[@as wonderObject]],
+wApolloProgram           = civ.getWonder(25) --[[@as wonderObject]],
+wSETIProgram             = civ.getWonder(26) --[[@as wonderObject]],
+wCureforCancer           = civ.getWonder(27) --[[@as wonderObject]],
+bDesert                  =civ.getBaseTerrain(0,0),  --Drt,
+bPlains                  =civ.getBaseTerrain(0,1),  --Pln,
+bGrassland               =civ.getBaseTerrain(0,2),  --Grs,
+bForest                  =civ.getBaseTerrain(0,3),  --For,
+bHills                   =civ.getBaseTerrain(0,4),  --Hil,
+bMountains               =civ.getBaseTerrain(0,5),  --Mou,
+bTundra                  =civ.getBaseTerrain(0,6),  --Tun,
+bGlacier                 =civ.getBaseTerrain(0,7),  --Gla,
+bSwamp                   =civ.getBaseTerrain(0,8),  --Swa,
+bJungle                  =civ.getBaseTerrain(0,9),  --Jun,
+bOcean                   =civ.getBaseTerrain(0,10),  --Oce,
+tDesert                  =civ.getTerrain(0,0,0),
+tOasis                   =civ.getTerrain(0,0,1), -- Fish Resource,
+tDesertOil               =civ.getTerrain(0,0,2), -- Whale Resource,
+tPlains                  =civ.getTerrain(0,1,0),
+tBuffalo                 =civ.getTerrain(0,1,1), -- Fish Resource,
+tWheat                   =civ.getTerrain(0,1,2), -- Whale Resource,
+tGrassland               =civ.getTerrain(0,2,0),
+tForest                  =civ.getTerrain(0,3,0),
+tPheasant                =civ.getTerrain(0,3,1), -- Fish Resource,
+tSilk                    =civ.getTerrain(0,3,2), -- Whale Resource,
+tHills                   =civ.getTerrain(0,4,0),
+tCoal                    =civ.getTerrain(0,4,1), -- Fish Resource,
+tWine                    =civ.getTerrain(0,4,2), -- Whale Resource,
+tMountains               =civ.getTerrain(0,5,0),
+tGold                    =civ.getTerrain(0,5,1), -- Fish Resource,
+tIron                    =civ.getTerrain(0,5,2), -- Whale Resource,
+tTundra                  =civ.getTerrain(0,6,0),
+tGame                    =civ.getTerrain(0,6,1), -- Fish Resource,
+tFurs                    =civ.getTerrain(0,6,2), -- Whale Resource,
+tGlacier                 =civ.getTerrain(0,7,0),
+tIvory                   =civ.getTerrain(0,7,1), -- Fish Resource,
+tGlacierOil              =civ.getTerrain(0,7,2), -- Whale Resource,
+tSwamp                   =civ.getTerrain(0,8,0),
+tPeat                    =civ.getTerrain(0,8,1), -- Fish Resource,
+tSpice                   =civ.getTerrain(0,8,2), -- Whale Resource,
+tJungle                  =civ.getTerrain(0,9,0),
+tGems                    =civ.getTerrain(0,9,1), -- Fish Resource,
+tFruit                   =civ.getTerrain(0,9,2), -- Whale Resource,
+tOcean                   =civ.getTerrain(0,10,0),
+tFish                    =civ.getTerrain(0,10,1), -- Fish Resource,
+tWhales                  =civ.getTerrain(0,10,2), -- Whale Resource,
+}
+--]=]
 
 
 -- gen.isTileRevealed(tile,tribe) -> boolean
@@ -6793,7 +6918,7 @@ weightTable has functions as keys, and numbers or false as values
 ---@param item weightItem
 ---@param weightTable table<fun(item:weightItem,extraArgument:extraArg):boolean, boolean|number|fun(item:weightItem, extraArgument:extraArg):(number|false)>
 ---@param extraArgument? extraArg Default is nil.
----@return false|number # If number, the item has this weight.  False means the item was not given a weight.
+---@return number|boolean # If number, the item has this weight.  False means the item was not given a weight.  
 function gen.calculateWeight(item,weightTable,extraArgument)
     local defaultWeight = 0
     for keyFunc, value in pairs(weightTable) do
@@ -7748,13 +7873,14 @@ local vDIKeys = {["nil"]=true,["boolean"]=true,["function"]=true,["number"]=true
 --          key being the name, and the function checking if it is that type
 --          being the value
 --  }
-function gen.checkValidDataInfo(validDataInfo)
+function gen.validateValueSpecificationKeys(validDataInfo)
     for key,val in pairs(validDataInfo) do
         if not vDIKeys[key] then
             error("gen.checkValidDataInfo: submitted validDataInfo has a bad key: "..key)
         end
     end
 end
+gen.checkValidDataInfo=gen.validateValueSpecificationKeys
 
 --  gen.describeAllowableValues(valueSpecification) --> string
 
@@ -8863,8 +8989,508 @@ function gen.removeUseTransportBetweenMaps(unitType,map1,map2,suppressFailureErr
     unitType.useTransport = gen.removeTransportBetweenMaps(map1,map2,
     unitType.useTransport,suppressFailureError,"gen.removeUseTransportBetweenMaps")
 end
+
+
+
+-- gen.isAllowedOnMap(unitType,map) --> boolean
+
+---Returns true if the `unitType` is allowed on `map`, and false otherwise.
+---@param unitType unitTypeObject
+---@param map integer|mapObject
+---@return boolean
+function gen.isAllowedOnMap(unitType,map)
+    if civ.isMap(map) then
+        map = map.id
+    end
+    return isBit0(unitType.notAllowedOnMap,map+1)
+end
+
+-- gen.giveAllowedOnMap(unitType,map) --> void
+
+
+---Allows the `unitType` to be on `map`
+---@param unitType unitTypeObject
+---@param map integer|mapObject
+function gen.giveAllowedOnMap(unitType,map)
+    if civ.isMap(map) then
+        map = map.id
+    end
+    unitType.notAllowedOnMap = setBit0(unitType.notAllowedOnMap,map+1)
+end
+
+
+-- gen.removeAllowedOnMap(unitType,map) --> void
+
+---Forbids the `unitType` to be on `map`
+---@param unitType unitTypeObject
+---@param map integer|mapObject
+function gen.removeAllowedOnMap(unitType,map)
+    if civ.isMap(map) then
+        map = map.id
+    end
+    unitType.notAllowedOnMap = setBit1(unitType.notAllowedOnMap,map+1)
+end
+
+
+
+
+
 if rawget(_G,"console") then
     _G["console"].gen = gen
 end
 
 return gen
+
+--#gen.isCivilDisorder(city)-->boolean
+--#gen.setCivilDisorder(city)-->void
+--#gen.clearCivilDisorder(city)-->void
+--#gen.isWeLoveTheKing(city)-->boolean
+--#gen.setWeLoveTheKing(city)-->void
+--#gen.clearWeLoveTheKing(city)-->void
+--#gen.isImprovementSold(city)-->boolean
+--#gen.setImprovementSold(city)-->void
+--#gen.clearImprovementSold(city)-->void
+--#gen.isTechnologyStolen(city)-->boolean
+--#gen.setTechnologyStolen(city)-->void
+--#gen.clearTechnologyStolen(city)-->void
+--#gen.isAutoBuild(city)-->boolean
+--#gen.setAutoBuild(city)-->void
+--#gen.clearAutoBuild(city)-->void
+--#gen.isAttribute6(city)-->boolean
+--#gen.setAttribute6(city)-->void
+--#gen.clearAttribute6(city)-->void
+--#gen.isAttribute7(city)-->boolean
+--#gen.setAttribute7(city)-->void
+--#gen.clearAttribute7(city)-->void
+--#gen.isBuildCoastal(city)-->boolean
+--#gen.setBuildCoastal(city)-->void
+--#gen.clearBuildCoastal(city)-->void
+--#gen.isAttribute9(city)-->boolean
+--#gen.setAttribute9(city)-->void
+--#gen.clearAttribute9(city)-->void
+--#gen.isAttribute10(city)-->boolean
+--#gen.setAttribute10(city)-->void
+--#gen.clearAttribute10(city)-->void
+--#gen.isAttribute11(city)-->boolean
+--#gen.setAttribute11(city)-->void
+--#gen.clearAttribute11(city)-->void
+--#gen.isBuildHydroPlant(city)-->boolean
+--#gen.setBuildHydroPlant(city)-->void
+--#gen.clearBuildHydroPlant(city)-->void
+--#gen.isAttribute13(city)-->boolean
+--#gen.setAttribute13(city)-->void
+--#gen.clearAttribute13(city)-->void
+--#gen.isAttribute14(city)-->boolean
+--#gen.setAttribute14(city)-->void
+--#gen.clearAttribute14(city)-->void
+--#gen.isAttribute15(city)-->boolean
+--#gen.setAttribute15(city)-->void
+--#gen.clearAttribute15(city)-->void
+--#gen.isAttribute16(city)-->boolean
+--#gen.setAttribute16(city)-->void
+--#gen.clearAttribute16(city)-->void
+--#gen.isUsedAirport(city)-->boolean
+--#gen.setUsedAirport(city)-->void
+--#gen.clearUsedAirport(city)-->void
+--#gen.isAttribute18(city)-->boolean
+--#gen.setAttribute18(city)-->void
+--#gen.clearAttribute18(city)-->void
+--#gen.isAttribute19(city)-->boolean
+--#gen.setAttribute19(city)-->void
+--#gen.clearAttribute19(city)-->void
+--#gen.isAttribute20(city)-->boolean
+--#gen.setAttribute20(city)-->void
+--#gen.clearAttribute20(city)-->void
+--#gen.isAttribute21(city)-->boolean
+--#gen.setAttribute21(city)-->void
+--#gen.clearAttribute21(city)-->void
+--#gen.isBuildShips(city)-->boolean
+--#gen.setBuildShips(city)-->void
+--#gen.clearBuildShips(city)-->void
+--#gen.isCityInvestigated(city)-->boolean
+--#gen.setCityInvestigated(city)-->void
+--#gen.clearCityInvestigated(city)-->void
+--#gen.isAttribute24(city)-->boolean
+--#gen.setAttribute24(city)-->void
+--#gen.clearAttribute24(city)-->void
+--#gen.isMilitaryAutoBuild(city)-->boolean
+--#gen.setMilitaryAutoBuild(city)-->void
+--#gen.clearMilitaryAutoBuild(city)-->void
+--#gen.isDomesticAutoBuild(city)-->boolean
+--#gen.setDomesticAutoBuild(city)-->void
+--#gen.clearDomesticAutoBuild(city)-->void
+--#gen.isObjective(city)-->boolean
+--#gen.setObjective(city)-->void
+--#gen.clearObjective(city)-->void
+--#gen.isAttribute28(city)-->boolean
+--#gen.setAttribute28(city)-->void
+--#gen.clearAttribute28(city)-->void
+--#gen.isMajorObjective(city)-->boolean
+--#gen.setMajorObjective(city)-->void
+--#gen.clearMajorObjective(city)-->void
+--#gen.isUsedTransporter(city)-->boolean
+--#gen.setUsedTransporter(city)-->void
+--#gen.clearUsedTransporter(city)-->void
+--#gen.isAttribute31(city)-->boolean
+--#gen.setAttribute31(city)-->void
+--#gen.clearAttribute31(city)-->void
+--#gen.isAttribute32(city)-->boolean
+--#gen.setAttribute32(city)-->void
+--#gen.clearAttribute32(city)-->void
+
+
+
+--#gen.toTile(tile or table)-->tile
+--gen.hasIrrigation(tile)-->boolean
+--gen.placeIrrigation(tile)-->void
+--gen.removeIrrigation(tile)-->void
+--#gen.hasMine(tile)-->boolean
+--#gen.placeMine(tile)-->void
+--#gen.placeMineUnderCity(tile)-->void
+--#gen.removeMine(tile)-->void
+--#gen.removeMineUnderCity(tile)-->void
+--#gen.hasFarmland(tile)-->boolean
+--#gen.placeFarmland(tile)-->void
+--#gen.removeFarmland(tile)-->void
+--#gen.hasAgriculture(tile)--> boolean
+--#gen.improveAgriculture(tile) --> void
+--#gen.degradeAgriculture(tile) --> void
+--#gen.removeAgriculture(tile)--> void
+--#gen.hasRoad(tile)-->boolean
+--#gen.placeRoad(tile)-->void
+--#gen.removeRoad(tile)-->void
+--#gen.hasRailroad(tile)-->boolean
+--#gen.placeRailroad(tile)-->void
+--#gen.removeRailroad(tile)-->void
+--#gen.hasTransportation(tile) --> boolean
+--#gen.upgradeTransportation(tile) --> void
+--#gen.degradeTransportation(tile) --> void
+--#gen.removeTransportation(tile) -->void
+--#gen.hasFortress(tile)-->boolean
+--#gen.placeFortress(tile)-->void
+--#gen.placeFortressForce(tile)-->void
+--#gen.removeFortress(tile)-->void
+--#gen.hasAirbase(tile)-->boolean
+--#gen.placeAirbase(tile)-->void
+--#gen.placeAirbaseForce(tile)-->void
+--#gen.removeAirbase(tile)-->void
+--#gen.hasPollution(tile)-->boolean
+--#gen.placePollution(tile)-->void
+--#gen.removePollution(tile)-->void
+--#gen.hasTransporter(tile)-->boolean
+--# NOTE: Can't placeTransporter
+--#gen.removeTransporter(tile)-->void
+
+
+
+--#gen.isFortifying(unit)-->boolean
+--#gen.setToFortifying(unit)-->void
+--#gen.isFortified(unit)-->boolean
+--#gen.setToFortified(unit)-->void
+--#gen.isSleeping(unit)-->boolean
+--#gen.setToSleeping(unit)-->void
+--#gen.isBuildingFortress(unit) --> boolean
+--#gen.setToBuildingFortress(unit)-->void
+--#gen.isBuildingRoad(unit) --> boolean
+--#gen.setToBuildingRoad(unit)-->void
+--#gen.isIrrigating(unit)-->boolean
+--#gen.setToIrrigating(unit)-->void
+--#gen.isMining(unit)-->boolean
+--#gen.setToMining(unit)-->void
+--#gen.isTransformingTerrain(unit)-->boolean
+--#gen.setToTransformingTerrain(unit)-->void
+--#gen.isBuildingAirbase(unit)-->boolean
+--#gen.setToBuildingAirbase(unit)-->void
+--#gen.isBuildingTransporter(unit)-->boolean
+--#gen.setToBuildingTransporter(unit)-->void
+--#gen.isGoingTo(unit)-->boolean
+--#gen.setToGoingTo(unit,tile)-->void
+--#gen.isNoOrder(unit)-->boolean
+--#gen.setToNoOrders(unit)-->void
+--#gen.isWaiting(unit)-->bool
+--#gen.setToWaiting(unit)-->void
+--#gen.clearWaiting(unit)-->void
+--#gen.isParadropped(unit)-->void
+--#gen.setParadropped(unit)-->void
+--#gen.clearParadropped(unit)-->void
+--#gen.isMoved(unit)-->boolean
+--#gen.setMoved(unit)-->void
+--#gen.clearMoved(unit)-->void
+
+--#gen.isSeeTwoSpaces(unitType)-->boolean
+--#gen.giveSeeTwoSpaces(unitType)-->void
+--#gen.removeSeeTwoSpaces(unitType)-->void
+--#gen.isIgnoreZOC(unitType)-->boolean
+--#gen.giveIgnoreZOC(unitType)-->void
+--#gen.removeIgnoreZOC(unitType)-->void
+--#gen.isAmphibious(unitType)-->boolean
+--#gen.giveAmphibious(unitType)-->void
+--#gen.removeAmphibious(unitType)-->void
+--#gen.isSubmarine(unitType)-->boolean
+--#gen.giveSubmarine(unitType)-->void
+--#gen.removeSubmarine(unitType)-->void
+--#gen.isAttackAir(unitType)-->boolean
+--#gen.giveAttackAir(unitType)-->void
+--#gen.removeAttackAir(unitType)-->void
+--#gen.isCoastal(unitType)-->boolean
+--#gen.giveCoastal(unitType)-->void
+--#gen.removeCoastal(unitType)-->void
+--#gen.isIgnoreWalls(unitType)-->boolean
+--#gen.giveIgnoreWalls(unitType)-->void
+--#gen.removeIgnoreWalls(unitType)-->void
+--#gen.isCarryAir(unitType)-->boolean
+--#gen.giveCarryAir(unitType)-->void
+--#gen.removeCarryAir(unitType)-->void
+--#gen.isParadrop(unitType)-->boolean
+--#gen.giveParadrop(unitType)-->void
+--#gen.removeParadrop(unitType)-->void
+--#gen.isAlpine(unitType)-->boolean
+--#gen.giveAlpine(unitType)-->void
+--#gen.removeAlpine(unitType)-->void
+--#gen.isBonusAgainstHorse(unitType)-->boolean
+--#gen.giveBonusAgainstHorse(unitType)-->void
+--#gen.removeBonusAgainstHorse(unitType)-->void
+--#gen.isFreeSupportUnderFundamentalism(unitType)-->boolean
+--#gen.giveFreeSupportUnderFundamentalism(unitType)-->void
+--#gen.removeFreeSupportUnderFundamentalism(unitType)-->void
+--#gen.isDestroyedAfterAttacking(unitType)-->boolean
+--#gen.giveDestroyedAfterAttacking(unitType)-->void
+--#gen.removeDestroyedAfterAttacking(unitType)-->void
+--#gen.isBonusAgainstAir(unitType)-->boolean
+--#gen.giveBonusAgainstAir(unitType)-->void
+--#gen.removeBonusAgainstAir(unitType)-->void
+--#gen.isSpotSubmarines(unitType)-->boolean
+--#gen.giveSpotSubmarines(unitType)-->void
+--#gen.removeSpotSubmarines(unitType)-->void
+-- gen.isInvisibleUntilAttack(unitType) --> bool
+-- gen.giveInvisibleUntilAttack(unitType) --> void
+-- gen.removeInvisibleUntilAttack(unitType) --> void
+-- gen.isNonDisbandable(unitType) --> bool
+-- gen.giveNonDisbandable(unitType) --> void
+-- gen.removeNonDisbandable(unitType) --> void
+-- gen.isZeroRangeAirUnitDamageOverride(unitType) --> bool
+-- gen.giveZeroRangeAirUnitDamageOverride(unitType) --> void
+-- gen.removeZeroRangeAirUnitDamageOverride(unitType) --> void
+-- gen.isCannotBuyOffBarbarian(unitType) --> bool
+-- gen.giveCannotBuyOffBarbarian(unitType) --> void
+-- gen.removeCannotBuyOffBarbarian(unitType) --> void
+-- gen.isCanCrossImpassableTerrain(unitType) --> bool
+-- gen.giveCanCrossImpassableTerrain(unitType) --> void
+-- gen.removeCanCrossImpassableTerrain(unitType) --> void
+-- gen.isBarbarianWillNotExpire(unitType) --> bool
+-- gen.giveBarbarianWillNotExpire(unitType) --> void
+-- gen.removeBarbarianWillNotExpire(unitType) --> void
+-- gen.isOverrideSPR(unitType) --> bool
+-- gen.giveOverrideSPR(unitType) --> void
+-- gen.removeOverrideSPR(unitType) --> void
+-- gen.isReducePopulationWhenBuilt(unitType) --> bool
+-- gen.giveReducePopulationWhenBuilt(unitType) --> void
+-- gen.removeReducePopulationWhenBuilt(unitType) --> void
+-- gen.isRequiresFoodSupport(unitType) --> bool
+-- gen.giveRequiresFoodSupport(unitType) --> void
+-- gen.removeRequiresFoodSupport(unitType) --> void
+-- gen.isCanFoundCities(unitType) --> bool
+-- gen.giveCanFoundCities(unitType) --> void
+-- gen.removeCanFoundCities(unitType) --> void
+-- gen.isCanImproveTiles(unitType)--> bool
+-- gen.giveCanImproveTiles(unitType,ignoreError=false) --> void
+-- gen.removeCanImproveTiles(unitType,ignoreError=false) --> void
+-- gen.isAllowedOnMap(unitType,map) --> boolean
+-- gen.giveAllowedOnMap(unitType,map) --> void
+-- gen.removeAllowedOnMap(unitType,map) --> void
+-- gen.isNativeTransportBetweenMaps(unitType, map1, map2) --> boolean
+-- gen.giveNativeTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.removeNativeTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.isBuildTransportBetweenMaps(unitType, map1, map2) --> boolean
+-- gen.giveBuildTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.removeBuildTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.isUseTransportBetweenMaps(unitType, map1, map2) --> boolean
+-- gen.giveUseTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+-- gen.removeUseTransportBetweenMaps(unitType, map1, map2, suppressFailureError?) --> void
+
+
+-- gen.isTileRevealed(tile,tribe) -> boolean
+-- gen.revealTile(tile,tribe) -> void
+-- gen.coverTile(tile,tribe) -> void
+-- gen.isCityCharted(city,tribe) --> bool
+-- gen.chartCity(city,tribe,visibleSize=nil) --> void
+-- gen.unchartCity(city,tribe) --> void
+-- gen.isIrrigationCharted(tile,tribe) --> bool
+-- gen.chartIrrigation(tile,tribe) --> void
+-- gen.unchartIrrigation(tile,tribe) --> void
+-- gen.isMineCharted(tile,tribe) --> bool
+-- gen.chartMine(tile,tribe) --> void
+-- gen.unchartMine(tile,tribe) --> void
+-- gen.isFarmlandCharted(tile,tribe) --> bool
+-- gen.chartFarmland(tile,tribe) --> void
+-- gen.unchartFarmland(tile,tribe) --> void
+-- gen.isRoadCharted(tile,tribe) --> bool
+-- gen.chartRoad(tile,tribe) --> void
+-- gen.unchartRoad(tile,tribe) --> void
+-- gen.isRailroadCharted(tile,tribe) --> bool
+-- gen.chartRailroad(tile,tribe) --> void
+-- gen.unchartRailroad(tile,tribe) --> void
+-- gen.unchartTransportation(tile,tribe) --> void
+-- gen.isFortressCharted(tile,tribe) --> bool
+-- gen.chartFortress(tile,tribe) --> void
+-- gen.unchartFortress(tile,tribe) --> void
+-- gen.isAirbaseCharted(tile,tribe) --> bool
+-- gen.chartAirbase(tile,tribe) --> void
+-- gen.unchartAirbase(tile,tribe) --> void
+-- gen.isPollutionCharted(tile,tribe) --> bool
+-- gen.chartPollution(tile,tribe) --> void
+-- gen.unchartPollution(tile,tribe) --> void
+-- gen.isTransporterCharted(tile,tribe) --> bool
+-- gen.chartTransporter(tile,tribe) --> void
+-- gen.unchartTransporter(tile,tribe) --> void
+-- gen.chartTruthfully(tile,tribe) --> void
+
+
+-- gen.placeMarker(tile,tribe,markerOption)
+-- gen.removeMarker(tile,tribe,markerOption) --> void
+-- gen.maintainTileMarkerTable() --> void
+-- gen.removeAllMarkers(tribeOrNil,markerTypeOrNil) --> void
+-- gen.showAllMarkersOnTile(tile,topMarkerTypeOrNil,secondMarkerTypeOrNil) --> void
+-- gen.showAllMarkers(topMarkerTypeOrNil) --> void
+-- gen.hasMarker(tile,tribe,markerType)
+-- gen.isMarkerVisible(tile,tribe,markerType)
+-- gen.hideMarker(tile,tribe,markerType)
+-- gen.hideAllMarkers(tribeOrNil,markerTypeOrNil)
+-- gen.showMarker(tile,tribe,markerType)
+-- gen.showMarkerOnAllTiles(tribe,markerType)
+
+--gen.checkBits(integer,string)-->boolean
+--gen.setBits(integer,string)-->integer
+--gen.printBits(integer,numOfBits or nil) --> string
+--gen.isBit1(integer,bitNumber)--> boolean
+--gen.isBit0(integer,bitNumber)--> boolean
+--gen.setBit1(integer,bitNumber)-->integer
+--gen.setBit0(integer,bitNumber)-->integer
+-- gen.isTransportBetweenMaps(map1, map2, transportBitmask, functionName?) --> boolean
+-- gen.giveTransportBetweenMaps(map1, map2, transportBitmask, suppressFailureError?, functionName?) --> bitmask
+-- gen.removeTransportBetweenMaps(map1, map2, transportBitmask, suppressFailureError?, functionName?) --> bitmask
+
+--#gen.inTable(object,table)--> bool
+--#gen.copyTable(table)-->table
+-- gen.copyTableWithMetatable(table) --> table
+--#gen.isEmpty(table)-->bool
+-- gen.mergeTableValues(table,table,...) --> table
+--#gen.clearGapsInArray(table,lowestValue=1)
+--#gen.tableWrap(item)-->table
+--#gen.tableWrap(item,needsWrapFn)-->table
+--#gen.errorForNilKey(table,tableName)-->void
+--#gen.noNewKey(table,tableName)-->void
+-- gen.isStateSavable(item) --> boolean
+-- gen.tableToString(table) --> string
+-- gen.makeDataTable(inputTable={},tableName="unnamed data table") --> dataTable
+-- gen.forbidReplacement(dataTable) --> void
+-- gen.allowReplacement(dataTable) --> void
+-- gen.forbidNewKeys(dataTable) --> void
+-- gen.allowNewKeys(dataTable) --> void
+-- gen.forbidNilValueAccess(dataTable) --> void
+-- gen.allowNilValueAccess(dataTable) --> void
+--gen.makeThresholdTable(table or nil)-->thresholdTable
+-- gen.persistentRandom(key) --> number between 0 and 1
+-- gen.clearPersistentRandom(key) --> void
+-- gen.getPersistentRandomTable() --> table
+-- gen.newEmptyStack() --> stack
+-- gen.newStack(table = {}) --> stack
+-- gen.isStack(item) --> boolean
+
+-- gen.getBaseTerrainID(baseTerrain) --> integer
+-- gen.getBaseTerrainFromID(id) --> baseTerrain
+-- gen.getTerrainID(terrain) --> integer
+-- gen.getTerrainFromID(id) --> terrain
+--#gen.getTileID(tileObject or int,int or nil,int or nil)-->int (by Knighttime, converts a tile/coordinates to a single integer as an ID number)
+--#gen.getTileId(tileObject or int,int or nil,int or nil)-->int (by Knighttime, converts a tile/coordinates to a single integer as an ID number)
+-- gen.getTileFromID(tileID) --> tileObject -- undoes gen.getTileID
+-- gen.getTileFromId(tileID) --> tileObject -- undoes gen.getTileID
+
+
+--#gen.rehomeUnitsInCapturedCity(city,defender) --> void
+--#gen.linkActivationFunction(function(unit,source)-->void)-->void
+--#gen.getActivationFunction()-->function(unit,source)
+--#gen.noGlobal()
+--#gen.linkState(stateTable)
+--#gen.linkGeneralLibraryState(stateTable) --> void
+--#gen.setDeathFunctions(defeatFunction,deathFunction,deletionFunction) --> void
+-- gen.setScenarioDirectory(directoryPath) --> void
+-- gen.getScenarioDirectory() --> string
+-- gen.setOutOfRangeMessage(textOrFunction,title=nil) --> void
+-- gen.outOfRangeMessage(unit) --> void
+-- gen.activateRangeForLandAndSea(restoreRangeFn=nil,applyToAI=false)
+-- gen.versionFunctions(moduleTable,versionNumber,fileMod,moduleFileName) -->void
+-- gen.registerEventsLuaVersion(versionNumber,fileMod,regressionNumber)
+--#gen.setMusicDirectory(path)
+
+-- gen.calculateWeight(item,weightTable,extraArgument=nil) --> number or false
+-- gen.getExtremeWeights(listOrIterator,weightTableOrWeightFunction,getTopX,changeOrder,functionName,extraArgument)
+-- gen.getBiggestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
+-- gen.getSmallestWeights(listOrIterator,weightTableOrWeightFunction,getTopX=nil,extraArgument=nil) --> item or tableOfItems or nil, weight or tableOfWeights or nil
+
+--  gen.describeAllowableData(validDataInfo) --> string
+-- gen.validateFunctionArgument(data,moduleName,functionName,argumentNumber, argumentName,validDataInfo,extraInfo=nil) --> void or error
+-- gen.createDataType(dataName,specificKeyTable,generalKeyTable,defaultValueTable,fixedKeyTable) --> newItemFunction, isDataTypeFunction
+-- gen.valueSpecForCustomData(isItemFn, failureDescription, itemDescription) --> valueSpecification
+
+
+--#gen.createUnit(unitType,tribe,locations,options) --> table of units
+--#gen.copyUnitAttributes(parent,child)-->void
+--#gen.defeatUnit(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)-->unit or nil
+--#gen.killUnit(dyingUnit)-->void
+--#gen.deleteUnit(deletedUnit,replacementUnit=nil)-->void
+--#gen.replaceUnit(oldUnit,replacementType)--> unit
+--#gen.limitedExecutions(key,maxTimes,limitedFunction)--> void
+-- gen.justOnce(key,limitedFunction)-->void
+--gen.isWonderActiveForTribe(wonderObject or integer,tribeObject or integer)-->boolean
+--#gen.tileDist(locA,locB,zDist=0)-->integer
+--#gen.distance(tileUnitCityA,tileUnitCityB,zDist=0)-->integer
+--#gen.wonderModifiedMoves(unit)-->integer
+--#gen.maxMoves(unit) --> integer
+--#gen.moveRemaining(unit) --> integer
+--#gen.inPolygon(tile,tableOfCoordinates)-->bool
+--  gen.getRandomTileInPolygon(polygonTableOfCoordinates,map=0,maxAttempts=100) -> tile (inspired by Pablostuka)
+--#gen.cityCanSupportAnotherUnit(city)-->bool
+--#gen.homeToNearestCity(unit)-->void
+--#gen.unitTypeOnTile(tile,unitTypeOrTableOfUnitType)-->bool
+--#gen.getAdjacentTiles(tile)-->tableOfTiles
+--#gen.moveUnitAdjacent(unit,destRankFn=suitableDefault)-->tile or bool
+--#gen.unprotectTile(tile,isProtectingUnit,isProtectedUnit,isProtectedTile,destRankFn=suitableDefault)-->void
+--#gen.clearAirProtection(tile)-->void
+--#gen.clearAdjacentAirProtection(unit) -->void clears air protection for tiles adjacent to the unit that are not owned by the unit's owner
+--#gen.cityRadiusTiles(cityOrTileOrCoordTable) --> table
+--#gen.getTilesInRadius(centre,radius,minRadius=0,maps=nil) --> table
+--#gen.playMusic(fileName)
+--#gen.isSinglePlayerGame() --> boolean
+--#gen.nearbyUnits(center,radius,maps={0,1,2,3}) --> iterator providing units
+--#gen.makeAllowedTerrainFunction(allowedTilesTable) --> function(tile)-->bool
+--#gen.nearbyUnoccupiedTiles(tile,distance,allowedTiles) --> table
+--#gen.getRandomNearbyUnoccupiedTile(tile,distance,allowedTiles) --> tile
+--#gen.nearbyOpenTilesForTribe(centerTile,distance,allowedTiles,tribe)
+--#gen.getRandomNearbyOpenTileForTribe(tile,distance,allowedTiles,tribe) --> tile
+-- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
+-- gen.computeBaseProduction(city)-->integer(food), integer(shields), integer(trade)
+-- gen.spendMovementPoints(unit,points,multiplier=totpp.movementMultipliers.aggregate,maxSpent=255,minSpent=0) -> void
+-- gen.getBearing(compassPoint,compassCentre) --> string | Inspired by Pablostuka
+-- gen.isInteger(item) --> boolean
+-- gen.getMapTransportFlagNumber(map1, map2, all?, functionName?) --> boolean|integer|table
+-- gen.getNumberOfTerrainTypes(map) --> integer
+--#gen.getState()-->table
+--#gen.getEphemeralTable()-->table
+-- gen.iterateUnitTypes() --> iterator
+-- gen.iterateImprovements() --> iterator
+-- gen.iterateWonders() --> iterator
+-- gen.iterateBaseTerrain() --> iterator
+-- gen.iterateTerrain() --> iterator
+-- gen.isRoadTradeBonus(baseTerrain) --> boolean
+-- gen.giveRoadTradeBonus(baseTerrain) -->boolean
+-- gen.removeRoadTradeBonus(baseTerrain) --> boolean
+
+--#gen.isMapFlat()-->boolean
+--#gen.isMapRound()-->boolean
+--#gen.declareMapFlat()-->void
+--#gen.declareMapRound()-->void
+--#gen.setTerrainType(tile,terrain)-->void
+--#gen.activate(unit)-->void
+--#gen.activateWithSource(unit,source)-->void
+

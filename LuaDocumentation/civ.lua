@@ -5,65 +5,92 @@
 ---[Open in Browser](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/)
 ---
 
----The 'nil' data type has a single value nil, and tends to represent the absence of a value. Nil is a data type which is native to Lua, and is considered 'falsy' in logical statements. Unassigned keys in a table return nil as their value.
----[Programming in Lua, 2.1 -- Nil](https://www.lua.org/pil/2.1.html)
----[Tutorialspoint Lua -- Data Types](https://www.tutorialspoint.com/lua/lua_data_types.htm)
 
 
 ---"Void" isn't a proper data type in Lua. Instead, it is an indication that a function or method is not returning a value at all. A function with a simple <code>return</code>, or without a <code>return</code> line will return (or, rather, not return) a "void", wheras <code>return nil</code> will return a proper nil value. If your function <em>never</em> returns useful information, returning "void" is appropriate. However, if your code <em>sometimes</em> returns useful data, it should return nil when it does not.
 ---@class void
 
+---@alias void_doc void
+
 
 ---The 'nil' data type has a single value nil, and tends to represent the absence of a value. Nil is a data type which is native to Lua, and is considered 'falsy' in logical statements. Unassigned keys in a table return nil as their value.
+---<br>
 ---[Programming in Lua, 2.1 -- Nil](https://www.lua.org/pil/2.1.html)
+---<br>
 ---[Tutorialspoint Lua -- Data Types](https://www.tutorialspoint.com/lua/lua_data_types.htm)
 ---@class nil
 
+---@alias nil_doc nil
+
 
 ---A table is a data type native to Lua, and links "keys" (usually numbers or strings) to "values" (any kind of data, including other tables). This is the only data structuring mechanism in Lua, and many of the data types documented here are simply tables with restrictions on their keys or values. If a key has not been assigned a value, the table returns nil as the corresponding value, and assigning nil as a value to a key removes that key from the table.
+---<br>
 ---[Programming in Lua, 2.5 -- Tables](https://www.lua.org/pil/2.5.html)
 ---@class table
 
+---@alias table_doc table
 
 
 
 ---A number is a data type native to Lua, which allows numerical computations to be performed. Fundamentally, Lua does not have separate data types for integers and numbers with a component after the decimal point, so any integer is also a number.
+---<br>
 ---[Programming in Lua, 2.3 -- Numbers](https://www.lua.org/pil/2.3.html)
 ---@class number
+
+---@alias number_doc number
 
 
 
 
 ---An integer is a number without a fractional part. Unlike other programming Languages, Lua does not distinguish between integers and 'floating point' numbers. You can convert a number to an integer by using commands like <code>math.floor</code> and <code>math.ceil</code>.
+---<br>
 ---[Programming in Lua, 2.3 -- Numbers](https://www.lua.org/pil/2.3.html)
 ---@class integer
 
+---@alias integer_doc integer
 
 
 
 ---A boolean is a data type native to Lua with exactly two possible values, <code>true</code> and <code>false</code>. These are often used when evaluating logical statements, but logical statements accept other values as well. All values except <code>false</code> and <code>nil</code> are considered 'truthy', even values such as 0 or the empty string.
+---<br>
 ---[Programming in Lua, 2.2 -- Booleans](https://www.lua.org/pil/2.2.html)
 ---@class boolean
+
+---@alias boolean_doc boolean
 
 
 
 
 ---A string is a data type native to Lua which consists of a sequence of characters. These often represent text to be displayed, but are also useful in other contexts. Strings are commonly used as keys in tables, since they make code more readable.
+---<br>
 ---[Programming in Lua, 2.4 -- Strings](https://www.lua.org/pil/2.4.html)
 ---@class string
+
+---@alias string_doc string
 
 
 
 
 ---A function is a sequence of instructions, which frequently depend on values that are provided ("arguments"). In Lua, functions are considered values, and can be stored in variables or tables. They can also be supplied as arguments to other functions.
+---<br>
 ---[Programming in Lua, 2.6 -- Functions](https://www.lua.org/pil/2.6.html)
 ---@class function
 
+---@alias function_doc function
 
 
+---Userdata is a data type native to Lua which represents objects that are not part of the Lua language. This data type is an overall data type for Civilization objects, such as units, cities, and tribes, particularly when dealing with native Lua functions.  For example, <code>type(civ.getUnitType(0))</code> returns <code>"userdata"</code>. 
+---<br>
+---[Programming in Lua, 2.7 -- Userdata and Threads](https://www.lua.org/pil/2.7.html)
+---@class userdata
 
----<p>A bitmask is an integer that is not meant to be interpreted as a number, but rather as a sequence of 1's and 0's (the binary representation of the number), with each 1 or 0 representing whether a condition is true or false. Bitmasks often have functions written to facilitate their manipulation. If none are available, Lua provides bitwise operators.</p><p>Typically, the leftmost bit (the bit representing the largest value) is interpreted as negative. Hence, the bitmask integer is not guaranteed to be positive.</p>
+---@alias userdata_doc userdata
+
+
+---A bitmask is an integer that is not meant to be interpreted as a number, but rather as a sequence of 1's and 0's (the binary representation of the number), with each 1 or 0 representing whether a condition is true or false. Bitmasks often have functions written to facilitate their manipulation. If none are available, Lua provides bitwise operators.</p><p>Typically, the leftmost bit (the bit representing the largest value) is interpreted as negative. Hence, the bitmask integer is not guaranteed to be positive.
+---<br>
 ---[Lua 5.3 Reference Manual 3.4.2 -- Bitwise Operators](https://www.lua.org/manual/5.3/manual.html#3.4.2)
+---<br>
 ---[Twos complement: Negative numbers in binary (Youtube Video)](https://www.youtube.com/watch?v=4qH4unVtJkE)
 ---@class bitmask: integer
 
@@ -76,6 +103,7 @@ for unit in civ.iterateUnits() do
   civ.deleteUnit(unit)
 end
 ```]]
+---<br>
 ---[Tutorialspoint: Lua -- Iterators](https://www.tutorialspoint.com/lua/lua_iterators.htm)
 ---@class iterator
 
@@ -83,6 +111,7 @@ end
 ---@class tribeToInt table<tribeObject,integer>
 
 ---A city object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a city in the game, and provides a means of interacting with that city.
+---<br>
 ---[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#city)
 ---@class cityObject
 ---@field attributes bitmask (get/set) Returns the city's attributes (bitmask).

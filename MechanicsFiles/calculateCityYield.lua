@@ -16,6 +16,7 @@ local baseProduction = gen.computeBaseProduction
 local strategicTargetsAvailable, strat = gen.requireIfAvailable("strategicTargets")
 local changeRules = require("changeRules")
 
+---&autoDoc onCalculateCityYield
 function cityYield.onCalculateCityYield(city,food,shields,trade)
     local extraFood,extraShields,extraTrade = 0,0,0 -- resources to add to compensate
             -- for terrain changes made during the city yield calculation
@@ -69,6 +70,7 @@ function cityYield.onCalculateCityYield(city,food,shields,trade)
             tradeChangeBeforeCorruption+ extraTrade,
             tradeChangeAfterCorruption
 end
+---&endAutoDoc
 
 
 --  onCalculateCityYield (since 0.16)

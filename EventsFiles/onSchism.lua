@@ -1,6 +1,7 @@
 -- This file can be deleted if it is not being used
 local register = {}
 
+---&autoDoc onSchism
 -- discreteEvents.onSchism and
 -- consolidated.onSchism
 -- also return booleans.  True means that the tribe can schism
@@ -11,5 +12,6 @@ function register.onSchism(tribe)
 
     return true
 end
+---&endAutoDoc
 
 return register

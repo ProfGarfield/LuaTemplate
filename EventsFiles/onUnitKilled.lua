@@ -5,6 +5,7 @@
 
 local onUnitKilled = {}
 
+---&autoDoc onUnitKilled
 -- This will only run when a unit is killed in combat (i.e. not when an event
 -- 'kills' a unit)
 -- note that if the aggressor loses, aggressor.location will not work
@@ -16,5 +17,6 @@ function onUnitKilled.onUnitKilled(loser,winner,aggressor,victim,loserLocation,w
     end
 
 end
+---&endAutoDoc
 
 return onUnitKilled

@@ -1,6 +1,7 @@
 -- this file can be deleted if it is not used.
 local register = {}
 
+---&autoDoc onGameEnds
 -- discreteEvents.onGameEnds and
 -- consolidated.onGameEnds
 -- also return booleans.  True means that the 
@@ -11,5 +12,6 @@ function register.onGameEnds(reason)
 
     return true
 end
+---&endAutoDoc
 
 return register

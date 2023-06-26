@@ -2,6 +2,7 @@
 
 local register = {}
 
+---&autoDoc onCityProcessingComplete
 function register.onCityProcessingComplete(turn,tribe)
     --civ.ui.text('after production separate file')
     if _global.eventTesting then
@@ -9,5 +10,6 @@ function register.onCityProcessingComplete(turn,tribe)
     end
 
 end
+---&endAutoDoc
 
 return register

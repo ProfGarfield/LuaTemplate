@@ -3,6 +3,7 @@
 local register = {}
 
 
+---&autoDoc onCanFoundCity
 -- Checking if a unit can found a city
 -- Return true if the unit can found a city
 -- return false if it can't
@@ -22,5 +23,6 @@ function register.onCanFoundCity(unit,advancedTribe)
     end
     return true
 end
+---&endAutoDoc
 
 return register

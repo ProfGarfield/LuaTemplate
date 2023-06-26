@@ -18,9 +18,11 @@ local register = {}
 --the cost to rush-buy a city's current production.
 --It takes the city and the cost as calculated by the
 --game as parameters. Returns an integer representing the new costs.
+---&autoDoc onGetRushBuyCost
 function register.onGetRushBuyCost(city,cost)
     return cost
 end
+---&endAutoDoc
 
 local gen = require("generalLibrary"):minVersion(1)
 gen.versionFunctions(register,versionNumber,fileModified,"MechanicsFiles".."\\".."rushBuySettings.lua")
