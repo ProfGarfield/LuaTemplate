@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -38,6 +38,7 @@ local diplomacySettingsFound, diplomacySettings = gen.requireIfAvailable("diplom
 local textFound, text = gen.requireIfAvailable("text")
 --local text = optionalRequire("text")
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
+local configuration = require("configuration")
 
 
 -- key press events can be registered here using the discreteEvents
@@ -113,6 +114,13 @@ if simpleSettings then
         end
     end
 end
+
+discreteEvents.onKeyPress(function(keyCode)
+    if keyCode == keyboard.zero then
+        configuration.openConfigurationMenu()
+    end
+end)
+
 
 --[[some testing code, can be removed
 local keyboardToMarkerType = {}

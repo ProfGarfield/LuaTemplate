@@ -81,6 +81,8 @@ local files = {
     ["textSettings"]=true,
     ["customCosmic"]=false,
     ["customCosmicSettings"]=false,
+    ["configuration"]=false,
+    ["configurationSettings"]=false,
 }
 
 local outputString = [==[

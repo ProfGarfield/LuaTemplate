@@ -7,11 +7,8 @@ local fileModified = false -- set this to true if you change this file for your 
 -- warn you that you've modified this file
 --
 --
---  This module governs units transporting cargo,
---  including the following features
---  Land and Air units carrying cargo
---  Restricting aircraft carrier capacity and planes
---  Restricting cargo types 
+--  This module allows land and air units to carry cargo
+--  and controls the details
 
 local gen = require("generalLibrary"):minVersion(1)
 local civlua = require("civlua")
@@ -20,21 +17,6 @@ local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local text = require("text")
 
 local cargo = {}
-gen.versionFunctions(cargo,versionNumber,fileModified,"LuaCore".."\\".."cargo.lua")
--- Change the @LANDFALL message so there is no option
--- to unload a ship by sailing into a land tile
---[[
-@LANDFALL
-@title=Disembark
-Shall we disembark, Sire,
-and leave the ships behind?
-
-Stay With Ships
-Make Landfall
---]]
+gen.versionFunctions(cargo,versionNumber,fileModified,"LuaCore".."\\".."landAirCargo.lua")
 
 
--- cargoSettings[unitType.id] = {
---  .
---  .forbiddenCargo = nil or table of unitType
---      
