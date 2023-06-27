@@ -15,7 +15,9 @@ local counter = require("counter")
 local discreteEvents = require("discreteEventsRegistrar")
 
 
+---@class configuration
 local configuration = {}
+
 local moduleName = "configurationModule"
 gen.versionFunctions(configuration, versionNumber, fileModified, "LuaCore\\configuration.lua")
 
@@ -157,6 +159,7 @@ configuration.defineSetting({
     defaultIndex = 3,
 })
 
+---Opens the configuration menu, so that the player can change settings.
 function configuration.openConfigurationMenu()
     local output = configurationMenu()
     if not output then
