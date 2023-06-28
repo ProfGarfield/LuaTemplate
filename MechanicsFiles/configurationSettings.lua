@@ -28,21 +28,27 @@ local configuration = require("configuration")
 
 -- Define a setting by calling configuration.defineSetting(settingSpec)
 
--- Example: (This example is defined in configuration.lua and will always exist because it requires some special extra code to work.)
+-- Example: 
 
---[[
 configuration.defineSetting({
     name = "linesPerTextBox",
     nameInMenu = "Lines Per Text Box",
     placement = 0,
     values = {8,10,12,14,16,18,20,25,30,35,40,45,50,55,60},
     defaultIndex = 3,
+    changeFunction = function(newValue,oldValue,tribeID,settingSpec)
+        text.setLinesPerWindow(newValue)
+        local lineDisplayText = ""
+        for i = 2, newValue do
+            lineDisplayText = lineDisplayText.."\n^"..tostring(i)
+        end
+
+        text.simple("The number of lines per text box has been changed from "..tostring(oldValue).." to "..tostring(newValue).."."..lineDisplayText)
+    end
 })
---]]
 -- Note that valueNames is omitted in this example.  The default valueNames are the values converted to strings.
 
 -- Another Example:
---[[
 configuration.defineSetting({
     name = "displayCombatPower",
     nameInMenu = "Display Combat Power",
@@ -64,6 +70,16 @@ configuration.defineSetting({
 -- or
 -- configuration.getSettingValue("displayCombatPower",object.pSomeTribe.id)
 
+-- The Scenario Designer can also set the value of a setting by calling
+-- configuration.setSettingValue(settingName,tribeID,value)
+-- where settingName is the name of the setting, tribeID is the
+-- tribeID of the tribe whose setting value you want to set, and
+-- value is the value you want to set it to.
+-- This can be useful if you want to change the value of a setting
+-- during an information menu, for example.  Also, if you want to
+-- use a setting for a "policy" that the player can change during
+-- the game, you can use this function to change the value of the
+-- setting for AI tribes.
 
 
 

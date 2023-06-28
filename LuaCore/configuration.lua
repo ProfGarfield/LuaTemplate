@@ -55,10 +55,12 @@ local settingSpecKeys = {
     values = {["table"] = {valueSpecIntIndexTable,"Table with integer keys starting at 1."}},
     valueNames = {["table"] = {valueSpecIntIndexStringValueTable,"Table with integer keys starting at 1 and string values."}},
     defaultIndex = {["number"] = {minVal=1,integer=true}},
+    changeFunction = {["function"] = "function(newValue, oldValue,tribeID,settingSpec)"}
 }
 
 local defaultSpecKeys = {
     valueNames = {},
+    changeFunction = function(newValue,oldValue,tribeID,settingSpec) end
 }
 
 local newSettingSpec, isSettingSpec, sSpedMT = gen.createDataType("settingSpec", settingSpecKeys,{},defaultSpecKeys,{},{})
@@ -97,6 +99,11 @@ local settingSpecTable = {}
 --          be replaced with the value from the values table after 
 --          applying the tostring function.
 --      defaultIndex: the index of the default value for the setting
+--      changeFunction: a function that is called when the setting 
+--          is changed.  If absent, no function is called.
+--          The function will be called with the following parameters:
+--          function(newValue, oldValue,tribeID,settingSpec)
+--          
 ---@param settingSpec table
 function configuration.defineSetting(settingSpec)
     settingSpec = newSettingSpec(settingSpec)
@@ -149,15 +156,71 @@ function configuration.getSettingValueName(settingName,tribeID)
     return settingSpec.valueNames[valueIndex] or tostring(settingSpec.values[valueIndex])
 end
 
+---Sets the index of the value for the setting `settingName` for the tribe with `tribeID` to `valueIndex`
+---If `suppressChangeFunction` is true, the changeFunction for the setting will not be called.
+---@param settingName string
+---@param tribeID integer
+---@param valueIndex integer
+---@param suppressChangeFunction? boolean
+function configuration.setSettingIndex(settingName,tribeID,valueIndex,suppressChangeFunction)
+    local playerTribeID = tostring(tribeID)
+    local settingSpec = settingSpecTable[settingName]
+    if not settingSpec then
+        error("configuration.getSettingValue: The setting "..settingName.." has not been defined.")
+    end
+    local oldValue = configuration.getSettingValue(settingName,tribeID)
+    counter.setValue(settingName..playerTribeID, valueIndex, moduleName)
+    if not suppressChangeFunction and settingSpec.changeFunction then
+        settingSpec.changeFunction(configuration.getSettingValue(settingName, tribeID),oldValue,tribeID,settingSpec)
+    end
+end
+
+---Sets the value of `settingName` for the tribe with `tribeID` to `value`
+---If `suppressChangeFunction` is true, the changeFunction for the setting will not be called.
+---@param settingName string
+---@param tribeID integer
+---@param value any
+---@param suppressChangeFunction? boolean
+function configuration.setSettingValue(settingName,tribeID,value,suppressChangeFunction)
+    local settingSpec = settingSpecTable[settingName]
+    if not settingSpec then
+        error("configuration.getSettingValue: The setting "..settingName.." has not been defined.")
+    end
+    local valueIndex = nil
+    for index,possibleValue in pairs(settingSpec.values) do
+        if possibleValue == value then
+            valueIndex = index
+            break
+        end
+    end
+    if not valueIndex then
+        error("configuration.setSettingValue: The value "..tostring(value).." is not a valid value for the setting "..settingName..".")
+    end
+    configuration.setSettingIndex(settingName,tribeID,valueIndex,suppressChangeFunction)
+end
+
+
 local configurationMenu = text.newMenuRecord({menuGenerator = configurationMenuGenerator,  menuText = "Choose a setting to change:", canCancel = true})
 
+--[[
+    -- with changeFunction, this can now be in configurationSettings.lua
 configuration.defineSetting({
     name = "linesPerTextBox",
     nameInMenu = "Lines Per Text Box",
     placement = 0,
     values = {8,10,12,14,16,18,20,25,30,35,40,45,50,55,60},
     defaultIndex = 3,
+    changeFunction = function(newValue,oldValue,tribeID,settingSpec)
+        text.setLinesPerWindow(newValue)
+        local lineDisplayText = ""
+        for i = 2, newValue do
+            lineDisplayText = lineDisplayText.."\n^"..tostring(i)
+        end
+
+        text.simple("The number of lines per text box has been changed from "..tostring(oldValue).." to "..tostring(newValue).."."..lineDisplayText)
+    end
 })
+--]]
 
 ---Opens the configuration menu, so that the player can change settings.
 function configuration.openConfigurationMenu()
@@ -167,22 +230,14 @@ function configuration.openConfigurationMenu()
     end
     local selectionIndex = output.index
     local settingName = output.settingName
-    counter.setValue(settingName..tostring(civ.getPlayerTribe().id), selectionIndex, moduleName)
-    if settingName == "linesPerTextBox" then
-        local newLinesSetting = configuration.getSettingValue("linesPerTextBox")
-        text.setLinesPerWindow(newLinesSetting)
-        local lineDisplayText = "" 
-        for i = 2, newLinesSetting do
-            lineDisplayText = lineDisplayText.."\n^"..tostring(i)
-        end
-
-        text.simple("The number of lines per text box has been changed to "..tostring(newLinesSetting).."."..lineDisplayText)
-    end
+    configuration.setSettingIndex(settingName,civ.getPlayerTribe().id,selectionIndex)
 end
 
 discreteEvents.onScenarioLoaded(function()
     text.setLinesPerWindow(configuration.getSettingValue("linesPerTextBox"))
 end)
+
+console.setSettingValue = configuration.setSettingValue
 
 
 
