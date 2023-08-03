@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -93,6 +93,7 @@ local combatMod = require("combatModifiers"):minVersion(1)
 local unitData = require("unitData"):minVersion(1)
 require("setTraits")
 local discreteEvents =require("discreteEventsRegistrar")
+local text           = require("text")
 
 local leaderBonus = {}
 -- leaderClassTable[rank] = leaderClass
@@ -482,6 +483,10 @@ local function verifyCommander(unit)
         return
     end
     local leaderClass = leaderClassTable[cmdrRank]
+    if leaderClass == nil then
+        print(gen.tableToString(leaderClassTable))
+        error("leaderBonus.verifyCommander: the rank '"..tostring(cmdrRank).."' is not a registered leaderClass.")
+    end
     if gen.distance(unit,leaderUnit) > leaderClass.subordinationRadius then
         unitData.phraseReset(unit,"commanderRank","leaderBonus")
         unitData.counterReset(unit,"commanderID","leaderBonus")
@@ -606,6 +611,38 @@ function discreteEvents.onActivateUnit(unit,source,rep)
         leaderBonus.commissionLeader(unit,alwaysLeaderUnits[unit.type.id])
     end
     leaderBonus.updateCommander(unit)
+end
+
+function discreteEvents.onScenarioLoaded()
+    local eliminatedRanks = {}
+    local atLeastOneRankEliminated = false
+    for unit in civ.iterateUnits() do
+        local rank = unitData.phraseGetValue(unit,"rank","leaderBonus")
+        if rank ~= "" and not leaderClassTable[rank] then
+            eliminatedRanks[rank] = true
+            unitData.phraseReset(unit,"rank","leaderBonus")
+            atLeastOneRankEliminated = true
+        end
+        local leaderRank = unitData.phraseGetValue(unit,"commanderRank","leaderBonus")
+        if leaderRank ~= "" and not leaderClassTable[leaderRank] then
+            eliminatedRanks[leaderRank] = true
+            unitData.phraseReset(unit,"commanderRank","leaderBonus")
+            unitData.counterReset(unit,"commanderID","leaderBonus")
+            atLeastOneRankEliminated = true
+        end
+    end
+    if not atLeastOneRankEliminated then
+        return
+    end
+    local eliminatedRanksList = {}
+    for rank,_ in pairs(eliminatedRanks) do
+        table.insert(eliminatedRanksList,rank)
+    end
+    local message = "The following ranks were eliminated from the game because their leader class was not found:\n"
+    message = message..text.niceList(eliminatedRanksList).."."
+    message = message.."  If you have not changed the registered leader classes since the time this game was saved, then this is a bug, and please report it. (This message has also been printed to the console.)"
+    civ.ui.text(message)
+    print(message)
 end
 
 

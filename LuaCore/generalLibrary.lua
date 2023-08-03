@@ -1,4 +1,4 @@
-local versionNumber = 7
+local versionNumber = 8
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -113,6 +113,7 @@ gen.constants = {
     cityStyleClassical = 1,
     cityStyleFarEast = 2,
     cityStyleMedieval = 3,
+    oceanBaseTerrainType = 10,
 }
 gen.c = gen.constants
 
@@ -4204,7 +4205,7 @@ function gen.getEphemeralTable()
 end
 
 --[[A state savable table can be saved in the 'state' table, which is to say, the table where data is saved to the saved game file. A state savable table is a table where the keys are integers and strings, and the values are integers, strings, and other state savable tables.]]
----@alias stateSavableTable table<string|number,string|number|table> | string | number
+---@alias stateSavableTable table<string|number,boolean|string|number|table>|string|number|boolean
 
 ---@type string|stateSavableTable
 local state = "stateNotLinked"
@@ -4255,8 +4256,8 @@ function gen.linkGeneralLibraryState(stateTable)
     genStateTable.tileMarkerTable = genStateTable.tileMarkerTable or {}
 end
 
-local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
-if fileFound then
+local discreteEventsFileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
+if discreteEventsFileFound then
     ---@cast discreteEvents -nil
     discreteEvents:minVersion(1)
     discreteEvents.linkStateToModules(function(state,stateTableKeys)
@@ -7579,7 +7580,7 @@ function gen.activateRangeForLandAndSea(restoreRangeFn,applyToAI)
         print("WARNING gen.activateRangeForLandAndSea: this function appears to have been run more than once, so nothing further was done.  If you don't have range for land and sea, seek help from Prof. Garfield.")
         return
     end
-    if not fileFound then
+    if not discreteEventsFileFound then
         print("WARNING gen.activateRangeForLandAndSea: discreteEventsRegistrar.lua was not found, so range for land and sea was not activated.")
         return
     end
@@ -9032,6 +9033,47 @@ function gen.removeAllowedOnMap(unitType,map)
 end
 
 
+-- Takes a table of items, and an iterator or table of all possible
+-- items, and returns a list of all items that are not values
+-- in the table.  If the iterator is a table, only the
+-- values in the table are considered.
+-- These functions might be useful:
+-- `gen.iterateUnitTypes()`
+-- `gen.iterateImprovements()`
+-- `gen.iterateWonders()`
+-- `gen.iterateBaseTerrain()`
+-- `gen.iterateTerrain()`
+---@param list table<any,any>
+---@param itemIterator iterator|table<any,any>
+---@return table<integer,any>
+function gen.complementList(list,itemIterator)
+    local complement = {}
+    local index = 1
+    local function isItemInList(item)
+        for _,listItem in pairs(list) do
+            if listItem == item then
+                return true
+            end
+        end
+        return false
+    end
+    if type(itemIterator) == "table" then
+        for _,item in pairs(itemIterator) do
+            if not isItemInList(item) then
+                complement[index] = item
+                index = index + 1
+            end
+        end
+    else
+        for item in itemIterator do
+            if not isItemInList(item) then
+                complement[index] = item
+                index = index + 1
+            end
+        end
+    end
+    return complement
+end
 
 
 

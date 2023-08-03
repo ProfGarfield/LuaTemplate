@@ -1,6 +1,6 @@
 -- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 6
+local versionNumber = 7
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -151,6 +151,7 @@ end
         
 
 
+---@module "generalLibrary"
 local gen = require("generalLibrary"):minVersion(1)
 gen.registerEventsLuaVersion(versionNumber,fileModified,regressionNumber)
 
@@ -190,7 +191,7 @@ attemptToRun("getLegacyEvents","WARNING: getLegacyEvents.lua not found.  You wil
 --local delay = require("delayedAction")
 local diplomacy = require("diplomacy")
 local cityYield = require("calculateCityYield")
-local combatSettings = require("combatSettings")
+local combatSettings = require("combatSettings"):minVersion(4)
 local setTraits = require("setTraits")
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 require("discreteEvents")
@@ -205,7 +206,14 @@ local cityData = require("cityData"):minVersion(1)
 require("registerFiles"):minVersion(1)
 local customCosmic = require("customCosmic")
 require("customCosmicSettings")
+local cargo = require("landAirCargo")
+local navy = require("navy"):minVersion(2)
 
+require("registerCombatModifiers")
+require("leaderBonusSettings")
+require("customCosmicSettings")
+require("configurationSettings")
+require("cargoSettings")
 
 
 
@@ -362,6 +370,7 @@ eventsFiles.onTribeTurnEnd = attemptRequireWithKey(individualFileDirectory.."onT
 eventsFiles.onCanFoundCity = attemptRequireWithKey(individualFileDirectory.."onCanFoundCity","onCanFoundCity",true)
 eventsFiles.onEnterTile = attemptRequireWithKey(individualFileDirectory.."onEnterTile","onEnterTile")
 eventsFiles.onFinalOrderGiven = attemptRequireWithKey(individualFileDirectory.."onFinalOrderGiven","onFinalOrderGiven")
+eventsFiles.onCityWindowOpened = attemptRequireWithKey(individualFileDirectory.."onCityWindowOpened","onCityWindowOpened")
 
 local function doOnChooseSeason()
     discreteEvents.performOnChooseSeason()
@@ -421,15 +430,22 @@ local function onEnterTile(unit,previousTile,previousDomainSpec)
     eventsFiles.onEnterTile(unit,previousTile,previousDomainSpec)
 end
 
+
+
 registeredInThisFile["onEnterTile"] = true
+unitData.defineModuleFlag("events.lua","finalOrderEventExecuted",false,"onTribeTurnEnd")
 -- onFinalOrderGiven(unit)
 -- executes when a unit has been given its last order for the turn
 -- that is, when a new unit is active, and the previous unit has spent
 -- all its movement points
 local function onFinalOrderGiven(unit)
+    if unitData.flagGetValue(unit,"finalOrderEventExecuted","events.lua") then
+        return
+    end
     discreteEvents.performOnFinalOrderGiven(unit)
     consolidated.onFinalOrderGiven(unit)
     eventsFiles.onFinalOrderGiven(unit)
+    unitData.flagSetTrue(unit,"finalOrderEventExecuted","events.lua")
 end
 registeredInThisFile["onFinalOrderGiven"] = true
 
@@ -505,9 +521,33 @@ civ.scen.onCityProduction(function(city,prod)
 end)
 registeredInThisFile["onCityProduction"] = true
 
+
+
 local activateUnitBackstopMostRecent = false
 local previousUnitActivationTime = os.time()+os.clock()
+local cancelledActivationUnit = nil
+local cancelledActivationUnitMovement = nil
+local cancelledActivationFunction = nil
+local function cancelledActivationCleanUp()
+    if cancelledActivationUnit then
+        cancelledActivationUnit.type.move = cancelledActivationUnitMovement
+        if type(cancelledActivationFunction) == "function" then
+            cancelledActivationFunction(cancelledActivationUnit)
+        end
+        cancelledActivationUnit = nil
+        cancelledActivationUnitMovement = nil
+        cancelledActivationFunction = nil
+    end
+end
+
+local previousActiveUnit = nil
 local function doOnUnitActivation(unit,source,repeatMove)
+    if previousActiveUnit and previousActiveUnit.location.x > 60000 then
+        --civ.ui.text("missing unit detection")
+        -- This turned out not to be necessary for the cargo event
+    end
+    previousActiveUnit = unit
+    cancelledActivationCleanUp()
     executeOnEnterTile(unit)
     customCosmic.changeEphemeralForUnit(unit)
     humanUnitActive = unit.owner.isHuman
@@ -515,13 +555,51 @@ local function doOnUnitActivation(unit,source,repeatMove)
         or (not unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionAI) then
         gen.clearAdjacentAirProtection(unit)
     end
-    eventsFiles.attackBonus(unit)
-    discreteEvents.performOnActivateUnit(unit,source,repeatMove)
-    consolidated.onActivateUnit(unit,source,repeatMove)
-    eventsFiles.onActivateUnit(unit,source,repeatMove)
     -- don't need to run this for repeat moves
     if simpleSettings.enableCustomUnitSelection and not repeatMove then
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)
+    end
+    eventsFiles.attackBonus(unit)
+    local isCancelled = cargo.onActivateCargoUnit(unit,source)
+    if isCancelled then
+        cancelledActivationUnit = unit
+        cancelledActivationUnitMovement = unit.type.move
+        unit.type.move = 0
+        if type(isCancelled) == "function" then
+            cancelledActivationFunction = isCancelled
+        end
+        return
+    end
+    isCancelled = discreteEvents.performOnActivateUnit(unit,source,repeatMove)
+    if isCancelled then
+        cancelledActivationUnit = unit
+        cancelledActivationUnitMovement = unit.type.move
+        unit.type.move = 0
+        if type(isCancelled) == "function" then
+            cancelledActivationFunction = isCancelled
+        end
+        return
+    end
+    isCancelled = consolidated.onActivateUnit(unit,source,repeatMove)
+    if isCancelled then
+        cancelledActivationUnit = unit
+        cancelledActivationUnitMovement = unit.type.move
+        unit.type.move = 0
+        if type(isCancelled) == "function" then
+            cancelledActivationFunction = isCancelled
+        end
+        return
+    end
+---@diagnostic disable-next-line: cast-local-type
+    isCancelled = eventsFiles.onActivateUnit(unit,source,repeatMove)
+    if isCancelled then
+        cancelledActivationUnit = unit
+        cancelledActivationUnitMovement = unit.type.move
+        unit.type.move = 0
+        if type(isCancelled) == "function" then
+            cancelledActivationFunction = isCancelled
+        end
+        return
     end
     activateUnitBackstopMostRecent = false
     previousUnitActivationTime = os.time()+os.clock()
@@ -584,8 +662,11 @@ local function doOnUnitDefeated(loser,winner,aggressor,victim,loserLocation,winn
     eventsFiles.onUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
     log.onUnitKilled(winner,loser)
     promotionSettings.checkForUpgradeDefeat(loser,winner,loserLocation,loserVetStatus,winnerVetStatus)
-    return promotionSettings.demotionFunction(loser,winner,loserLocation,loserVetStatus,winnerVetStatus)
-
+    local survivor = promotionSettings.demotionFunction(loser,winner,loserLocation,loserVetStatus,winnerVetStatus)
+    if not survivor then
+        cargo.onCarryingUnitDefeated(loser,winner,aggressor,victim,loserLocation,winnerVetStatus,loserVetStatus)
+    end
+    return survivor
 end
 registeredInThisFile["onUnitDefeated"] = true
 
@@ -598,6 +679,7 @@ end
 
 -- this happens whenever a unit 'dies', but not through combat (or 'defeat')
 local function doOnUnitDeathOutsideCombat(dyingUnit)
+    cargo.onCarryingUnitDeathOutsideCombat(dyingUnit)
     eventsFiles.onUnitDeathOutsideCombat(dyingUnit)
 end
 
@@ -608,6 +690,9 @@ local function doOnUnitDeletion(deletedUnit,replacingUnit)
     discreteEvents.performOnUnitDeleted(deletedUnit,replacingUnit)
     eventsFiles.onUnitDeleted(deletedUnit,replacingUnit)
     unitData.onUnitDeleted(deletedUnit,replacingUnit)
+    if deletedUnit == previousActiveUnit then
+        previousActiveUnit = nil
+    end
     --eventTools.unitDeletion(deletedUnit)
 end
 registeredInThisFile["onUnitDeath"] = true
@@ -650,6 +735,10 @@ civ.scen.onUnitKilled(function (loser,winner)
         doOnUnitDeath(loser)
     end
     doOnUnitDeletion(loser,survivor)
+    if gen.isDestroyedAfterAttacking(winner.type) then
+        doOnUnitDeath(winner)
+        doOnUnitDeletion(winner,nil)
+    end
     suppressActivateUnitBackstop = false
 end)
 
@@ -728,11 +817,24 @@ local function activateUnitBackstop()
     activateUnitBackstopMostRecent = true
 end
 
+local function onCityWindowOpened(city)
+    --text.simple(city.name)
+    discreteEvents.performOnCityWindowOpened(city)
+    eventsFiles.onCityWindowOpened(city)
+end
 
+
+local mostRecentOpenCity = nil
 civ.scen.onGetFormattedDate(function(turn,defaultDateString)
+    cancelledActivationCleanUp()
         if humanUnitActive and (not suppressActivateUnitBackstop) and (not activateUnitBackstopMostRecent) and os.time()+os.clock() >= previousUnitActivationTime + 2 and (not civ.getActiveUnit()) then
             activateUnitBackstop()
         end
+        local openCity = civ.getOpenCity()
+        if openCity and openCity ~= mostRecentOpenCity then
+            onCityWindowOpened(openCity)
+        end
+        mostRecentOpenCity = openCity
 ---@diagnostic disable-next-line: need-check-nil
         return formattedDate.onGetFormattedDate(turn,defaultDateString)
     end
@@ -938,7 +1040,10 @@ registeredInThisFile["onCityProcessed"] = true
 local function doOnTribeTurnEnd(turn,tribe)
     activateUnitBackstop()
     for unit in civ.iterateUnits() do
-        if unit.owner == tribe and gen.moveRemaining(unit) > 0 then
+        if unit.owner == tribe  then
+            -- onFinalOrderGiven checks if the unit has already been
+            -- given a final order, so we only need to check for
+            -- tribe ownership
             onFinalOrderGiven(unit)
         end       
     end
@@ -1009,7 +1114,18 @@ end)
 
 registeredInThisFile["onInitiateCombat"] = true
 
-civ.scen.onChooseDefender(combatSettings.onChooseDefender)
+
+-- note: due to a bug, onChooseDefender seems to need the defaultFn
+-- to be called at some point, otherwise naval stack kills don't
+-- work properly.  This is why the defaultFn is called in the
+-- onChooseDefender function
+civ.scen.onChooseDefender(function(defaultFn,tile,attacker,isCombat)
+    defaultFn(tile,attacker)
+    return combatSettings.onChooseDefender(defaultFn, tile, attacker, isCombat)  end)
+
+--civ.sleep(1000)
+
+--civ.scen.onChooseDefender(combatSettings.onChooseDefender)
 
 registeredInThisFile["onChooseDefender"] = true
 

@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -10,6 +10,8 @@ local fileModified = false -- set this to true if you change this file for your 
 local leaderBonus = require("leaderBonus"):minVersion(1)
 local traits = require("traits")
 local combatMod = require("combatModifiers")
+local gen = require("generalLibrary"):minVersion(4)
+local object = require("object")
 
 
 
@@ -371,9 +373,6 @@ local combatMod = require("combatModifiers")
 --      uses the information in leaderClass.alwaysLeaderType and leaderClass.unitInitialization
 --      to commission units as leaders
 
-local gen = require("generalLibrary"):minVersion(4)
-local object = require("object")
-local traits = require("traits")
 
 --[[
 traits.allowedTraits("fighter","bomber","warship")
@@ -383,8 +382,8 @@ traits.assign({gen.original.uDestroyer, gen.original.uCruiser, gen.original.uAEG
         gen.original.uBattleship, gen.original.uCarrier},"warship")
         --]]
 
-        --[[
 
+--[[
 leaderBonus.registerLeaderClass({
     rank = "Vice-Admiral",
     seniority = 2,

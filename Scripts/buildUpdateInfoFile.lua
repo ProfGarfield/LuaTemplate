@@ -25,7 +25,7 @@ local files = {
     ["cityData"] = false,
     ["civilopedia"] = 2,
     ["combatCalculator"] = 4,
-    ["changeRules"] = false,
+    ["changeRules"] = 2,
     ["consolidator"] = false,
     ["context"] = false,
     ["counter"] = false,
@@ -39,8 +39,8 @@ local files = {
     ["legacyEventBuilder"] = false,
     ["legacyEventEngine"] = false,
     ["log"] = false,
-    ["munitions"] = 2,
-    ["navy"] = false,
+    ["munitions"] = 3,
+    ["navy"] = 2,
     ["promotion"] = 2,
     ["radar"] = 2,
     ["reactionBase"] = false,
@@ -83,6 +83,8 @@ local files = {
     ["customCosmicSettings"]=false,
     ["configuration"]=false,
     ["configurationSettings"]=false,
+    ["landAirCargo"]=false,
+    ["cargoSettings"]=false,
 }
 
 local outputString = [==[

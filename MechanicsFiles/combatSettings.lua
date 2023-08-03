@@ -1,5 +1,5 @@
 --
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -29,6 +29,7 @@ local fileModified = false -- set this to true if you change this file for your 
 
 local register = {}
 local gen = require("generalLibrary"):minVersion(1)
+local landAirCargo = require("landAirCargo")
 gen.versionFunctions(register,versionNumber,fileModified,"MechanicsFiles".."\\".."combatSettings.lua")
 --
 local combatCalculator = require("combatCalculator"):recommendedVersion(2)
@@ -129,6 +130,8 @@ local function computeCombatStatistics(attacker, defender, isSneakAttack)
     combatModifierOverride.aCustomMult = combatModifierOverride.aCustomMult*aMult
     combatModifierOverride.dCustomMult = combatModifierOverride.dCustomMult*dMult
     combatModifiers.applyRegisteredRules(attacker,defender,combatModifierOverride)
+    dMult = landAirCargo.getDefenseModifier(defender)
+    combatModifierOverride.dCustomMult = combatModifierOverride.dCustomMult*dMult
 
 
 
@@ -184,6 +187,9 @@ local function defenderValueModifier(defender,tile,attacker)
         return 1e8
     end
     if defender.type.domain == domain.ground and tile.baseTerrain.type == 10 then
+        return -1e8
+    end
+    if not landAirCargo.canDefend(defender) then
         return -1e8
     end
     return 0

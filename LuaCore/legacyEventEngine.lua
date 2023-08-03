@@ -14,7 +14,7 @@ local fileModified = false -- set this to true if you change this file for your 
 -- If you want to parse the legacy events at the time the 
 -- scenario is run, use "getLegacyEvents"
 -- note: ignore the .lua part of the file name
-local civlua = require("civluaModified")
+local civlua = require("civlua")
 local func = require("functions")
 --local hash = require("secureHashAlgorithm")
 --local legacyEventTableName = "getLegacyEvents" -- no longer needed with
@@ -109,7 +109,12 @@ local function linkState(table)
             -- if there is no storedEventHashValue, then the modify date is before
             -- 2020-12-06
             -- checks and changes are done in doScenarioLoadedEvents
-            g_LegacyState["modifyDate"] = "Before 2020-12-06"
+            --g_LegacyState["modifyDate"] = "Before 2020-12-06"
+            -- June 2023, no one should have a legacy event engine
+            -- from before 2020, so no stored hash value should mean
+            -- this is either an old scenario file, or one that
+            -- has never been saved.
+            g_LegacyState["modifyDate"] = currentModifyDate
         end
     else
         error("legacy.linkState: linkState requires a table as the argument.")
@@ -1967,6 +1972,9 @@ initializeCanTalk=initializeCanTalk,
 if console then
     console.legacy = legacy
 end
-local gen = require("generalLibrary"):minVersion(1)
-gen.versionFunctions(legacy,versionNumber,fileModified,"LuaCore".."\\".."legacyEventEngine.lua")
+local genFound, gen = requireIfAvailable("generalLibrary")
+if genFound then
+    gen:minVersion(1)
+    gen.versionFunctions(legacy,versionNumber,fileModified,"LuaCore".."\\".."legacyEventEngine.lua")
+end
 return legacy

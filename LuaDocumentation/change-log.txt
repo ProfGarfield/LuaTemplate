@@ -69,11 +69,36 @@ if these modules are available, but it should work if they are absent.
 Some new generalLibrary functions are also made available, and
 the general library has a constants table, too.
 
+added comments to facilitate auto documentation
+
+minor changes to fix issues noted while documenting, in particular added a check for sleeping/fortified units at the end of turn for onFinalOrderGiven.
+
+Added the configuration module.
+
 last update
+
+Supplemental Data modules have LuaLS documentation.
+
+Changed Legacy Event Engine to be able to operate independently of the general library and secureHashAlgorithm modules, and eliminated warning message for games that have never been saved with a modern version of the legacy event engine.
+
+fixed bug where carried units are sometimes not killed with the sea transport.
+
+added an onCityWindowOpened event for discreteEvents and events files.
+
+can now return true or function to cancel unit activation in onActivateUnit events.
+
+Fixed navy bug where aircraft carriers expelled aircraft from port.
+
+Fixed munitions shooter bug
+make events.lua do the kill event for missile units after a successful attack
+
+Fixed bug in changeRules.lua, where @cosmic2 wasn't being read due to a typo.
+
+Added land and air transport.
 
 todo
 
 
-kill land units when last transport is killed
+
 
 

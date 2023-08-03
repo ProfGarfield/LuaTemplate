@@ -66,6 +66,15 @@ local civlua = require("civluaModified")
 -- ===============================================================================
 ---&autoDoc onActivateUnit
 --Registers a function to be called every time a unit is activated. The callback takes the unit activated as a parameter, and the source of unit activation. `source` is `true` if activated by keyboard or mouse click, `false` if activated by the game itself. `repeatMove` is `true` if it's a repeat activation caused by moving, `false` otherwise.
+--If the function returns true, the unit activation will be cancelled.
+--No further activation code will be executed, and the unit's type
+--will temporarily be set to have 0 movement points.
+--If the function returns function(unit), then the unit activation
+--will be cancelled, and the function returned will be executed
+--just before another unit is activated.  (You may wish to put
+--the unit to sleep, for example.)
+--Not returning anything is equivalent to returning nil, which is
+--acceptable, and keeps the unit activation going.
 discreteEvents.onActivateUnit(function(unit,source,repeatMove)
     if _global.eventTesting then
         civ.ui.text("Unit activation Discrete Event")
@@ -286,6 +295,16 @@ end)
 discreteEvents.onKeyPress(function(keyCode)
     if _global.eventTesting and keyboard.backspace == keyCode then
         civ.ui.text("discreteEvents.onKeyPress: The backspace key has been pressed.")
+    end
+end)
+---&endAutoDoc
+
+---&autoDoc onCityWindowOpened
+-- Executes when a city window is opened.
+-- Note that the AI doesn't open city windows.
+discreteEvents.onCityWindowOpened(function(city)
+    if _global.eventTesting then
+        civ.ui.text("discreteEvents.onCityWindowOpened: The city window for "..city.name.." has been opened.")
     end
 end)
 ---&endAutoDoc

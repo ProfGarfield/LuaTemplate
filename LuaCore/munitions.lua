@@ -1,5 +1,5 @@
 
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -9,6 +9,7 @@ local fileModified = false -- set this to true if you change this file for your 
 
 local gen = require("generalLibrary"):minVersion(1)
 local func = require("functions")
+local unitData = require("unitData")
 --usage example
 --[=[
 
@@ -41,63 +42,89 @@ end
 local munitionState = "munitionStateNotLinked"
 
 -- links the state table with this module
+-- no longer necessary, but kept for backward compatibility
 local function linkState(tableInStateTable)
-    if type(tableInStateTable) == "table" then
-        munitionState = tableInStateTable
-        -- this table is indexed by the unit ID numbers of munitions that were generated,
-        munitionState.munitionIDGeneratorID = munitionState.munitionIDGeneratorID or {}
-        -- this table keeps track of the unit type that generated the munition,
-        -- as a backup check
-        munitionState.munitionIDGeneratorTypeID = munitionState.munitionIDGeneratorTypeID or {}
-    else
-        error("linkState: linkState takes a table as an argument.")
-    end
+    --if type(tableInStateTable) == "table" then
+    --    munitionState = tableInStateTable
+    --    -- this table is indexed by the unit ID numbers of munitions that were generated,
+    --    munitionState.munitionIDGeneratorID = munitionState.munitionIDGeneratorID or {}
+    --    -- this table keeps track of the unit type that generated the munition,
+    --    -- as a backup check
+    --    munitionState.munitionIDGeneratorTypeID = munitionState.munitionIDGeneratorTypeID or {}
+    --else
+    --    error("linkState: linkState takes a table as an argument.")
+    --end
 end
 
 
-local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
-if fileFound then
-    function discreteEvents.linkStateToModules(state,stateTableKeys)
-        local keyName = "munitionsState"
-        if stateTableKeys[keyName] then
-            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
-        else
-            stateTableKeys[keyName] = true
-        end
-        -- link the state table to the module
-        state[keyName] = state[keyName] or {}
-        linkState(state[keyName])
-    end
-end
+--local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
+--if fileFound then
+--    function discreteEvents.linkStateToModules(state,stateTableKeys)
+--        local keyName = "munitionsState"
+--        if stateTableKeys[keyName] then
+--            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+--        else
+--            stateTableKeys[keyName] = true
+--        end
+--        -- link the state table to the module
+--        state[keyName] = state[keyName] or {}
+--        linkState(state[keyName])
+--    end
+--end
 
+-- no longer necessary (handled by the unitData module)
+-- but kept for backward compatibility
 local function unitDeathMaintenance(dyingUnit)
-    local dyingUnitID = dyingUnit.id
-    munitionState.munitionIDGeneratorID[dyingUnit.id] = nil
-    munitionState.munitionIDGeneratorTypeID[dyingUnit.id] = nil
-    for unitID,generatorID in pairs(munitionState.munitionIDGeneratorID) do
-        if generatorID == dyingUnitID then
-            munitionState.munitionIDGeneratorID[unitID] = nil
-        end
-    end
+--    local dyingUnitID = dyingUnit.id
+--    munitionState.munitionIDGeneratorID[dyingUnit.id] = nil
+--    munitionState.munitionIDGeneratorTypeID[dyingUnit.id] = nil
+--    for unitID,generatorID in pairs(munitionState.munitionIDGeneratorID) do
+--        if generatorID == dyingUnitID then
+--            munitionState.munitionIDGeneratorID[unitID] = nil
+--        end
+--    end
 end
+
+unitData.defineModuleCounter("munitions", "shooterID", -1, nil, nil, "reset", "onTribeTurnEnd", nil, nil)
+unitData.defineModuleCounter("munitions", "shooterTypeID", -1, nil, nil, "reset", "onTribeTurnEnd", nil, nil)
 
 -- returns the unit that generated the munition, if it exists
 -- returns nil if there is no unit (or the unit can't be confirmed)
 local function getShooter(unit)
-    local shooterID = munitionState.munitionIDGeneratorID[unit.id]
-    local shooterTypeID = munitionState.munitionIDGeneratorTypeID[unit.id]
-    if shooterID and civ.getUnit(shooterID) and shooterTypeID and
-        (civ.getUnit(shooterID).type == civ.getUnitType(shooterTypeID)) then
-        return civ.getUnit(shooterID)
+    local shooterID = unitData.counterGetValue(unit, "shooterID", "munitions")
+    local shooterTypeID = unitData.counterGetValue(unit, "shooterTypeID", "munitions")
+    if shooterID == -1 or shooterTypeID == -1 then
+        return nil
+    end
+    local shooter = civ.getUnit(shooterID)
+    if shooter and shooter.type == civ.getUnitType(shooterTypeID) and shooter.owner == unit.owner then
+        return shooter
     else
         return nil
     end
 end
 
+
+--local function getShooter(unit)
+--    local shooterID = munitionState.munitionIDGeneratorID[unit.id]
+--    local shooterTypeID = munitionState.munitionIDGeneratorTypeID[unit.id]
+--    if shooterID and civ.getUnit(shooterID) and shooterTypeID and
+--        (civ.getUnit(shooterID).type == civ.getUnitType(shooterTypeID)) then
+--        return civ.getUnit(shooterID)
+--    else
+--        return nil
+--    end
+--end
+
 local function linkMunitionAndShooter(munition,shooter)
-    munitionState.munitionIDGeneratorID[munition.id]=shooter.id
-    munitionState.munitionIDGeneratorTypeID[munition.id]=shooter.type.id
+    unitData.counterSetValue(munition, "shooterID", shooter.id, "munitions")
+    unitData.counterSetValue(munition, "shooterTypeID", shooter.type.id, "munitions")
 end
+
+--local function linkMunitionAndShooter(munition,shooter)
+--    munitionState.munitionIDGeneratorID[munition.id]=shooter.id
+--    munitionState.munitionIDGeneratorTypeID[munition.id]=shooter.type.id
+--end
 
 
 

@@ -12,7 +12,38 @@ local fileModified = false -- set this to true if you change this file for your 
 -- tribe 3, then it is no longer continuous for all other tribes as well.
 -- The legacy event engine can override this by including the line
 -- @CONTINUOUSFLAGSPERTRIBE
-local hash = require("secureHashAlgorithm")
+
+
+
+
+
+
+local function requireIfAvailable(fileName)
+    if package.loaded[fileName] then
+        return true, require(fileName)
+    else
+        for _,searcher in ipairs(package.searchers) do
+            local loader = searcher(fileName)
+            if type(loader) == 'function' then
+                return true, require(fileName)
+            end
+        end
+        return false, nil
+    end
+end
+
+local hashModuleFound, hash = requireIfAvailable("secureHashAlgorithm")
+if not hashModuleFound then
+    hash = {
+        hash256 = function(str)
+            return "1234567890123456789012345678901234567890123456789012345678901234"
+        end
+    }
+end
+
+
+
+
 local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName,eventOutputFileName,
     batchInfo,eventsToConvert,scenarioFolderPath,currentFolder)
     --
@@ -472,6 +503,9 @@ local builder = {
     buildLegacyEvents=buildLegacyEvents,
 }
 
-local gen = require("generalLibrary"):minVersion(1)
-gen.versionFunctions(builder,versionNumber,fileModified,"LuaCore".."\\".."buildLegacyEvents.lua")
+local genFound, gen = requireIfAvailable("generalLibrary")
+if genFound then
+    gen:minVersion(1)
+    gen.versionFunctions(builder,versionNumber,fileModified,"LuaCore".."\\".."buildLegacyEvents.lua")
+end
 return builder

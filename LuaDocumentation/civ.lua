@@ -7,7 +7,7 @@
 
 
 
----"Void" isn't a proper data type in Lua. Instead, it is an indication that a function or method is not returning a value at all. A function with a simple <code>return</code>, or without a <code>return</code> line will return (or, rather, not return) a "void", wheras <code>return nil</code> will return a proper nil value. If your function <em>never</em> returns useful information, returning "void" is appropriate. However, if your code <em>sometimes</em> returns useful data, it should return nil when it does not.
+---"Void" isn't a proper data type in Lua. Instead, it is an indication that a function or method is not returning a value at all. A function with a simple <code>return</code>, or without a <code>return</code> line will return (or, rather, not return) a "void", whereas <code>return nil</code> will return a proper nil value. If your function <em>never</em> returns useful information, returning "void" is appropriate. However, if your code <em>sometimes</em> returns useful data, it should return nil when it does not.
 ---@class void
 
 ---@alias void_doc void

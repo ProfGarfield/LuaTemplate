@@ -11,6 +11,7 @@
 local traits = require("traits")
 local object = require("object")
 local gen = require("generalLibrary")
+
 --[[
 traits.allowedTraits("fighter","bomber","warship")
 traits.assign({gen.original.uFighter, gen.original.uStlthFtr},"fighter")

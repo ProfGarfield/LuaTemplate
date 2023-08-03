@@ -98,7 +98,10 @@ eventsTable.onActivateUnitIndex = 1
 
 function discreteEvents.performOnActivateUnit(unit,source,rep)
     for i = 1,eventsTable.onActivateUnitIndex-1 do
-        eventsTable.onActivateUnit[i](unit,source,rep)
+        local isCancelled = eventsTable.onActivateUnit[i](unit,source,rep)
+        if isCancelled then
+            return isCancelled
+        end
     end
 end
 
@@ -418,6 +421,16 @@ function discreteEvents.performOnFinalOrderGiven(unit)
     end
 end
 
+
+eventsTable.onCityWindowOpened = {}
+eventsTable.onCityWindowOpenedIndex = 1
+
+function discreteEvents.performOnCityWindowOpened(city)
+    for i = 1,eventsTable.onCityWindowOpenedIndex-1 do
+        eventsTable.onCityWindowOpened[i](city)
+    end
+end
+
 local registeredEventTypes =
 [[
 discreteEvents.onActivateUnit 
@@ -449,6 +462,7 @@ discreteEvents.onSave
 discreteEvents.onEnterTile
 discreteEvents.onEnterTilePriority
 discreteEvents.onFinalOrderGiven
+discreteEvents.onCityWindowOpened
 ]]
 
 local function newIndexFn(myTable,key,value)
@@ -491,6 +505,7 @@ discreteEvents.performOnSave
 discreteEvents.performOnEnterTile
 discreteEvents.performOnEnterTilePriority
 discreteEvents.performOnFinalOrderGiven
+discreteEvents.performOnCityWindowOpened
 ]]
 local function indexFn(myTable,key)
     if discreteEvents[key] then
@@ -508,7 +523,16 @@ local superTable = {version=versionNumber, eventsTable=eventsTable}
 
 ---Registers a function to be called every time a unit is activated. The callback takes the unit activated as a parameter, and the source of unit activation. `source` is `true` if activated by keyboard or mouse click, `false` if activated by the game itself. `repeatMove` is `true` if it's a repeat activation caused by moving (see civ.scen.compatibility), `false` otherwise.
 ---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
----@param code fun(unit: unitObject, source: boolean, repeatMove: boolean)
+---If the function returns true, the unit activation will be cancelled.
+---No further activation code will be executed, and the unit's type
+---will temporarily be set to have 0 movement points.
+---If the function returns function(unit), then the unit activation
+---will be cancelled, and the function returned will be executed
+---just before another unit is activated.  (You may wish to put
+---the unit to sleep, for example.)
+--Not returning anything is equivalent to returning nil, which is
+--acceptable, and keeps the unit activation going.
+---@param code fun(unit: unitObject, source: boolean, repeatMove: boolean):nil|boolean|function(unit: unitObject)
 discreteEvents.onActivateUnit = function(code)
     newIndexFn(nil,"onActivateUnit",code)
 end
@@ -812,6 +836,14 @@ function discreteEvents.onFinalOrderGiven(code)
     newIndexFn(nil,"onFinalOrderGiven",code)
 end
 
+--[[
+Registers code to be executed when a city window is opened.  `city` is the city whose window is being opened.  Note that the AI doesn't open city windows.
+]]
+---@param code fun(city: cityObject)
+function discreteEvents.onCityWindowOpened(code)
+    newIndexFn(nil,"onCityWindowOpened",code)
+end
+
 
 
 -- to make these functions appear in the documentation, 
@@ -863,6 +895,7 @@ superTable.onSave = discreteEvents.onSave
 superTable.onEnterTile = discreteEvents.onEnterTile
 superTable.onEnterTilePriority = discreteEvents.onEnterTilePriority
 superTable.onFinalOrderGiven = discreteEvents.onFinalOrderGiven
+superTable.onCityWindowOpened = discreteEvents.onCityWindowOpened
 local function nillify(table)
     table.onActivateUnit = nil
     table.onBribeUnit = nil
@@ -891,6 +924,7 @@ local function nillify(table)
     table.onSave = nil
     table.onEnterTile = nil
     table.onEnterTilePriority = nil
+    table.onCityWindowOpened = nil
 end
 nillify(superTable)
 
