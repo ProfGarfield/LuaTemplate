@@ -613,18 +613,18 @@ end
 --[[
 Updates all of tile's data keys that have an updateTime of time, unless
 key is specified, in which case, update that key only.
-    * time = "onTurn"|"onTribeTurnBegin"|"onTribeTurnEnd"|"custom"
-        - Update the tile's data keys that have this updateTime.
-        - Default is "custom".
-    * tribe = nil|tribeObject
-        - The tribe to consider the active tribe for onTribeTurnBegin and onTribeTurnEnd updates.
-        - Default is nil.
-    * key = nil|string
-        - The key to update.
-        - Default is nil, in which case all keys with the updateTime specified by time are updated.
-    * moduleName = nil|string
-        - The name of the module using this name, if applicable.
-        - Default is nil.
+* time = "onTurn"|"onTribeTurnBegin"|"onTribeTurnEnd"|"custom"
+    - Update the tile's data keys that have this updateTime.
+    - Default is "custom".
+* tribe = nil|tribeObject
+    - The tribe to consider the active tribe for onTribeTurnBegin and onTribeTurnEnd updates.
+    - Default is nil.
+* key = nil|string
+    - The key to update.
+    - Default is nil, in which case all keys with the updateTime specified by time are updated.
+* moduleName = nil|string
+    - The name of the module using this name, if applicable.
+    - Default is nil.
 ]]
 ---@param tile tileObject
 ---@param time? "onTurn"|"onTribeTurnBegin"|"onTribeTurnEnd"|"custom"
