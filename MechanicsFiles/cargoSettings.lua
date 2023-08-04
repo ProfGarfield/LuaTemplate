@@ -146,7 +146,6 @@ cargoSpec is a table with the following fields:
 
 
 --[[ Some examples used during testing ]]
-
 --[[
 cargo.registerCargoSpec(gen.original.uMechInf,{
     hold = 1,
@@ -195,8 +194,8 @@ cargo.registerCargoSpec(gen.original.uFighter,{
 cargo.registerCargoSpec(gen.original.uFreight,{
     hold = 2,
     load = "everywhere",
-    --unload = "everywhere",
-    unload = "peaceCitiesAirfields",
+    unload = "everywhere",
+    --unload = "peaceCitiesAirfields",
     loadEffects = -1,
     unloadEffects = -1,
     cargoDefends = 0.75,

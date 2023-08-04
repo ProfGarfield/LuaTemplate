@@ -75,7 +75,6 @@ minor changes to fix issues noted while documenting, in particular added a check
 
 Added the configuration module.
 
-last update
 
 Supplemental Data modules have LuaLS documentation.
 
@@ -95,6 +94,9 @@ make events.lua do the kill event for missile units after a successful attack
 Fixed bug in changeRules.lua, where @cosmic2 wasn't being read due to a typo.
 
 Added land and air transport.
+
+
+last update
 
 todo
 

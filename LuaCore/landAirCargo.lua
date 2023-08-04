@@ -17,6 +17,7 @@ local diplomacy = require("diplomacy")
 ---@module "discreteEventsRegistrar"
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local text = require("text")
+---@module "unitData"
 local unitData = require("unitData")
 local navy = require("navy"):minVersion(2) -- to make sure that the navy module doesn't interfere with this module
 local changeRules = require("changeRules")
@@ -434,28 +435,33 @@ function cargo.registerCargoSpec(unitType,cargoSpec)
 end
 
 local moduleName = "landAirCargo"
--- stores the unit ID of the unit carrying the cargo
-unitData.defineModuleCounter(moduleName, "carriedByID", -1, -1, nil, "none", "never", nil, nil)
+
+unitData.defineModuleFlag(moduleName, "isBeingCarried", false)
 
 
 -- This function exists so that a different way of recording
 -- cargo being carried can be used if necessary
 local function setCarriedBy(cargoUnit,carryingUnit)
-    --unitData.counterSetValue(cargo, "landAirCargo", carryingUnit.id, moduleName)
+    unitData.flagSetTrue(cargoUnit,"isBeingCarried",moduleName)
     cargoUnit.carriedBy = carryingUnit
 end
 
 -- This function exists so that a different way of recording
 -- cargo being carried can be used if necessary
 local function clearCarriedBy(cargoUnit)
-    --unitData.counterReset(cargo, "landAirCargo", moduleName)
+    unitData.flagReset(cargoUnit,"isBeingCarried",moduleName)
     cargoUnit.carriedBy = nil
 end
 
 -- This function exists so that a different way of recording
 -- cargo being carried can be used if necessary
 local function isCarriedBy(cargoUnit,possibleCarrier)
-    return cargoUnit.carriedBy == possibleCarrier
+    if unitData.flagGetValue(cargoUnit, "isBeingCarried", moduleName) then
+        return cargoUnit.carriedBy == possibleCarrier
+    else
+        return false
+    end
+    --return cargoUnit.carriedBy == possibleCarrier
 end
 
 ---Returns true if the `cargoUnit` is being carried by the `possibleCarrier`.
@@ -470,7 +476,8 @@ end
 -- This function exists so that a different way of recording
 -- cargo being carried can be used if necessary
 local function isBeingCarried(cargoUnit)
-    return cargoUnit.carriedBy ~= nil
+    return unitData.flagGetValue(cargoUnit, "isBeingCarried", moduleName)
+    --return cargoUnit.carriedBy ~= nil
 end
 
 ---Returns true if the `cargoUnit` is being carried by any unit.
@@ -481,6 +488,9 @@ function cargo.isBeingCarried(cargoUnit)
 end
 
 local function getCarryingUnit(cargoUnit)
+    if not isBeingCarried(cargoUnit) then
+        return nil
+    end
     return cargoUnit.carriedBy
 end
 
@@ -526,7 +536,7 @@ function cargo.loadCargo(cargoUnit,carryingUnit)
             end
         end
     end
-    setCarriedBy(cargo, carryingUnit)
+    setCarriedBy(cargoUnit, carryingUnit)
 end
 
 --Makes the cargoUnit not carried by the carrying unit.
@@ -726,12 +736,13 @@ discreteEvents.onTribeTurnEnd(cargoOnTribeTurnEnd)
 ---@param cargoUnit unitObject
 ---@return boolean|fun(u:unitObject) Return true if activation should be cancelled, and false otherwise.
 function cargo.onActivateCargoUnit(cargoUnit,manualActivation)
+    print(cargoUnit.type.name)
     -- don't apply to AI unless specified
     if not (applyToAI or cargoUnit.owner.isHuman) then
         return false
     end
     local carryingUnit = getCarryingUnit(cargoUnit)
-    if not carryingUnit or carryingUnit.type.domain == gen.c.domainSea then
+    if (not carryingUnit) or carryingUnit.type.domain == gen.c.domainSea then
         return false
     end
     if carryingUnit.location.x > 60000 then

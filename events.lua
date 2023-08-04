@@ -560,7 +560,8 @@ local function doOnUnitActivation(unit,source,repeatMove)
         gen.selectNextActiveUnit(unit,source,simpleSettings.customWeightFunction)
     end
     eventsFiles.attackBonus(unit)
-    local isCancelled = cargo.onActivateCargoUnit(unit,source)
+    local isCancelled = nil
+    isCancelled = cargo.onActivateCargoUnit(unit,source)
     if isCancelled then
         cancelledActivationUnit = unit
         cancelledActivationUnitMovement = unit.type.move
@@ -568,6 +569,8 @@ local function doOnUnitActivation(unit,source,repeatMove)
         if type(isCancelled) == "function" then
             cancelledActivationFunction = isCancelled
         end
+        activateUnitBackstopMostRecent = false
+        previousUnitActivationTime = os.time()+os.clock()
         return
     end
     isCancelled = discreteEvents.performOnActivateUnit(unit,source,repeatMove)
@@ -578,6 +581,8 @@ local function doOnUnitActivation(unit,source,repeatMove)
         if type(isCancelled) == "function" then
             cancelledActivationFunction = isCancelled
         end
+        activateUnitBackstopMostRecent = false
+        previousUnitActivationTime = os.time()+os.clock()
         return
     end
     isCancelled = consolidated.onActivateUnit(unit,source,repeatMove)
@@ -588,6 +593,8 @@ local function doOnUnitActivation(unit,source,repeatMove)
         if type(isCancelled) == "function" then
             cancelledActivationFunction = isCancelled
         end
+        activateUnitBackstopMostRecent = false
+        previousUnitActivationTime = os.time()+os.clock()
         return
     end
 ---@diagnostic disable-next-line: cast-local-type
@@ -599,6 +606,8 @@ local function doOnUnitActivation(unit,source,repeatMove)
         if type(isCancelled) == "function" then
             cancelledActivationFunction = isCancelled
         end
+        activateUnitBackstopMostRecent = false
+        previousUnitActivationTime = os.time()+os.clock()
         return
     end
     activateUnitBackstopMostRecent = false
