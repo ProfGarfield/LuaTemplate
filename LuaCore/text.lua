@@ -1,5 +1,5 @@
 
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -120,8 +120,18 @@ local func = require "functions"
 local charSize = require("characterTable")
 local gen = require("generalLibrary"):minVersion(5)
 
--- The functions this module provides are stored in the text table
+--[[
+The text module provides functions for displaying text boxes and menus.  It also provides code for manipulating strings, though
+these are primarily useful to make messages that other functions
+in the module will display.
+
+The Civfanatics users [Knighttime](https://forums.civfanatics.com/members/knighttime.21777/) and [Pablostuka](https://forums.civfanatics.com/members/pablostuka.14725/) have contributed functionality to this module.
+]]
+---@class text
 local text={}
+
+
+
 gen.versionFunctions(text,versionNumber,fileModified,"LuaCore".."\\".."text.lua")
 gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."text.lua")
 
@@ -133,7 +143,7 @@ else
     textSettings:minVersion(1)
 end
 local dictionary = textSettings.dictionary or {}
-local importSubstitutiontTags = textSettings.substitutionTags or {}
+local importSubstitutionTags = textSettings.substitutionTags or {}
 local importChoiceTags = textSettings.choiceTags or {}
 
 -- textState allows this module to access the state table
@@ -207,13 +217,20 @@ local minimumLinesPerWindow = 8
 
 --  text.setLinesPerWindow(integer)--> void
 
--- Set the number of lines per text box for some functions (especially menus)
+-- Set the number of lines per text box for some functions provided
+-- by this module (especially menus).
+-- By default, there is a setting in the configuration module
+-- that will allow the player to change this setting.
 ---@param numberOfLines integer
 function text.setLinesPerWindow(numberOfLines)
     linesPerWindow = math.max(math.floor(numberOfLines),minimumLinesPerWindow)
 end
 local setLinesPerWindow = text.setLinesPerWindow 
 
+---Returns the current setting for the number of lines per text box,
+---which functions in this module use to determine when to break a
+---message or menu into multiple text boxes.
+---@return integer
 function text.getLinesPerWindow()
     return linesPerWindow
 end
@@ -238,10 +255,23 @@ local getLinesPerWindow = text.getLinesPerWindow
 
 ---@type string|table
 local imageTable = "imageTableNotSet"
-local tableName = ""
+local imageTableName = ""
 
-local function setImageTable(table,tableNm)
-    if type(tableName) ~="string" then
+--[[
+This function lets you specify a table that is being used to store
+imageObjects.  Some functions in this module will allow you to
+specify an imageObject by providing a (string) table key.  
+This function specifies the table that will be used to look up
+the image.
+
+If you generate an object.lua file using the script included
+in the Lua Scenario Template, then the imageTable will be
+set to the object file.
+]]
+---@param table table A table where images can be stored and looked up.
+---@param tableName string A name for the table to use in error messages.
+function text.setImageTable(table,tableName)
+    if type(imageTableName) ~="string" then
         error("setImageTable: second argument must be a string, and should be the name of this table."
             .."The name provided will be given as part of error messages, to help you debug.")
     end
@@ -251,26 +281,30 @@ local function setImageTable(table,tableNm)
     else
         ---@cast imageTable table
         imageTable = table
-        tableName = tableNm
+        imageTableName = tableName
     end
 end
-text.setImageTable = setImageTable
 
-    -- used to do a protected call on the imageTable,
-    -- since trying to access a nil value from the
-    -- object table results in an error, and
-    -- we want a better error message
+-- used to do a protected call on the imageTable,
+-- since trying to access a nil value from the
+-- object table results in an error, and
+-- we want a better error message
 local function tableAccess(table,key)
     return table[key]
 end
 
--- text.toImage(input) --> imageObject
--- input: one of
---      imageObject --> returns this input
---      string --> returns imageTable[input] if it is an imageObject, error otherwise
---      table --> returns civ.ui.loadImage(table[1],table[2],table[3],table[4],table[5])
+--[[
+An `imageInfo` is one of the following:<br><br>
+An `imageObject`. <br><br>
+A `table` such that the first 5 values (some of which can be nil) are valid arguments for `civ.ui.loadImage`.  That is, `civ.ui.loadImage(imageObject[1],imageObject[2],imageObject[3],imageObject[4],imageObject[5])` returns a valid imageObject.<br><br>
+A `string` that is the key corresponding to an `imageObject` in the `imageTable` registered by `text.setImageTable`.
+]]
+---@alias imageInfo string|imageObject|table
 
-local function toImage(input)
+---Converts an `imageInfo` to an `imageObject`.
+---@param input imageInfo # An `imageInfo` is one of the following:<br><br>An `imageObject`. <br><br>A `table` such that the first 5 values (some of which can be nil) are valid arguments for `civ.ui.loadImage`.<br><br>A `string` that is the key corresponding to an `imageObject` in the `imageTable` registered by `text.setImageTable`.
+---@return imageObject
+function text.toImage(input)
     if type(input) == "table" then
         -- the table contains the arguments for civ.ui.loadImage
         return civ.ui.loadImage(input[1],input[2],input[3],input[4],input[5])
@@ -289,7 +323,7 @@ local function toImage(input)
         if bool and civ.isImage(val) then
             return val
         else
-            error("text.toImage: "..tableName.."[\""..input.."\"] is not an image.\n"
+            error("text.toImage: "..imageTableName.."[\""..input.."\"] is not an image.\n"
             .."If "..input.."\n"
             .."is the file path to access the image, then you should write it as:\n"
             .."{[1]=\""..input.."\",}")
@@ -301,7 +335,7 @@ local function toImage(input)
         .."but only tables, strings, and imageObjects are acceptable.")
     end
 end
-text.toImage = toImage
+local toImage = text.toImage
 
 -- returns an error if any table or sub table consists of stuff other
 -- than numbers and strings
@@ -326,43 +360,58 @@ end
 --      can be saved in the state table, either the
 --      key referencing the image in the imageTable,
 --      or the table of commands to load the image with civ.ui.loadImage
-local function stateImageReference(imageInput)
-    if type(imageInput) == "table" then
-        validateArgumentTable(imageInput,"stateImageReference")
-        local bool, result = pcall(civ.ui.loadImage,imageInput[1],imageInput[2],imageInput[3],imageInput[4],imageInput[5])
+
+--[[
+Takes an imageInfo and returns a string or table that can be saved in the state table and used to recover the image later.
+
+If the imageInfo is a table of arguments for civ.ui.loadImage, then the table is returned.  An error is thrown if civ.ui.loadImage doesn't return a valid imageObject when called with those arguments.
+
+If the imageInfo is a string, then the string is returned if it is a key for an image in the `imageTable` (registered by `text.setImageTable`).  An error is thrown if the string is not a key for an image in the `imageTable`.
+
+If the imageInfo is an imageObject, then the image is searched for in the `imageTable`, and the key for that image is returned.  If the image is not found in the `imageTable`, then an error is thrown.
+]]
+---@param imageInfo imageInfo # An `imageInfo` is one of the following:<br><br>An `imageObject`. <br><br>A `table` such that the first 5 values (some of which can be nil) are valid arguments for `civ.ui.loadImage`.<br><br>A `string` that is the key corresponding to an `imageObject` in the `imageTable` registered by `text.setImageTable`.
+---@return stateSavableTable
+function text.toStateImage(imageInfo)
+    if type(imageInfo) == "table" then
+        validateArgumentTable(imageInfo,"stateImageReference")
+        local bool, result = pcall(civ.ui.loadImage,imageInfo[1],imageInfo[2],imageInfo[3],imageInfo[4],imageInfo[5])
         if bool then
-            return imageInput
+            ---@cast imageInfo stateSavableTable
+            ---@diagnostic disable-next-line: return-type-mismatch
+            return imageInfo 
         else
             error("stateImageReference: the table\n"
-                .."{[1]=\""..tostring(imageInput[1]).."\",\n"
-                .." [2]="..tostring(imageInput[2])..", [3]="..tostring(imageInput[3])..",\n"
-                .." [4]="..tostring(imageInput[4])..", [5]="..tostring(imageInput[5])..",}\n"
+                .."{[1]=\""..tostring(imageInfo[1]).."\",\n"
+                .." [2]="..tostring(imageInfo[2])..", [3]="..tostring(imageInfo[3])..",\n"
+                .." [4]="..tostring(imageInfo[4])..", [5]="..tostring(imageInfo[5])..",}\n"
                 .."Does not load a valid image when its values are provided to\n"
                 .."civ.ui.loadImage.")
         end
-    elseif type(imageInput) == "string" then
+    elseif type(imageInfo) == "string" then
         if type(imageTable) == "string" then
             error("text.stateImageReference: The 'Image Table' has not been set.\n"
-                .."Your input was this: "..imageInput.."\n"
-                .."If this is a key to a table, and table["..imageInput.."] is the image you want\n"
+                .."Your input was this: "..imageInfo.."\n"
+                .."If this is a key to a table, and table["..imageInfo.."] is the image you want\n"
                 .."to use, then you have not run text.setImageTable(imageTable,tableNameString).\n"
                 .."If your input is a file path to access the image, use the following as your argument:\n"
-                .."{[1]=\""..imageInput.."\",}")
+                .."{[1]=\""..imageInfo.."\",}")
         end
-        local bool,result = pcall(tableAccess,imageTable,imageInput)
+        local bool,result = pcall(tableAccess,imageTable,imageInfo)
         if bool and civ.isImage(result) then
-            return imageInput
+            ---@diagnostic disable-next-line: return-type-mismatch
+            return imageInfo
         else
-            error("text.stateImageReference: "..tableName.."[\""..imageInput.."\"] is not an image.\n"
-            .."If "..imageInput.."\n"
+            error("text.stateImageReference: "..imageTableName.."[\""..imageInfo.."\"] is not an image.\n"
+            .."If "..imageInfo.."\n"
             .."is the file path to access the image, then you should write it as:\n"
-            .."{[1]=\""..imageInput.."\",}")
+            .."{[1]=\""..imageInfo.."\",}")
         end
-    elseif civ.isImage(imageInput) then
+    elseif civ.isImage(imageInfo) then
         local imgKey = nil
 ---@diagnostic disable-next-line: param-type-mismatch
         for key,value in pairs(imageTable) do
-            if civ.isImage(value) and value == imageInput then
+            if civ.isImage(value) and value == imageInfo then
                 imgKey = key
                 break
             end
@@ -370,11 +419,11 @@ local function stateImageReference(imageInput)
         if imgKey then
             return imgKey
         else
-            error("stateImageReference: the image provided is not in the "..tableName.." table.\n"
+            error("stateImageReference: the image provided is not in the "..imageTableName.." table.\n"
             .."An imageObject can't be saved to the state table directly, and\n"
-            .."the imageOjbect provided is not a value in the "..tableName.." table,\n"
+            .."the imageOjbect provided is not a value in the "..imageTableName.." table,\n"
             .."so the corresponding key can't be saved in the state table.\n"
-            .."If you think the image you provided IS in the "..tableName.." table,"
+            .."If you think the image you provided IS in the "..imageTableName.." table,"
             .."you can provide the key it is saved in.  This error may be a result\n"
             .."of the fact that img1 = civ.ui.loadImage(\"myImage.bmp\")\n"
             .."img2 = civ.ui.loadImage(\"myImage.bmp\")\n"
@@ -384,12 +433,12 @@ local function stateImageReference(imageInput)
             .."loads your desired image.")
         end
     else
-        error("text.stateImageReference: argument 1 has type "..type(imageInput).."\n"
+        error("text.stateImageReference: argument 1 has type "..type(imageInfo).."\n"
         .."but only tables, strings, and imageObjects are acceptable.")
     end
 end
-text.stateImageReference = stateImageReference
-text.toStateImage = stateImageReference
+text.stateImageReference = text.toStateImage
+local stateImageReference = text.toStateImage
 
 
 
@@ -398,6 +447,8 @@ text.toStateImage = stateImageReference
 -- Determines how many lines of text are in a string, so that text boxes can be kept
 -- to a manageable size
 -- This can be improved by counting characters and font sizes
+---@param string string
+---@return integer
 local function linesInText(string)
     local linesSoFar = 1
     -- if very first character in the string is a newline, don't count that as a line
@@ -414,6 +465,10 @@ end
 -- splitTextForWindow(string,maxLines=linesPerWindow)-->string,string or nil
 -- Takes a string, and splits it into two strings if it is too long
 -- for a single window.  If the string fits in one window, the second return value is nil
+---@param string string
+---@param maxLines? integer
+---@return string
+---@return string|nil
 local function splitTextForWindow(string,maxLines)
     maxLines = maxLines or linesPerWindow
     local firstPageBreakStart,firstPageBreakEnd = string.find(string,pageBreakControl)
@@ -455,30 +510,63 @@ local function splitTextForWindow(string,maxLines)
 end
 
 -- text.addMultiLineTextToDialog(text,dialogObject) --> void
--- adds text that is in multiple lines to a dialog object,
--- performing all necessary splitlines
-local function addMultiLineTextToDialog(text,dialog)
-    local lineTable = {func.splitlines(text)}
+
+--[[
+Adds some text to the dialog object, in such a way that the
+character sequence \\n^ will cause a line break when the
+dialog is displayed.
+]]
+---@param string string
+---@param dialog dialogObject
+function text.addMultiLineTextToDialog(string,dialog)
+    local lineTable = {func.splitlines(string)}
     for i=1,#lineTable do
         dialog:addText(lineTable[i])
     end
 end
-text.addMultiLineTextToDialog = addMultiLineTextToDialog
+local addMultiLineTextToDialog = text.addMultiLineTextToDialog
 
 --  text.simple(string or tableOfStrings,title="",imageInfo=nil) --> void
---  shows a text box with the string and title, splitting
---  into multiple text boxes if the string is very long.
---  If a table of strings is input, each string is shown in
---  order starting at tableOfStrings[1]
---
-local function simple(stringOrTable,boxTitle,imageInfo)
+
+
+--[[
+Shows a text box with the message and title, splitting
+into multiple text boxes if the string is very long.
+If a table of strings is input, each string is shown in
+order starting at tableOfStrings[1].  If an imageInfo
+is provided, the image is shown in the text box.
+
+The function determines how many lines of text are in the
+message by counting newline characters (note that newline
+characters by themselves do not cause a line break in the
+text box).  If the message has too many lines, as determined
+by the variable `linesPerWindow`, then the message is split
+at a newline character.  (`linesPerWindow` can be changed
+using text.setLinesPerWindow -- by default, the player can
+change it using the configuration module.)
+
+To create a line break in the text box, use the character
+sequence \\n^ (newline, caret).
+
+If you wish to break up a message into two text boxes
+at a particular point, use the sequence of characters
+'%PAGEBREAK' (not including quote marks).
+
+If you wish to center a line of text, use the sequence
+\\n^^ (newline, caret, caret).
+]]
+---@param stringOrTable string|string[]
+---@param boxTitle? string # The title for the text box.  Defaults to ""
+---@param imageInfo? imageInfo # The image to show in the text box.  Defaults to not showing an image.<br><br>An `imageInfo` is one of the following:<br><br>An `imageObject`. <br><br>A `table` such that the first 5 values (some of which can be nil) are valid arguments for `civ.ui.loadImage`.<br><br>A `string` that is the key corresponding to an `imageObject` in the `imageTable` registered by `text.setImageTable`.
+function text.simple(stringOrTable,boxTitle,imageInfo)
     boxTitle = boxTitle or ""
     imageInfo = imageInfo and toImage(imageInfo)
     if type(stringOrTable)=="string" then
-        local remainingString = stringOrTable
+        ---@type string|nil
+        local remainingString = stringOrTable 
         local textToShow = nil
         repeat
-            textToShow,remainingString = splitTextForWindow(remainingString)
+            textToShow,remainingString = splitTextForWindow(remainingString --[[@as string]])
             local textBox = civ.ui.createDialog()
             textBox.title = boxTitle
             if imageInfo then
@@ -494,13 +582,13 @@ local function simple(stringOrTable,boxTitle,imageInfo)
             if type(stringOrTable[i]) ~= "string" then
                 error("text.simple must have a string or a table of strings as the first argument.")
             end
-            simple(stringOrTable[i],boxTitle,imageInfo)
+            text.simple(stringOrTable[i],boxTitle,imageInfo)
         end
     else
         error("text.simple must have a string or a table of strings as the first argument.")
     end
 end
-text.simple = simple
+local simple = text.simple
 
 
 -- Pending Message Specification
@@ -539,8 +627,14 @@ text.simple = simple
 -- in the archive
 
 -- text.addToArchive(tribe or TribeID,messageBody,messageTitle,archiveTitle,imageInfo)-->void
+
 -- Adds a message to a tribe's archive
-local function addToArchive(tribeID,messageBody,messageTitle,archiveTitle,imageInfo)
+---@param tribeID integer|tribeObject # The tribe for whom the message should be added to the archive.
+---@param messageBody string # The message to be displayed in the archive.
+---@param messageTitle string # The title of the text box of the message.
+---@param archiveTitle string # The title of the message in the archive menu.
+---@param imageInfo? imageInfo # The image to show in the text box.  Defaults to not showing an image.<br><br>An `imageInfo` is one of the following:<br><br>An `imageObject`. <br><br>A `table` such that the first 5 values (some of which can be nil) are valid arguments for `civ.ui.loadImage`.<br><br>A `string` that is the key corresponding to an `imageObject` in the `imageTable` registered by `text.setImageTable`.
+function text.addToArchive(tribeID,messageBody,messageTitle,archiveTitle,imageInfo)
     if civ.isTribe(tribeID) then
         tribeID = tribeID.id
     end
@@ -554,7 +648,7 @@ local function addToArchive(tribeID,messageBody,messageTitle,archiveTitle,imageI
     local archiveTable = textState.archive[tribeID]
     archiveTable[#archiveTable+1] = archivedMessage
 end
-text.addToArchive=addToArchive
+local addToArchive = text.addToArchive
 
 --  text.displayNextOpportunity(tribe or tableOfTribes,messageBody,messageTitle="",
 --              archiveTitle=nil, broadcast=nil,imageInfo = nil)
@@ -617,13 +711,38 @@ local function displayNextOpportunity(tribeOrTable,messageBody,messageTitle,
         end
     end
 end
-text.displayNextOpportunity=displayNextOpportunity
+
+--[[
+Displays a message to a tribe or tribes at the next possible opportunity,
+either immediately (if the tribe is active), or during the onCityProcessingComplete execution point.
+
+If an archive title is specified, the message will be added to the tribe's archive after it is shown.
+
+Note: For backwards compatibility, the order of the last two arguments can be reversed.  The function will figure it out.
+]]
+---@param tribes tribeObject|integer|table<any,tribeObject|integer> # The tribe or tribes to whom the message should be displayed.  Integers reference the tribe's ID.
+---@param messageBody string # The message to be displayed.
+---@param messageTitle? string # The title of the text box of the message.
+---@param archiveTitle? string # The title of the message in the archive menu.  If nil, the message will not be added to the archive.
+---@param imageInfo? imageInfo # The image to show in the text box.  Defaults to not showing an image.<br><br>An `imageInfo` is one of the following:<br><br>An `imageObject`. <br><br>A `table` such that the first 5 values (some of which can be nil) are valid arguments for `civ.ui.loadImage`.<br><br>A `string` that is the key corresponding to an `imageObject` in the `imageTable` registered by `text.setImageTable`.
+---@param broadcast? boolean # If true, the text box with the message will be displayed even if the tribe is controlled by an AI.  If false or absent, it will only be displayed if the tribe is controlled by a human.
+function text.displayNextOpportunity(tribes,messageBody,messageTitle,archiveTitle,imageInfo,broadcast)
+    displayNextOpportunity(tribes,messageBody,messageTitle,archiveTitle,imageInfo,broadcast)
+end
+
 
 -- text.displayAccumulatedMessages() --> void
--- displays to the current player all messages that were to be displayed
--- at the next opportunity, then either archives or deletes the messages.
--- meant to go in the after production event
-local function displayAccumulatedMessages()
+
+--[[
+Displays to the current player all messages that were to be displayed
+at the next opportunity, then either archives or deletes the messages.
+
+If the player is an AI, the messages will not be displayed, unless the broadcast parameter was true.
+
+In the Lua Scenario Template, this is in the onCityProcessingComplete 
+execution point, and the scenario designer should not need to call it.
+]]
+function text.displayAccumulatedMessages()
     local tribeID = civ.getCurrentTribe().id
     local pendingMessagesTable = textState.pendingMessages[tribeID]
     for i=1,#pendingMessagesTable do
@@ -640,7 +759,6 @@ local function displayAccumulatedMessages()
         pendingMessagesTable[index] = nil
     end
 end
-text.displayAccumulatedMessages = displayAccumulatedMessages
 
 
 --  Menu Table Specification
@@ -648,6 +766,20 @@ text.displayAccumulatedMessages = displayAccumulatedMessages
 --  and menu will return i if option is chosen
 --  optionName will be a string
 --  start counting at 1, can skip numbers (incl. 1), but don't have other entries in table
+
+
+--[[
+A menuTable represents the options that will appear in a menu.
+
+The options will appear in order based on the keys of the table.
+
+When an option is chosen in the menu, the key of the option will be returned.
+
+The keys of the table must be integers, and the lowest allowable key is 1.
+(0 represents the "cancel" option, which is not part of the menuTable.)  The menuTable does not have to have an option associated with every integer.  (It is even permissible to not have the key 1 associated with an option.)
+]]
+---@alias menuTable table<integer,string>
+
 
 -- text.menu(menuTable,menuText,menuTitle="",canCancel=false,menuPage=1)-->integer,integer
 -- text.menu(menuTable,menuText,menuTitle="",canCancel=false,imageInfo=nil,dimensions={width=nil,height=nil},menuPage=1) --> integer,integer
@@ -781,7 +913,25 @@ local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6,arg7)
         return choice,menuPage
     end
 end
-text.menu = menu
+
+--[[
+This function displays a menu of options to the user, as defined by the menuTable.  The user can choose one of the options, and may or may not be given the option to "cancel" as a choice.  The function returns the index of the menuTable entry that was chosen, or 0 if the user cancels the menu.  If the menu has multiple pages, the function returns the page where the choice was made.
+    ]]
+---@param menuTable menuTable # A table of menu options.  The keys are the numbers that will be returned when the option is chosen.  The values are the text to display for each option.
+---@param menuText string # The text to display above the menu options.
+---@param menuTitle? string # The title of the menu's text box.  Defaults to "".
+---@param canCancel? boolean # Whether or not the menu should have a "Cancel" option, which returns 0.  Defaults to false.
+---@param imageInfo? imageInfo
+---@param dimensions? {width:integer|nil, height:integer|nil} # The dimensions of the menu text box.  If not specified, the game will choose.
+---@param menuPage? integer # The page of the menu to start on.  Defaults to 1.
+---@return integer choice # The index of the menuTable entry that was chosen.
+---@return integer menuPage # The page of the menu where the choice was made.  This could be useful if you want to be able to re-open the menu on the same page.
+function text.menu(menuTable,menuText,menuTitle,canCancel,imageInfo,dimensions, menuPage)
+    local choice,page = menu(menuTable,menuText,menuTitle,canCancel, menuPage,imageInfo,dimensions)
+    return choice,page
+end
+
+--text.menu = menu
 
 -- text.displayArchivedMessage(archivedMessage,archivePage=1,displayArchiveTable=nil,
 --                              displayArchiveTableIndex=nil,
@@ -926,9 +1076,13 @@ end
 text.openArchive = openArchive
 
 -- text.purgeArchive(tribeOrTribeID) --> void
--- purges all archived messages that have been marked for purging
--- for the current tribe
-local function purgeArchive(tribeOrID)
+
+--[[
+Purges (deletes) all archived messages that have been marked for purging
+by the tribe.
+]]
+---@param tribeOrID tribeObject|integer # The tribe or tribe ID for whom to purge the archive.
+function text.purgeArchive(tribeOrID)
     local tribeID = tribeOrID
     if civ.isTribe(tribeID) then
         tribeID = tribeID.id
@@ -945,11 +1099,12 @@ local function purgeArchive(tribeOrID)
         end
     end
 end
-text.purgeArchive = purgeArchive
+local purgeArchive = text.purgeArchive
 
 -- text.deleteAIArchives()-->void
--- deletes all messages in archives owned by AI Tribes
-local function deleteAIArchives()
+
+--Deletes all messages saved in archives owned by AI Tribes
+function text.deleteAIArchives()
     for i=0,7 do
         if not civ.getTribe(i).isHuman then
             for __,archiveMessage in pairs(textState.archive[i]) do
@@ -959,7 +1114,6 @@ local function deleteAIArchives()
         end
     end
 end
-text.deleteAIArchives = deleteAIArchives
 
 
 -- Old version of substitute
@@ -999,6 +1153,19 @@ local aOrAn = {}
 -- dictionary[anyKey] = {singular=singularVersionOfWord, plural=pluralVersionOfWord, an=boolean}
 --      an = true if it is 'an singularVersionOfWord' and false/nil if it is 'a singularVersionOfWord'
 
+--[[
+Registers a 'dictionary' table with the text module.  The dictionary table
+should have the following format:
+```
+dictionary[anyKey] = {singular=singularVersionOfWord, plural=pluralVersionOfWord, an=boolean}
+```
+an = true if it is 'an singularVersionOfWord' and false/nil if it is 'a singularVersionOfWord'
+
+The keys in the dictionary table do not matter.
+
+The dictionary table is used to enhance the functionality of text.substitute.
+]]
+---@param dictionary table # A table with the above format
 function text.registerDictionary(dictionary)
     for _,entry in pairs(dictionary) do
         if type(entry) == "table" then
@@ -1046,7 +1213,7 @@ end
 text.registerSubstitutionTag("ADJECTIVE",function(val) return val.adjective or val.owner.adjective end)
 --]]
 
-for tag,convertFn in pairs(importSubstitutiontTags) do
+for tag,convertFn in pairs(importSubstitutionTags) do
     substitutionTags[tag] = convertFn
 end
 
@@ -1182,7 +1349,15 @@ local function addIndefiniteArticle(rawText)
     return rawText
 end
 
-local function newSubstitute(rawText,substitutionTable)
+--[[
+Substitutes values from the substitutionTable into the rawText, based on 
+tags in the rawText.
+
+]]
+---@param rawText string
+---@param substitutionTable table<integer,any> # the values associated with the keys 0-9 are eligible to be used for substitution.
+---@return string
+function text.substitute(rawText,substitutionTable)
     if string.find(rawText,"%%%?") then
         for tag,choiceFn in pairs(choiceTags) do
             rawText = substituteChoice(rawText,tag,choiceFn,substitutionTable)
@@ -1195,7 +1370,7 @@ local function newSubstitute(rawText,substitutionTable)
     rawText = addIndefiniteArticle(rawText)
     return rawText
 end
-text.substitute = newSubstitute
+--text.substitute = newSubstitute
 
 function console.testSubstitution()
     local function rowsToMoney(type)

@@ -1,6 +1,6 @@
 -- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 7
+local versionNumber = 8
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -424,10 +424,23 @@ registeredInThisFile["onCanBuild"]=true
 local function onEnterTile(unit,previousTile,previousDomainSpec)
     -- onEnterTile priority is for transport events, so units can
     -- 'drag' other units into the tile before the regular onEnterTile event
-    discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDomainSpec)
-    discreteEvents.performOnEnterTile(unit,previousTile,previousDomainSpec)
-    consolidated.onEnterTile(unit,previousTile,previousDomainSpec)
-    eventsFiles.onEnterTile(unit,previousTile,previousDomainSpec)
+    local isCancelled = nil
+    isCancelled =discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDomainSpec)
+    if isCancelled then
+        return isCancelled
+    end
+    isCancelled =discreteEvents.performOnEnterTile(unit,previousTile,previousDomainSpec)
+    if isCancelled then
+        return isCancelled
+    end
+    isCancelled = consolidated.onEnterTile(unit,previousTile,previousDomainSpec)
+    if isCancelled then
+        return isCancelled
+    end
+    isCancelled = eventsFiles.onEnterTile(unit,previousTile,previousDomainSpec)
+    if isCancelled then
+        return isCancelled
+    end
 end
 
 
@@ -549,6 +562,13 @@ local function doOnUnitActivation(unit,source,repeatMove)
     previousActiveUnit = unit
     cancelledActivationCleanUp()
     executeOnEnterTile(unit)
+    if unit.location.x > 60000 then
+        -- unit is not on the map, so don't do anything
+        -- (probably killed during enter tile event)
+        activateUnitBackstopMostRecent = false
+        previousUnitActivationTime = os.time()+os.clock()
+        return
+    end
     customCosmic.changeEphemeralForUnit(unit)
     humanUnitActive = unit.owner.isHuman
     if (unit.owner.isHuman and simpleSettings.clearAdjacentAirProtectionHuman)

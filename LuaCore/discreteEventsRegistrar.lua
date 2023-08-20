@@ -1,4 +1,4 @@
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -396,7 +396,10 @@ eventsTable.onEnterTileIndex = 1
 
 function discreteEvents.performOnEnterTile(unit,previousTile,previousDomainSpec)
     for i = 1,eventsTable.onEnterTileIndex-1 do
-        eventsTable.onEnterTile[i](unit,previousTile,previousDomainSpec)
+        local isCancelled = eventsTable.onEnterTile[i](unit,previousTile,previousDomainSpec)
+        if isCancelled then
+            return isCancelled
+        end
     end
 end
 
@@ -407,7 +410,10 @@ eventsTable.onEnterTilePriorityIndex = 1
 
 function discreteEvents.performOnEnterTilePriority(unit,previousTile,previousDomainSpec)
     for i = 1,eventsTable.onEnterTilePriorityIndex-1 do
-        eventsTable.onEnterTilePriority[i](unit,previousTile,previousDomainSpec)
+        local isCancelled = eventsTable.onEnterTilePriority[i](unit,previousTile,previousDomainSpec)
+        if isCancelled then
+            return isCancelled
+        end
     end
 end
 
@@ -815,15 +821,16 @@ end
 
 --[[
 Registers code to be executed when a unit enters a tile.  (Implemented using several civ.scen functions.)  `unit` is the unit which entered the tile, `previousTile` is where the unit was before it moved, and `previousDomainSpec` is the value of unit.domainSpec before it moved into the square (useful for units with range).
+If true is returned, no further discrete events are executed for this event.
 ]]
 ---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
----@param code fun(unit: unitObject, previousTile: tileObject, previousDomainSpec: integer)
+---@param code fun(unit: unitObject, previousTile: tileObject, previousDomainSpec: integer):(nil|boolean)
 function discreteEvents.onEnterTile(code)
     newIndexFn(nil,"onEnterTile",code)
 end
 
 --- Registers an onEnterTile event before all other onEnterTile events.  It is used for "transport" events, so that units can "drag" other units into the tile before the regular onEnterTile event.
----@param code fun(unit: unitObject, previousTile: tileObject, previousDomainSpec: integer)
+---@param code fun(unit: unitObject, previousTile: tileObject, previousDomainSpec: integer):(nil|boolean)
 function discreteEvents.onEnterTilePriority(code)
     newIndexFn(nil,"onEnterTilePriority", code)
 end

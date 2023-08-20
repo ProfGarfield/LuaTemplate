@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -676,7 +676,7 @@ end
 
 function cargo.onEnterTile(carryingUnit,previousTile,prevDomainSpec)
     -- don't apply to AI unless specified
-    if not (applyToAI or carryingUnit.owner.isHuman) then
+    if carryingUnit.type.domain == gen.c.domainSea or not (applyToAI or carryingUnit.owner.isHuman) then
         return false
     end
     local carryingInfo = cargoInfoTable[carryingUnit.type.id] or emptyCargoInfo
@@ -736,7 +736,6 @@ discreteEvents.onTribeTurnEnd(cargoOnTribeTurnEnd)
 ---@param cargoUnit unitObject
 ---@return boolean|fun(u:unitObject) Return true if activation should be cancelled, and false otherwise.
 function cargo.onActivateCargoUnit(cargoUnit,manualActivation)
-    print(cargoUnit.type.name)
     -- don't apply to AI unless specified
     if not (applyToAI or cargoUnit.owner.isHuman) then
         return false

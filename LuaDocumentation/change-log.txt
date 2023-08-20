@@ -95,8 +95,13 @@ Fixed bug in changeRules.lua, where @cosmic2 wasn't being read due to a typo.
 
 Added land and air transport.
 
+Fixed worked around goto bug where unit.carriedBy cancelled goto orders when called during onActivateUnit for the unit.  Discovered due to land/air cargo.
 
 last update
+
+Updated events.lua and discreteEventsRegistrar to allow onEnterTile to cancel further code execution by returning true.  Also, onActivateUnit event is cancelled if onEnterTile kills the active unit.
+
+gen.isNoOrder updated to check for order==-1 instead of order==0xFF (255)
 
 todo
 

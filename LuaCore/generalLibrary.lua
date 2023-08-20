@@ -1454,7 +1454,7 @@ end
 ---@param unit unitObject
 ---@return boolean
 function gen.isNoOrder(unit) 
-    return unit.order == 0xFF
+    return unit.order == -1 --0xFF
 end
 
 -- gen.setToNoOrders(unit)-->void
