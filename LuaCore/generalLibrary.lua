@@ -1,4 +1,4 @@
-local versionNumber = 8
+local versionNumber = 9
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -5014,7 +5014,7 @@ function gen.getTileProduction(tile,city,ignoreCustomCosmic)
 
         -- tiles with city or irrigation get the irrigation bonus, regardless of whether
         -- the tile can actually be irrigated
-        if tile.city or gen.hasIrrigation(tile) then
+        if tile.city or gen.hasAgriculture(tile) then
             food = food + baseTerrainData.irrigateBonus
         end
         -- don't need refrigeration tech to take advantage of farm production, just supermarket
