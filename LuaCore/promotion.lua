@@ -396,7 +396,7 @@ local function performPendingUpgrades(upgradeFunction,activeUnit)
     upgradeFunction = upgradeFunction or defaultUpgradeFunction
     for i=1,(#promotionState.pendingPromotions) do
         local promotionInfo = promotionState.pendingPromotions[i]
-        if promotionInfo.unitID == activeUnit.id then
+        if activeUnit and promotionInfo.unitID == activeUnit.id then
             activeUnit = upgradeFunction(promotionInfo.unitID,promotionInfo.replacementTypeID,promotionInfo.promotionInfoTable)
             if not activeUnit then
                 error("promotion.peformPendingUpgrades: the active unit was upgraded, but the upgrade function did not return the replacement unit.  Make sure your upgrade function returns the unit that replaces the upgraded unit.")

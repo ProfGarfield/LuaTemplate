@@ -417,7 +417,7 @@ if rulesTable[promotionSection] then
             local datum = {}
 ---@diagnostic disable-next-line: param-type-mismatch
             datum.upgradeUnitType = civ.getUnitType(tonumber(rulesSection[unitID][3]))
-            datum.upgradeChance = tonumber(rulesSection[unitID][4])//100
+            datum.upgradeChance = tonumber(rulesSection[unitID][4])/100
             datum.excludedUnitTypes = filterAndMerge(promotionGroups,rulesSection[unitID][5])
             local flags = rulesSection[unitID][6]
             if string.sub(flags,-1,-1) == "1" then
