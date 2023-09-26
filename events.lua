@@ -1052,6 +1052,11 @@ local function doBeforeProduction(turn,tribe)
     eventsFiles.onTribeTurnBegin(turn,tribe)
     humanUnitActive = false
     humanPlayerActive = tribe.isHuman
+    for cityID,_ in pairs(state.processedCities) do
+        if civ.getCity(cityID).owner == tribe then
+            state.processedCities[cityID] = false
+        end
+    end
 end
 console.beforeProduction = function () doBeforeProduction(civ.getTurn(),civ.getCurrentTribe()) end
 console.onTribeTurnBegin = console.beforeProduction
