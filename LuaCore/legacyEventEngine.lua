@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -84,6 +84,9 @@ local function supplyLegacyEventsTable(table)
     if type(table)~="table" then
         error("legacyEventEngine.supplyLegacyEventsTable expects a table as input")
     else
+        if not table["legacyEventBuilderVersion"] or table["legacyEventBuilderVersion"] < 2 then
+            print("WARNING:\nlegacyEventEngine.supplyLegacyEventsTable: The supplied legacy event table was built by an old version of legacyEventBuilder.lua.  The events are fine, but error messages will not tell you the line in the file where the event has a mistake.")
+        end
         eventTable = table
         eventHashValue = eventTable["eventHash"]
         globalContinuousFlagsOverride = eventTable["continuousFlagsPerTribe"]
@@ -1451,7 +1454,6 @@ end
 --
 --
 local function onTurnEventsAndMaintenance(turnNumber)
-    -- moved to checkForScenarioBeingSaved
     --if turnNumber == 1 then
     --    for index,val in pairs(g_LegacyState) do
     --        g_LegacyState[index] = nil
@@ -1519,8 +1521,14 @@ end
 
 -- 
 local function doScenarioLoadedEvents()
+    if civ.getTurn() == 0 then
+        for index,val in pairs(g_LegacyState) do
+            g_LegacyState[index] = nil
+        end
+        g_LegacyState["modifyDate"] = currentModifyDate
+    end
     if eventHashValue and g_LegacyState.storedEventHashValue and
-        (eventHashValue ~= g_LegacyState.storedEventHashValue) then
+        (eventHashValue ~= g_LegacyState.storedEventHashValue) and civ.getTurn() ~= 0 then
         local clearStateDialog = civ.ui.createDialog()
         clearStateDialog:addText("It appears that the legacy events have been changed since you saved this game. (You will get this message even for extremely small changes such as changing whitespace or comments.)  Do you wish to clear the state table for the legacy events?  Doing this will erase all record of previous events (such as continuous flags activated and Just Once events), but will prevent event bugs if you've changed the order of events, or removed events and added new ones.")
         clearStateDialog:addOption("Yes, clear the saved data from the legacy events.",1)
@@ -1884,6 +1892,7 @@ local function luaTrigger(triggerName,triggerAttackerString,triggerDefenderStrin
     doTriggerEventsFunction(luaTriggerConditionMet,triggerName,nil,triggerAttackerString,triggerDefenderString,triggerReceiverString)
 end
 
+--[[
 local function checkForScenarioBeingSaved()
     if civ.scen.params.name ~= "" and civ.scen.params.name ~= g_LegacyState["scenarioName"] then
         local clearStateDialog = civ.ui.createDialog()
@@ -1903,45 +1912,79 @@ local function checkForScenarioBeingSaved()
     end
     g_LegacyState["scenarioName"] = civ.scen.params.name
 end
+]]
+
+local function callEventWithHelpfulErrors(eventFunction,name,...)
+    local success, err = pcall(eventFunction,...)
+
+    if not success then
+        local errorAndArguments = "Called "..name.." with arguments: "
+        for i=1,select("#",...) do
+            errorAndArguments = errorAndArguments..tostring(select(i,...))..", "
+        end
+        errorAndArguments = errorAndArguments:sub(1,-3)
+        errorAndArguments = errorAndArguments.."\n"
+        local eventError = "Error in the Legacy Event Engine.  This appears to be caused by event number "..g_EventNumber..", which starts at line "..tostring(eventTable[g_EventNumber]["STARTLINE"])..".\n"..errorAndArguments.."\n The error actually generated was "..err
+        error(eventError)
+    end
+    return err
+end
+
 
 if discreteEventsFound then
     function discreteEvents.onSave()
-        checkForScenarioBeingSaved()
+        --checkForScenarioBeingSaved()
+        -- decided to use onturneventsandmaintenance instead
+        --callEventWithHelpfulErrors(checkForScenarioBeingSaved,"checkForScenarioBeingSaved")
     end
     function discreteEvents.onTurn(turn)
-        onTurnEventsAndMaintenance(turn)
+        --onTurnEventsAndMaintenance(turn)
+        callEventWithHelpfulErrors(onTurnEventsAndMaintenance,"onTurnEventsAndMaintenance",turn)
     end
     function discreteEvents.onUnitKilled(loser,winner,aggressor,victim,
         loserLocation,winnerVetStatus,loserVetStatus) 
-        doUnitKilledEvents(loser,winner)
+        --doUnitKilledEvents(loser,winner)
+        callEventWithHelpfulErrors(doUnitKilledEvents,"doUnitKilledEvents",loser,winner)
+
     end
     function discreteEvents.onCityProduction(city,item)
-        doCityProductionEvents(city,item)
+        --doCityProductionEvents(city,item)
+        callEventWithHelpfulErrors(doCityProductionEvents,"doCityProductionEvents",city,item)
     end
     function discreteEvents.onCityTaken(city,defender)
-        doCityTakenEvents(city,defender)
+        --doCityTakenEvents(city,defender)
+        callEventWithHelpfulErrors(doCityTakenEvents,"doCityTakenEvents",city,defender)
     end
     function discreteEvents.onCentauriArrival(tribe)
-        doAlphaCentauriArrivalEvents(tribe)
+        --doAlphaCentauriArrivalEvents(tribe)
+        callEventWithHelpfulErrors(doAlphaCentauriArrivalEvents,"doAlphaCentauriArrivalEvents",tribe)
     end
     function discreteEvents.onCityDestroyed(city)
-        doCityDestroyedEvents(city)
+        --doCityDestroyedEvents(city)
+        callEventWithHelpfulErrors(doCityDestroyedEvents,"doCityDestroyedEvents",city)
     end
     function discreteEvents.onBribeUnit(unit,previousOwner)
-        doBribeUnitEvents(unit,previousOwner)
+        --doBribeUnitEvents(unit,previousOwner)
+        callEventWithHelpfulErrors(doBribeUnitEvents,"doBribeUnitEvents",unit,previousOwner)
+
     end
     function discreteEvents.onScenarioLoaded()
-        doScenarioLoadedEvents()
+        --doScenarioLoadedEvents()
+        callEventWithHelpfulErrors(doScenarioLoadedEvents,"doScenarioLoadedEvents")
     end
     function discreteEvents.onNegotiation(talker,listener)
-        doNegotiationEvents(talker,listener)
-        return canNegotiate(talker,listener)
+        --doNegotiationEvents(talker,listener)
+        callEventWithHelpfulErrors(doNegotiationEvents,"doNegotiationEvents",talker,listener)
+        --return canNegotiate(talker,listener)
+        return callEventWithHelpfulErrors(canNegotiate,"canNegotiate",talker,listener)
     end
     function discreteEvents.onGameEnds(reason)
-        return endTheGame(reason)
+        --return endTheGame(reason)
+        return callEventWithHelpfulErrors(endTheGame,"endTheGame",reason)
     end
     function discreteEvents.onSchism(tribe)
-        return doNoSchismEvents(tribe)
+        --return doNoSchismEvents(tribe)
+        return callEventWithHelpfulErrors(doNoSchismEvents,"doNoSchismEvents",tribe)
     end
 end
 

@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -123,6 +123,14 @@ end
 function tileData.flagSetFalse(tile,flagName,moduleName)
 end
 
+--Sets the value associated with the tile's flag of flagName to the `value` 
+--(true or false) specified.
+---@param tile tileObject
+---@param flagName string
+---@param value boolean
+---@param moduleName? string
+function tileData.flagSetValue(tile,flagName,value,moduleName)
+end
 
 --Sets the value associated with the tile's flag of flagName to nil
 --(meaning that it returns the default value set when it was defined).
@@ -684,7 +692,7 @@ end
 
 
 
-local supplementalData = require("supplementalData"):minVersion(1)
+local supplementalData = require("supplementalData"):minVersion(2)
 local gen = require("generalLibrary"):minVersion(1)
 local civlua = require("civlua")
 

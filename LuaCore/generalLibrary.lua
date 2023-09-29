@@ -1,4 +1,4 @@
-local versionNumber = 9
+local versionNumber = 10
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -74,6 +74,7 @@ gen.constants = {
     maxTerrainID = 191,
     maxMaps = 4,
     maxMapID = 3,
+    maxTechID = 252,
     roleAttack = 0,
     roleDefend = 1,
     roleNavalSuperiority = 2,
@@ -679,8 +680,10 @@ end
 
 -- gen.hasIrrigation(tile)-->boolean
 
--- returns true if tile has irrigation but no farm
--- returns false otherwise
+-- Returns true if tile has irrigation but no farm.
+-- Returns false otherwise.
+-- If you need to know if a tile has irrigation or farmland,
+-- use gen.hasAgriculture(tile)
 ---@param tile tileAnalog # Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
 ---@return boolean
 function gen.hasIrrigation(tile)
@@ -3468,7 +3471,7 @@ function gen.getTerrainFromID(id)
     terrainType = terrainType // 3
     local res = id % 3
     if authoritativeDefaultRules then
-        local numTerrain = authoritativeDefaultRules["@COSMIC2"]["NumberOfTerrainTypes"][z]
+        local numTerrain = authoritativeDefaultRules["cosmic2"]["NumberOfTerrainTypes"][z]
         if z > (maps-1) or terrainType > (numTerrain-1) then
             return nil
         end
@@ -4768,7 +4771,7 @@ function gen.createUnit(unitType,tribe,locations,options)
     gen.makeArrayOneToN(placementTable)
     local returnUnits = {}
     if gen.isEmpty(placementTable) then
-        print("No units placed, since no valid location.")
+        print("gen.createUnit: No units placed, since no valid location.")
         return returnUnits
     end
     local numToPlace = options.count or 1
@@ -8685,6 +8688,15 @@ function gen.iterateTerrain()
                     coroutine.yield(civ.getTerrain(z,t,whaleResource))
                 end
             end
+        end
+    end)
+end
+
+---Returns an iterator for all tech objects.
+function gen.iterateTechs()
+    return coroutine.wrap(function()
+        for id = 0,gen.constants.maxTechID do
+            coroutine.yield(civ.getTech(id))
         end
     end)
 end

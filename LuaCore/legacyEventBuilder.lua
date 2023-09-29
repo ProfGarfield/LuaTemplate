@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -191,6 +191,10 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     
     local eventTable = {}
     local eventTableIndex=1
+
+
+    -- Old code to convert coordinates
+    --[[
     
     -- reads a line of coordinates x1,y1,x2,y2,x3,y3,x4,y4 (in string form)
     -- and transforms to table
@@ -213,7 +217,129 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
         oT[1],oT[2],oT[3] = load("return "..line)()
         return oT
     end
+    --]]
+
+    -- New code to convert coordinates
     
+    local function removeCommentsTrailingSpaces(line)
+        local semicolonLoc = string.find(line,";")
+        if semicolonLoc then
+            line = line:sub(1,semicolonLoc-1)
+        end
+        while line:sub(-1)==" " or line:sub(-1)=="\t" do
+            line = line:sub(1,-2)
+        end
+        return line
+    end
+
+    local function removeLeadingSpaces(line)
+        while line:sub(1,1)==" " or line:sub(1,1)=="\t" do
+            line = line:sub(2)
+        end
+        return line
+    end
+
+    local function lineToTable(line)
+        local function splitAtComma(line)
+            local commaLoc = string.find(line,",")
+            if commaLoc then
+                return line:sub(1,commaLoc-1),line:sub(commaLoc+1)
+            else
+                return line,nil
+            end
+        end
+        local remainingLine = line
+        local currentEntry = nil
+        local column = 0
+        local table = {}
+        repeat
+            currentEntry,remainingLine = splitAtComma(remainingLine)
+            currentEntry = removeCommentsTrailingSpaces(currentEntry)
+            currentEntry = removeLeadingSpaces(currentEntry)
+            table[column] = currentEntry
+            column = column+1
+        until column >= 30 or not remainingLine
+        return table
+    end
+
+    -- reads a line of coordinates x1,y1,x2,y2,x3,y3,x4,y4 (in string form)
+    -- and transforms to table
+    -- {{x1,y1},{x2,y2},{x3,y3},{x4,y4}}
+    local function mapRectangleToTable(line,lineNumber,fileNumber)
+        local originalLine = line
+        local function coordinateStringToNumber(coordinateString)
+            local coordinateNumber = tonumber(coordinateString)
+            if coordinateNumber == nil then
+                error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The line after a 'maprect' line should be four coordinate pairs separated by commas (8 numbers separated by commas).  Received:\n"..originalLine)
+            end
+            return coordinateNumber
+        end
+        local function validateCoordinates(x,y,coordNumber)
+            if x%2 ~= y%2 then
+                error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The coordinates in a map rectangle must be even or odd in both the x and y component. Coordinate "..coordNumber.." is invalid.  Received:\n"..originalLine)
+            end
+        end
+        if line:sub(-1) == "," then
+            line = line:sub(1,-2)
+        end
+        local oT={{},{},{},{}}
+        local lineTable = lineToTable(line)
+        --oT[1][1], oT[1][2],oT[2][1],oT[2][2],oT[3][1],oT[3][2],oT[4][1],oT[4][2] = load("return "..line)()
+        oT[1][1] = coordinateStringToNumber(lineTable[0])
+        oT[1][2] = coordinateStringToNumber(lineTable[1])
+        oT[2][1] = coordinateStringToNumber(lineTable[2])
+        oT[2][2] = coordinateStringToNumber(lineTable[3])
+        oT[3][1] = coordinateStringToNumber(lineTable[4])
+        oT[3][2] = coordinateStringToNumber(lineTable[5])
+        oT[4][1] = coordinateStringToNumber(lineTable[6])
+        oT[4][2] = coordinateStringToNumber(lineTable[7])
+        validateCoordinates(oT[1][1],oT[1][2],1)
+        validateCoordinates(oT[2][1],oT[2][2],2)
+        validateCoordinates(oT[3][1],oT[3][2],3)
+        validateCoordinates(oT[4][1],oT[4][2],4)
+        if oT[1][2] ~= oT[2][2] or oT[3][2] ~= oT[4][2] or
+        oT[1][1] ~= oT[4][1] or oT[2][1] ~= oT[3][1]
+        then
+            error([[Legacy Event Builder: File Number: ]]..fileNumber..[[ Line Number: ]]..lineNumber..[[. Invalid 'maprect' coordinates. ]]..
+                [[The maprect coordinates define the corners of the rectangular region. They must (1) be on the line immediately following the word maprect, (2) be separated by commas, and (3) be listed in the following specific order to be valid. (They also must be valid map coordinates.) The first coordinate must be the upper left corner; next comes the upper right, then lower right, and finally lower left. Thus:
+
+	1--2
+	4--3
+    
+    ]]
+    ..[[Received: ]]..originalLine)
+                end
+
+        return oT
+    end
+    -- converts string "x1,y1" to table
+    -- {x1,y1}
+    local function mapCoordinateToTable(line,lineNumber,fileNumber)
+        local originalLine = line
+        local function coordinateStringToNumber(coordinateString,isZCoord)
+            local coordinateNumber = tonumber(coordinateString)
+            if coordinateNumber == nil and not isZCoord then
+                error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The lines between a 'locations' line and an 'endlocations' line should each have one map coordinate (2 or 3 numbers separated by commas).  Received:\n"..originalLine)
+            end
+            return coordinateNumber
+        end
+        if line:sub(-1) == "," then
+            line = line:sub(1,-2)
+        end
+        local oT={}
+        local lineTable = lineToTable(line)
+        --oT[1],oT[2],oT[3] = load("return "..line)()
+        oT[1] = coordinateStringToNumber(lineTable[0],false)
+        oT[2] = coordinateStringToNumber(lineTable[1],false)
+        oT[3] = coordinateStringToNumber(lineTable[2],true)
+        if oT[1] % 2 ~= oT[2] % 2 then
+            -- invalid civ ii coordinates, x,y must be both even or both odd
+            error("Legacy Event Builder File Number: "..fileNumber.." Line Number: "..lineNumber..".  A coordinate in Civ II must have the x and y component be both even or both odd.  Received:\n"..originalLine)
+        end
+        return oT
+    end
+
+    -- end of coordinate conversion code
     local function removeTrailingSpaces(line)
         while line:sub(-1)==" " or line:sub(-1)=="\t" do
             line = line:sub(0,-2)
@@ -257,6 +383,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                 eventTable[eventTableIndex]={IF={}}
                 atIfOpen=true
                 eventTable[eventTableIndex]["BATCHINFO"]=batchInfo
+                eventTable[eventTableIndex]["STARTLINE"]=lineNumber
             elseif line == "@and" then
                 atIfOpen=false
                 atAndOpen=true
@@ -267,6 +394,12 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                 atThenOpen=true
                 eventTable[eventTableIndex]["THEN"]={}
             elseif line == "@endif" then
+                if multiLineParameterOpen["text"] then
+                    error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The event has no ENDTEXT line.")
+                end
+                if multiLineParameterOpen["locations"] then
+                    error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The event has no ENDLOCATIONS line.")
+                end
                 atIfOpen=false
                 atAndOpen=false
                 atThenOpen=false
@@ -325,7 +458,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                 -- we're after the @THEN line
                 if nextLineParameterOpen.maprect then
                     -- put the map rectangle coordinates into the "maprect" index of the open action
-                    eventTable[eventTableIndex]["THEN"][getOpenAction()]["maprect"]=mapRectangleToTable(line)
+                    eventTable[eventTableIndex]["THEN"][getOpenAction()]["maprect"]=mapRectangleToTable(line,lineNumber,fileNumber)
                     if eventTable[eventTableIndex]["THEN"][getOpenAction()]["maprect"][4][2] == nil then
                         error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The line after a 'maprect' line should be four coordinates separated by commas (8 numbers separated by commas).  Received:\n"..line)
                     end
@@ -333,7 +466,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                     nextLineParameterOpen.maprect=false
                 elseif nextLineParameterOpen.moveto then
                     -- put the move to coordinates into the "moveto" index of the open action
-                    eventTable[eventTableIndex]["THEN"][getOpenAction()]["moveto"]=mapCoordinateToTable(line)
+                    eventTable[eventTableIndex]["THEN"][getOpenAction()]["moveto"]=mapCoordinateToTable(line,lineNumber,fileNumber)
                     -- close the nextLineParameter for moveto
                     nextLineParameterOpen.moveto=false
                 elseif multiLineParameterOpen.locations then
@@ -344,7 +477,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                         eventTable[eventTableIndex]["THEN"][getOpenAction()]["locations"]=eventTable[eventTableIndex]["THEN"][getOpenAction()]["locations"] or {}
                         local locTable = eventTable[eventTableIndex]["THEN"][getOpenAction()]["locations"]
                         -- add the coordinates of the next location to the table
-                        locTable[#locTable+1]=mapCoordinateToTable(line)
+                        locTable[#locTable+1]=mapCoordinateToTable(line,lineNumber,fileNumber)
                     end
                 elseif multiLineParameterOpen["text"] then
                     if line=="endtext" then
@@ -433,6 +566,9 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     -- this provides a way of checking if the event file has been changed
     local eventFileHash = hash.hash256(totalEventString)
     eventTable["eventHash"]=eventFileHash
+
+    -- Add the current version number of the legacy event builder
+    eventTable["legacyEventBuilderVersion"]=versionNumber
     
     
     -- This Piece of Code was written by TheNamelessOne, creater of TOTPP

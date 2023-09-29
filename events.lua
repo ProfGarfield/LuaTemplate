@@ -102,6 +102,44 @@ if string.find(package.path, scenarioFolderPath, 1, true) == nil then
     
 end
 
+-- Found this code on stackoverflow.com
+-- https://stackoverflow.com/questions/5303174/how-to-get-list-of-directories-in-lua
+local function scandir(directory)
+    local i, t, popen = 0, {}, io.popen
+    local pfile = popen([[dir "]]..directory..[[" /b]])
+    for filename in pfile:lines() do
+        i = i + 1
+        t[i] = filename
+    end
+    pfile:close()
+    return t
+end
+local scenFolder = scenarioFolder:sub(1,-2)
+local mainScenarioFolder = string.gsub(scenFolder,".*\\","")
+local requirePathFiles = {}
+requirePathFiles[mainScenarioFolder] = scandir(scenarioFolder)
+requirePathFiles["LuaCore"] = scandir(scenarioFolder.."\\LuaCore")
+requirePathFiles["LuaParameterFiles"] = scandir(scenarioFolder.."\\LuaParameterFiles")
+requirePathFiles["MechanicsFiles"] = scandir(scenarioFolder.."\\MechanicsFiles")
+requirePathFiles["EventsFiles"] = scandir(scenarioFolder.."\\EventsFiles")
+
+-- detect duplicate file names
+local fileNameRegistry = {}
+local duplicateFound = false
+for dirName,files in pairs(requirePathFiles) do
+    for _,fileName in pairs(files) do
+        if fileNameRegistry[fileName] then
+            print("Duplicate file name: "..fileName.." in "..dirName.." and "..fileNameRegistry[fileName])
+            duplicateFound = true
+        else
+            fileNameRegistry[fileName] = dirName
+        end
+    end
+end
+if duplicateFound then
+    error("Duplicate file names found.  The list is printed above.  You must only have one file with a given name in "..mainScenarioFolder.." and the following subfolders: LuaCore, LuaParameterFiles, MechanicsFiles, EventsFiles.")
+end
+
 -- requireIfAvailable(fileName) --> fileFound (bool), prefix (whatever is returned by a successful require, or nil)
 local function requireIfAvailable(fileName)
     if package.loaded[fileName] then

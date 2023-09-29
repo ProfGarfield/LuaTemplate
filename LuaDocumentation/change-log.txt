@@ -103,6 +103,20 @@ Updated events.lua and discreteEventsRegistrar to allow onEnterTile to cancel fu
 
 gen.isNoOrder updated to check for order==-1 instead of order==0xFF (255)
 
+fixed a bug in rules.lua, an integer division prevented units from being upgraded by rules_lst unless the upgrade chance was 100%.
+
+added flagSetValue function to the supplementalData module (and its derivative modules)
+
+Added supplementalData modules for technologies, terrain, baseTerrain, improvements, wonders, unitTypes.
+
+Added "itemless" supplementalData module under the name "data".
+
+Updated legacyEventEngine/Builder with some more helpful error messages.
+
+Events.lua now searches for duplicate files in the five default require folders.
+
+Some updates to version numbers that should have been done before.
+
 todo
 
 

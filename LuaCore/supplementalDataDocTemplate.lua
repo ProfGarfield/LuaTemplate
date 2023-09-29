@@ -118,6 +118,15 @@ end
 function _item_Data.flagSetFalse(_item_,flagName,moduleName)
 end
 
+--Sets the value associated with the _item_'s flag of flagName to the `value` 
+--(true or false) specified.
+---@param _item_ _item_Object
+---@param flagName string
+---@param value boolean
+---@param moduleName? string
+function _item_Data.flagSetValue(_item_,flagName,value,moduleName)
+end
+
 
 --Sets the value associated with the _item_'s flag of flagName to nil
 --(meaning that it returns the default value set when it was defined).
@@ -428,7 +437,7 @@ end
 
 
 --[[
-Defines a phrase for _item_ data, which keeps string values.   This version of defineCounter allows you to add a module name to the phrase name, which
+Defines a phrase for _item_ data, which keeps string values.   This version of definePhrase allows you to add a module name to the phrase name, which
 will prevent name collisions with phrases from other modules and code
 written for a specific scenario.
 * moduleName = string

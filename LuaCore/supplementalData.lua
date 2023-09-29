@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -291,6 +291,12 @@ local onTribeTurnEndFunctions = {}
 --          if true, the counter can take on non-integer values
 --          if false, the counter rounds non-integer values before saving them
 --          if nil, non-integer values generate an error when attempting to save them
+--      allowedValues = {[allowedString]=true} or nil
+--          if data is phrase
+--          a table with string keys that the phrase can take on
+--          if nil, the phrase can take on any string
+--          
+
 
 -- <item>Datum = {
 --      [key] = state-savable
@@ -476,6 +482,17 @@ function supplementalData.buildModuleFunctions(moduleName, itemName, isItem,
         guaranteeDatum(item)
         local itemID = getItemID(item)
         dataTable[itemID][flagName] = false
+    end
+
+    function itemData.flagSetValue(item,flagName,value,modName)
+        gen.validateFunctionArgument(flagName, moduleName, "flagSetValue",2, "flagName",anyString)
+        gen.validateFunctionArgument(modName, moduleName, "flagSetValue",4, "moduleName",anyStringNil,"flagName: "..flagName)
+        gen.validateFunctionArgument(value, moduleName, "flagSetValue",3, "value",{["boolean"]=true},"flagName: "..flagName)
+        flagName = makeModuleKeyName(modName,flagName) 
+        standardChecks(item,flagName,"flagSetFalse","flag")
+        guaranteeDatum(item)
+        local itemID = getItemID(item)
+        dataTable[itemID][flagName] = value
     end
 
     -- returns true if the datum is "empty", which is to say,
@@ -755,12 +772,14 @@ function supplementalData.buildModuleFunctions(moduleName, itemName, isItem,
         return not (dataTable[itemID] and dataTable[itemID][counterName] ~= nil)
     end
 
-    function itemData.definePhrase(phraseName,defaultValue,resetTime)
+    function itemData.definePhrase(phraseName,defaultValue,resetTime,allowedValuesTable)
         gen.validateFunctionArgument(phraseName,moduleName,"definePhrase",1,"phraseName",anyString)
         gen.validateFunctionArgument(defaultValue,moduleName,"definePhrase",2,"defaultValue",{["nil"]=true,["string"]=true},"phraseName: "..phraseName)
         defaultValue = defaultValue or ""
         gen.validateFunctionArgument(resetTime,moduleName,"definePhrase",3,"resetTime",
             {["nil"]=true,["string"]=allowedUpdateTimes},"phraseName: "..phraseName)
+        gen.validateFunctionArgument(allowedValuesTable,moduleName,"definePhrase",4,"allowedValuesTable",
+            {["nil"]=true,["table"]=true},"phraseName: "..phraseName)
         resetTime = resetTime or "never"
         if keyDefinitions[phraseName] then
             error(moduleName..'.definePhrase: the phraseName "'..phraseName..'" is already in use.')
@@ -776,12 +795,28 @@ function supplementalData.buildModuleFunctions(moduleName, itemName, isItem,
         def.minValue = nil
         def.maxValue = nil
         def.nonInteger = nil
+        if allowedValuesTable then
+            def.allowedValues = {}
+            for key,value in pairs(allowedValuesTable) do
+                if type(key) == "string" then
+                    def.allowedValues[key] = true
+                end
+                if type(value) == "string" then
+                    def.allowedValues[value] = true
+                end
+            end
+            if not def.allowedValues[def.defaultValue] then
+                error(moduleName..".definePhrase: the defaultValue(arg2) must be a key or value in the allowedValuesTable(arg4).  Received: defaultValue: "..tostring(defaultValue).." allowedValuesTable: "..gen.tableToString(allowedValuesTable))
+            end
+        else
+            def.allowedValues = nil
+        end
     end
-    function itemData.defineModulePhrase(modName,phraseName,defaultValue,resetTime)
+    function itemData.defineModulePhrase(modName,phraseName,defaultValue,resetTime,allowedValuesTable)
         if type(modName) ~= "string" or type(phraseName) ~= "string" then
             error(moduleName..".defineModulePhrase: the moduleName or the keyName for a module phrase is not a string.  Received: moduleName: "..tostring(moduleName).." keyName: "..tostring(phraseName))
         end
-        itemData.definePhrase(makeModuleKeyName(modName,phraseName),defaultValue,resetTime)
+        itemData.definePhrase(makeModuleKeyName(modName,phraseName),defaultValue,resetTime,allowedValuesTable)
     end
         
     function itemData.phraseGetValue(item,phraseName,modName)
@@ -804,6 +839,13 @@ function supplementalData.buildModuleFunctions(moduleName, itemName, isItem,
         phraseName = makeModuleKeyName(modName,phraseName)
         standardChecks(item,phraseName,"phraseSetValue","phrase")
         guaranteeDatum(item)
+        if keyDefinitions[phraseName].allowedValues and not keyDefinitions[phraseName].allowedValues[value] then
+            local errorMessage = moduleName..".phraseSetValue: the value(arg3) must be one of the allowedValues specified when defining the phrase.  Received: value: "..tostring(value).." allowedValues: "
+            for key,_ in pairs(keyDefinitions[phraseName].allowedValues) do
+                errorMessage = errorMessage..key..", "
+            end
+            error(errorMessage)
+        end
         local itemID = getItemID(item)
         dataTable[itemID][phraseName] = value
     end
