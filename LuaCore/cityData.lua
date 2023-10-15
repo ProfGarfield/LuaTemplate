@@ -1,4 +1,4 @@
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -690,7 +690,7 @@ end
 
 
 local supplementalData = require("supplementalData"):minVersion(2)
-local gen = require("generalLibrary"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(11)
 gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."cityData.lua")
 
 local getCityID = function(city) return city.id end
@@ -700,8 +700,12 @@ local verifyCity = function(city) return gen.getTileID(city.location), nil, nil 
 cityData = supplementalData.buildModuleFunctions("cityData","city",
     civ.isCity,getCityID,civ.getCity,civ.iterateCities,getCityOwner,verifyCity)
 
+
+gen.registerUpdateCityValidationInfo(cityData.changeValidationInfo)
+
 -- This is run as part of the onCityDestroyed event, after everything else
 -- This even runs when civ.deleteCity is called
+
 
 function cityData.onCityDestroyed(city)
     cityData.deleteData(city)

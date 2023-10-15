@@ -448,12 +448,20 @@ local function groundUnitActivatedOnLand(unit)
     end
 end
 
+
+local function tileName(tile)
+    if tile.city then
+        return tile.city.name
+    end
+    return "("..text.coordinates(tile)..")"
+end
+
 local function moveOrDeleteForbiddenCargo(ship,cargo,previousTile)
-    if previousTile.city and previousTile.city.owner == cargo.owner then
+    if previousTile.baseTerrain.type ~= 10 and (previousTile.defender == nil or previousTile.defender == cargo.owner) then
             cargo:teleport(previousTile)
             cargo.carriedBy = nil
             if cargo.owner.isHuman then
-                text.simple("In this scenario, "..cargo.type.name.." units can't be transported by "..ship.type.name.." units.  Your "..cargo.type.name.." has been moved to "..previousTile.city.name..".","Scenario Rules: Shipping")
+                text.simple("In this scenario, "..cargo.type.name.." units can't be transported by "..ship.type.name.." units.  Your "..cargo.type.name.." has been moved to "..tileName(previousTile)..".","Scenario Rules: Shipping")
             end
             return
     end
@@ -468,11 +476,11 @@ function navy.beachSettingsUnitActivation(unit)
         -- Ship holds don't need to be set to 0 when a sea or air unit is active
         resetShipHolds()
         local unitTypeID = unit.type.id
-        if unit.type.domain == 2 and unit.type.hold > 0 and unit.location.city
+        if unit.type.domain == 2 and unit.type.hold > 0 and unit.location.baseTerrain.type ~= 10
             and (unit.owner.isHuman or applyToAI) then
-            for unitInCity in unit.location.units do
-                if gen.isSleeping(unitInCity) and forbidTransportTable[unitTypeID][unitInCity.type.id] then
-                    gen.setToNoOrders(unitInCity)
+            for unitOnLand in unit.location.units do
+                if gen.isSleeping(unitOnLand) and forbidTransportTable[unitTypeID][unitOnLand.type.id] then
+                    gen.setToNoOrders(unitOnLand)
                 end
             end
         end

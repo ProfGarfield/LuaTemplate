@@ -1,5 +1,5 @@
 
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -696,7 +696,7 @@ end
 
 
 local supplementalData = require("supplementalData"):minVersion(2)
-local gen = require("generalLibrary"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(11)
 gen.minEventsLuaVersion(1,1,"LuaCore".."\\".."unitData.lua")
 
 local getUnitID = function(unit) return unit.id end
@@ -721,6 +721,7 @@ end
 
 gen.versionFunctions(unitData,versionNumber,fileModified,"LuaCore".."\\".."unitData.lua")
 
+gen.registerUpdateUnitValidationInfo(unitData.changeValidationInfo)
 
 if rawget(_G,"console") then
     _G["console"].unitData = unitData

@@ -1,5 +1,5 @@
 
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -3214,7 +3214,7 @@ function console.menuAutoTest(tribeID)
 end
 
 
---  text.makeChooseNumberMenu(increments={1,10,50,100,500,1000, -1,-10,-100},extremes={min=0,max=10000},selectionKey="menuChosenNumber",nextMenu=nil,goBackOptions = {},menuName="Choose Number Menu")
+--  text.makeChooseNumberMenu(increments={1,10,50,100,500,1000, -1,-10,-100},extremes={min=0,max=10000},selectionKey="menuChosenNumber",nextMenu=nil,goBackOptions = {},menuName="Choose Number Menu",plusOptionWrapper="Add %STRING1",minusOptionWrapper="Subtract %STRING1",confirmOptionWrapper="Select %STRING1")
 --      Creates a menu which allows the user to select a positive integer.
 --      This is actually a series of menus, but using post processing,
 --      it will only count as 1 element of history and menuRecordHistory.
@@ -3241,20 +3241,40 @@ end
 --      menuName = string
 --          a name for the menuRecord that will appear in some error messages
 --
+--      plusOptionWrapper = string
+--          A string for which text.substitute will be used to generate the option
+--          name, with the increment substituting %STIRNG1
+--          Applies when the option is positive
+--          If nil, the option name will be "Add %STRING1"
+--      minusOptionWrapper = string
+--          A string for which text.substitute will be used to generate the option
+--          name, with the increment substituting %STIRNG1
+--          Applies when the option is negative
+--          If nil, the option name will be "Subtract %STRING1"
+--      confirmOptionWrapper = string
+--          A string for which text.substitute will be used to generate the option
+--          name, with the increment substituting %STIRNG1
+--          Applies for the selection of the current number
+--          
+--
 --      The menuRecord created will have a menuGenerator and postProcessor created already.
 --      You still have to create the other entries in the menuRecord, like menuText, menuTitle,
 --      and image.   You can use autoChoice to immediately return a choice, but don't 
 --      try to use autoChoiceWeights.  Leave that as nil.
 --
+--      
 --
 
-function text.makeChooseNumberMenu(increments,extremes,selectionKey,nextMenu,goBackOptions,menuName)
+function text.makeChooseNumberMenu(increments,extremes,selectionKey,nextMenu,goBackOptions,menuName,plusOptionWrapper,minusOptionWrapper,confirmOptionWrapper)
     increments = increments or {1,10,50,100,500,1000, -1,-10,-100}
     extremes = extremes or {min=0,max=10000}
     selectionKey = selectionKey or "menuChosenNumber"
     nextMenu = nextMenu or nil
     goBackOptions = goBackOptions or {}
     menuName = menuName or "Choose Number Menu"
+    plusOptionWrapper = plusOptionWrapper or "Add %STRING1"
+    minusOptionWrapper = minusOptionWrapper or "Subtract %STRING1"
+    confirmOptionWrapper = confirmOptionWrapper or "Select %STRING1"
     local returnMenu = text.newMenuRecord({menuName=menuName})
     
     local function menuGen(callingArgument,history)
@@ -3276,16 +3296,17 @@ function text.makeChooseNumberMenu(increments,extremes,selectionKey,nextMenu,goB
             c[selectionKey] = math.min(extremes.max,math.max(extremes.min,currentChoice+increments[i]))
             local inc = increments[i]
             if inc >= 0 and not maxBinding then
-                menu[menuIndex] = {choice = c, nextMenu = returnMenu, optionName = "Add "..tostring(inc)}
+                menu[menuIndex] = {choice = c, nextMenu = returnMenu, optionName = text.substitute(plusOptionWrapper,{inc})}
                 menuIndex = menuIndex+1
             elseif inc < 0 and not minBinding then
-                menu[menuIndex] = {choice = c, nextMenu = returnMenu, optionName = "Subtract "..tostring(inc)}
+                menu[menuIndex] = {choice = c, nextMenu = returnMenu, optionName = text.substitute(minusOptionWrapper,{math.abs(inc)}),
+            }
                 menuIndex = menuIndex+1
             end
         end
         local c = gen.copyTable(lastHistory)
         c[selectionKey] = currentChoice
-        menu[menuIndex] = {choice = c, nextMenu = nextMenu, optionName = "Select "..tostring(currentChoice)}
+        menu[menuIndex] = {choice = c, nextMenu = nextMenu, optionName = text.substitute(confirmOptionWrapper,{currentChoice})}
         menuIndex = menuIndex+1
         for i=1,#goBackOptions do
             menu[menuIndex] = {choice = nil, nextMenu = goBackOptions[i].goBack, 

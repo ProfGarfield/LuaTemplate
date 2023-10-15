@@ -1,41 +1,34 @@
+
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
 -- if you set fileModified to true, the error generated if this file is out of date will
 -- warn you that you've modified this file
---
---
--- Provides Functionality related to diplomacy
---  diplomacy.warExists(tribe1,tribe2)-->bool
---  diplomacy.setWar(tribe1,tribe2)
---  diplomacy.clearWar(tribe1,tribe2)
---  diplomacy.contactExists(tribe1,tribe2)-->bool
---  diplomacy.setContact(tribe1,tribe2)
---  diplomacy.clearContact(tribe1,tribe2)
---  diplomacy.ceaseFireExists(tribe1,tribe2)-->bool
---  diplomacy.setCeaseFire(tribe1,tribe2)
---  diplomacy.clearCeaseFire(tribe1,tribe2)
---  diplomacy.peaceTreatyExists(tribe1,tribe2)-->bool
---  diplomacy.setPeaceTreaty(tribe1,tribe2)
---  diplomacy.clearPeaceTreaty(tribe1,tribe2)
---  diplomacy.allianceExists(tribe1,tribe2)-->bool
---  diplomacy.setAlliance(tribe1,tribe2)
---  diplomacy.clearAlliance(tribe1,tribe2)
---  diplomacy.hasEmbassyWith(ownerTribe,hostTribe) -->bool
---  diplomacy.setEmbassyWith(ownerTribe,hostTribe)
---  diplomacy.clearEmbassyWith(ownerTribe,hostTribe)
---  diplomacy.hasVendettaWith(angryTribe,offendingTribe)-->bool
---  diplomacy.setVendettaWith(angryTribe,offendingTribe)
---  diplomacy.clearVendettaWith(angryTribe,offendingTribe)
 
-local gen = require("generalLibrary"):minVersion(1)
-local text = require("text")
-local civlua = require("civluaModified")
+---@module "generalLibrary"
+local gen = require("generalLibrary"):minVersion(9)
 
-local diplomacy = {version=versionNumber}
+---@module "text"
+local text = require("text"):minVersion(5)
+
+local civlua = require("civlua")
+
+---@module "data"
+local data = require("data")
+
+---@module "discreteEventsRegistrar"
+local discreteEvents = require("discreteEventsRegistrar")
+
+
+local changeRules = require("changeRules")
+
+local diplomacy = {}
+
 gen.versionFunctions(diplomacy,versionNumber,fileModified,"LuaCore".."\\".."diplomacy.lua")
+gen.minEventsLuaVersion(9, 1, "LuaCore\\diplomacy.lua")
+
 
 local diplomacyState = "notLinked"
 
@@ -61,58 +54,20 @@ local function linkState(tableInState)
     end
     diplomacyState.diplomaticOffers = diplomacyState.diplomaticOffers or {}
     diplomacyState.expectedTreaties = initializeExpectedTreaties(diplomacyState.expectedTreaties)
-    diplomacyState.allowedTreatyChanges = diplomacyState.allowedTreatyChanges or {[0]={},{},{},{},{},{},{},{}}
 end
 diplomacy.linkState = linkState
 
-local fileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
-if fileFound then
-    function discreteEvents.linkStateToModules(state,stateTableKeys)
-        local keyName = "diplomacyState"
-        if stateTableKeys[keyName] then
-            error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
-        else
-            stateTableKeys[keyName] = true
-        end
-        -- link the state table to the module
-        state[keyName] = state[keyName] or {}
-        linkState(state[keyName])
+discreteEvents.linkStateToModules(function (stateTable, stateTableKeys)
+    local keyName = "diplomacyState"
+    if stateTableKeys[keyName] then
+        error('"'..keyName..'" is used as a key for the state table on at least two occasions.')
+    else
+        stateTableKeys[keyName] = true
     end
-end
-
-
-
-
-local alwaysAllowedTreatyChanges = {[0]={},{},{},{},{},{},{},{}}
-
-local function negotiationTreaty(tribe1ID,tribe2ID)
-    return diplomacyState.allowedTreatyChanges[tribe1ID][tribe2ID] or alwaysAllowedTreatyChanges[tribe1ID][tribe2ID]
-end
-
-local function enableTreatyChanges(tribe1,tribe2)
-    if type(diplomacyState)=="string" then
-        error("diplomacy.enableTreatyChanges: enableTreatyChanges should only be used within an event, and not as part of the setup scripts.  Either use 'diplomacy.alwaysEnableTreatyChanges', or place diplomacy.enableTreatyChanges within an event, such as onScenarioLoaded or onTurn.")
-    end
-    diplomacyState.allowedTreatyChanges[tribe1.id][tribe2.id]=true
-    diplomacyState.allowedTreatyChanges[tribe2.id][tribe1.id]=true
-end
-diplomacy.enableTreatyChanges = enableTreatyChanges
-
-
-local function disableTreatyChanges(tribe1,tribe2)
-    if type(diplomacyState)=="string" then
-        error("diplomacy.disableTreatyChanges: disableTreatyChanges should only be used within an event, and not as part of the setup scripts.  Place it within an event function such as onTurn.")
-    end
-    diplomacyState.allowedTreatyChanges[tribe1.id][tribe2.id]=nil
-    diplomacyState.allowedTreatyChanges[tribe2.id][tribe1.id]=nil
-end
-diplomacy.disableTreatyChanges = disableTreatyChanges
-
-local function alwaysEnableTreatyChanges(tribe1,tribe2)
-    alwaysAllowedTreatyChanges[tribe1.id][tribe2.id]=true
-    alwaysAllowedTreatyChanges[tribe2.id][tribe1.id]=true
-end
-diplomacy.alwaysEnableTreatyChanges = alwaysEnableTreatyChanges
+    -- link the state table to the module
+    stateTable[keyName] = stateTable[keyName] or {}
+    linkState(stateTable[keyName])
+end)
 
 
 -- checkSymmetricBit1(int1,int2,bitNumber,errorMessage)-->bool
@@ -131,61 +86,259 @@ local function checkSymmetricBit1(int1,int2,bitNumber,errorMessage)
     end
 end
 
--- if eventTreatiesOnly is true, treaties can only
--- be changed by events in the diplomacy module
-local eventTreatiesOnly = false
-local eventTreatiesMessage = nil
-
--- After this function is set, treaties can only be
--- changed by event
--- if eventTreatiesMessage is supplied,
--- the message will be shown to the player when a treaty
--- is reset to the event specification
-local function setEventTreatiesOnly(eventTreatiesMsg)
-    eventTreatiesOnly = true
-    eventTreatiesMessage = eventTreatiesMsg
+local function dataSuffix(tribe1,tribe2)
+    if civ.isTribe(tribe1) then
+        tribe1=tribe1.id
+    end
+    if civ.isTribe(tribe2) then
+        tribe2 = tribe2.id
+    end
+    if type(tribe1) ~= "number" then
+        error("diplomacy.dataSuffix: tribe1 must be a tribe object or a tribe ID")
+    end
+    if type(tribe2) ~= "number" then
+        error("diplomacy.dataSuffix: tribe2 must be a tribe object or a tribe ID")
+    end
+    if tribe1< tribe2 then
+        return tribe1.."_"..tribe2
+    else
+        return tribe2.."_"..tribe1
+    end
 end
-diplomacy.setEventTreatiesOnly = setEventTreatiesOnly
+
+local endogenousFlagsDefined = false
+
+local endogenousFlagDefaults = {}
+for i=0,gen.c.maxTribeID do
+    for j = i+1,gen.c.maxTribeID do
+        endogenousFlagDefaults[i.."_"..j] = true
+    end
+end
+
+--[[
+Calling this function prevents `tribe1` and `tribe2` from changing their treaty status with each other through diplomacy.  If they change
+their treaty status, events will undo the change at the earliest opportunity.  All treaty changes will have to be made using the diplomacy module.
+The function `diplomacy.enableEndogenousTreatyChanges` can be used to re-enable treaty changes through diplomacy.
+Vendetta and Embassy status can still be changed.
+    ]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.disableEndogenousTreatyChanges(tribe1,tribe2)
+    if not endogenousFlagsDefined then
+        error("diplomacy.disableEndogenousTreatyChanges: This function can only be called during a scenario execution point, and not during initialization.  You might want to use the function diplomacy.disableEndogenousTreatyChangesByDefault instead.")
+    end
+    if not civ.isTribe(tribe1) or not civ.isTribe(tribe2) then
+        error("diplomacy.disableEndogenousTreatyChanges: tribe1 and tribe2 must be tribe objects")
+    end
+    data.flagSetFalse("endogenousTreatyChangesEnabled_"..dataSuffix(tribe1,tribe2),"diplomacy")
+end
+
+--[[
+Calling this function enables `tribe1` and `tribe2` to change their treaty status with each other through diplomacy.  This ability
+may have been disabled by a call to `diplomacy.disableEndogenousTreatyChanges`, or it may have been disabled by default (see `diplomacy.disableEndogenousTreatyChangesByDefault`).
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.enableEndogenousTreatyChanges(tribe1,tribe2)
+    if not endogenousFlagsDefined then
+        error("diplomacy.enableEndogenousTreatyChanges: This function can only be called during a scenario execution point, and not during initialization.  The function diplomacy.disableEndogenousTreatyChangesByDefault is available, though since you are calling this function, you probably want to refrain from calling it somewhere.")
+    end
+    if not civ.isTribe(tribe1) or not civ.isTribe(tribe2) then
+        error("diplomacy.enableEndogenousTreatyChanges: tribe1 and tribe2 must be tribe objects")
+    end
+    data.flagSetTrue("endogenousTreatyChangesEnabled_"..dataSuffix(tribe1,tribe2),"diplomacy")
+end
+
+--[[
+Calling this function changes whether `tribe1` and `tribe2` can change their treaty status with each other through diplomacy.  Ordinarily, the
+ability to change treaty status is enabled by default (in which case this function restores the default behaviour after a call to `diplomacy.disableEndogenousTreatyChanges`).  However, if `diplomacy.disableEndogenousTreatyChangesByDefault` was called during initialization, then the ability to change treaty status is disabled by default (in which case this function restores the default behaviour after a call to `diplomacy.enableEndogenousTreatyChanges`).
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.resetEndogenousTreatyChanges(tribe1,tribe2)
+    if not endogenousFlagsDefined then
+        error("diplomacy.resetEndogenousTreatyChanges: This function can only be called during a scenario execution point, and not during initialization.")
+    end
+    if not civ.isTribe(tribe1) or not civ.isTribe(tribe2) then
+        error("diplomacy.resetEndogenousTreatyChanges: tribe1 and tribe2 must be tribe objects")
+    end
+    data.flagReset("endogenousTreatyChangesEnabled_"..dataSuffix(tribe1,tribe2),"diplomacy")
+end
+
+--[[
+Call this function in diplomacySettings.lua to disable the ability of `tribe1` and `tribe2` to change their treaty status with each other through diplomacy by default.  This is useful if you want to use the diplomacy module to control all treaty changes, and you don't want the AI to change treaties on its own.  You can use `diplomacy.enableEndogenousTreatyChanges` if you want two tribes to be able to change their treaty status with each other through diplomacy during
+part of your scenario.
+Vendetta and Embassy status can still be changed.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.disableEndogenousTreatyChangesByDefault(tribe1,tribe2)
+    if endogenousFlagsDefined then
+        error("diplomacy.disableEndogenousTreatyChangesByDefault: The flags governing endogenous treaty changes have already been defined.  You must call this function before calling diplomacy.defineEndogenousFlags.  You should be able to call this function in the file MechanicsFiles\\diplomacySettings.lua.  This function can never be called as part of an actual event.")
+    end
+    endogenousFlagDefaults[dataSuffix(tribe1,tribe2)] = false
+end
+
+--[[Returns true if `tribe1` and `tribe2` are allowed to change their treaty status with each other through diplomacy.  This is the default behaviour, but it can be changed by calling `diplomacy.disableEndogenousTreatyChangesByDefault` in diplomacySettings.lua.  It can also be changed by calling `diplomacy.disableEndogenousTreatyChanges` or `diplomacy.enableEndogenousTreatyChanges` as part of normal events.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+---@return boolean
+function diplomacy.canTribesChangeTreatiesEndogenously(tribe1,tribe2)
+    return data.flagGetValue("endogenousTreatyChangesEnabled_"..dataSuffix(tribe1,tribe2),"diplomacy")
+end
 
 
 
--- checkTreaties()
---  
-local function checkTreaties()
-    if eventTreatiesOnly then
-        local expectedTreatiesTable = diplomacyState.expectedTreaties
-        local treatyRestored = false
-        for senderTribeID=0,7 do
-            for receiverTribeID = 0,7 do
-                -- if tribes have been allowed to change their treaties
-                if negotiationTreaty(senderTribeID,receiverTribeID) then
-                    expectedTreatiesTable[senderTribeID][receiverTribeID]=civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]
-                else
-                    -- tribes haven't been allowed to change their treaties
-                    if expectedTreatiesTable[senderTribeID][receiverTribeID]~=civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]
-                    then
-                        civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]=expectedTreatiesTable[senderTribeID][receiverTribeID]
-                        treatyRestored=true
+--[[
+It is not expected that the scenario designer will need to use this function.
+
+This function is called in events.lua to define the flags that allow
+the diplomacy module to keep track of whether two tribes can change
+their treaty status with each other through diplomacy.
+
+It is called in events.lua (instead of in diplomacy.lua) so that
+`diplomacy.disableEndogenousTreatyChangesByDefault` can be called
+in diplomacySettings.lua before the flags are defined, which
+allows the default value to be set to false for some tribes.
+    ]]
+function diplomacy.defineEndogenousFlags()
+    for i=0,gen.c.maxTribeID do
+        for j = i,gen.c.maxTribeID do
+            data.defineModuleFlag("diplomacy","endogenousTreatyChangesEnabled_"..i.."_"..j,
+            endogenousFlagDefaults[i.."_"..j])
+        end
+    end
+    endogenousFlagsDefined = true
+end
+
+---@type string|nil|false
+local eventTreatiesMessage = "You may have received a message that the %STRING1 and %STRING2 have changed their treaty status.  This has been undone."
+
+--[[
+Sets the message that is displayed when a treaty change is undone.
+%STRING1 and %STRING2 are replaced with the names of the tribes that
+changed their treaty status.
+Calling this function with a value of nil or false will prevent a message
+from being displayed.
+The default value is "You may have received a message that the %STRING1 and %STRING2 have changed their treaty status.  This has been undone."
+]]
+---@param message string|nil|false
+function diplomacy.setDiplomacyReversalMessage(message)
+    eventTreatiesMessage = message
+end
+
+--[[
+The scenario designer should not need to call this function.
+Checks the treaties between tribes and compares them to expectations.
+If tribes are not allowed to change their treaty status with each other
+through diplomacy, then the treaty status is reset to the expected value.
+If they can change treaties, the expected value is updated to match the
+actual value.
+]]
+function diplomacy.checkTreaties()
+    local expectedTreatiesTable = diplomacyState.expectedTreaties
+    for tribe1ID=0,gen.c.maxTribeID do
+        for tribe2ID=tribe1ID+1,gen.c.maxTribeID do
+            if data.flagGetValue("endogenousTreatyChangesEnabled_"..tribe1ID.."_"..tribe2ID,"diplomacy") then
+                expectedTreatiesTable[tribe1ID][tribe2ID] = civ.getTribe(tribe1ID).treaties[civ.getTribe(tribe2ID)]
+                expectedTreatiesTable[tribe2ID][tribe1ID] = civ.getTribe(tribe2ID).treaties[civ.getTribe(tribe1ID)]
+                
+            else
+                local tribe1Treaties = civ.getTribe(tribe1ID).treaties[civ.getTribe(tribe2ID)]
+                local tribe2Treaties = civ.getTribe(tribe2ID).treaties[civ.getTribe(tribe1ID)]
+                local expectedTreatiesTribe1 = expectedTreatiesTable[tribe1ID][tribe2ID]
+                local expectedTreatiesTribe2 = expectedTreatiesTable[tribe2ID][tribe1ID]
+                -- set bits 5 and 8 (vendetta and embassy) to 0
+                -- so they don't interfere with the comparison
+                -- and can change even if endogenous treaty changes are forbidden
+                tribe1Treaties = tribe1Treaties & ~0x90
+                tribe2Treaties = tribe2Treaties & ~0x90
+                expectedTreatiesTribe1 = expectedTreatiesTribe1 & ~0x90
+                expectedTreatiesTribe2 = expectedTreatiesTribe2 & ~0x90
+                if tribe1Treaties ~= expectedTreatiesTribe1 or 
+                    tribe2Treaties ~= expectedTreatiesTribe2 then
+                    civ.getTribe(tribe1ID).treaties[civ.getTribe(tribe2ID)] = expectedTreatiesTable[tribe1ID][tribe2ID]
+                    civ.getTribe(tribe2ID).treaties[civ.getTribe(tribe1ID)] = expectedTreatiesTable[tribe2ID][tribe1ID]
+                    if eventTreatiesMessage then
+                        text.simple(text.substitute(eventTreatiesMessage,{civ.getTribe(tribe1ID).name,civ.getTribe(tribe2ID).name}))
                     end
                 end
             end
         end
-        if treatyRestored and eventTreatiesMessage then
-            text.simple(eventTreatiesMessage,"Diplomacy")
-        end
-        return
-    else
-    local expectedTreatiesTable = diplomacyState.expectedTreaties
-        for senderTribeID=0,7 do
-            for receiverTribeID = 0,7 do
-                expectedTreatiesTable[senderTribeID][receiverTribeID]=civ.getTribe(senderTribeID).treaties[civ.getTribe(receiverTribeID)]
-            end
-        end
-        return
     end
 end
-diplomacy.checkTreaties = checkTreaties
--- 
+
+--[[
+Generates an error, so the scenario designer knows to update
+to the new diplomacy functions.
+]]
+---@deprecated
+---@param eventTreatiesMsg string
+function diplomacy.setEventTreatiesOnly(eventTreatiesMsg)
+    local message = [[diplomacy.setEventTreatiesOnly:
+This is a function from an earlier version of the diplomacy module.
+In order to disable two tribes from changing their treaty status,use 
+diplomacy.disableEndogenousTreatyChangesByDefault(tribe1,tribe2)
+in this file, or call 
+diplomacy.disableEndogenousTreatyChanges(tribe1,tribe2) within
+an execution point during the scenario.  To re-enable the tribes
+to change their treaty status, use
+diplomacy.enableEndogenousTreatyChanges(tribe1,tribe2) within
+an execution point during the scenario.]]
+
+    message = message.."\nTo set the message for reversing a treaty change, add the following call to this file:\ndiplomacy.setDiplomacyReversalMessage("..eventTreatiesMsg..")"
+    error(message)
+end
+
+
+--[[
+Generates an error, so the scenario designer knows to update
+to the new diplomacy functions.
+]]
+---@deprecated
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.alwaysEnableTreatyChanges(tribe1,tribe2)
+    local message = [[diplomacy.alwaysEnableTreatyChanges:
+This is a function from an earlier version of the diplomacy module.
+You no longer need to call this function to make sure some tribes
+can always change their treaties when other tribes can't.
+Now, for the relevant tribes, you simply need to refrain from calling
+diplomacy.disableEndogenousTreatyChangesByDefault(tribe1,tribe2)
+in this file or
+diplomacy.disableEndogenousTreatyChanges(tribe1,tribe2)
+in the scenario events.
+
+Note that diplomacy.enableTreatyChanges and diplomacy.disableTreatyChanges should still work as before, as long as
+you've called diplomacy.disableEndogenousTreatyChangesByDefault
+for tribes that should not be able to negotiate at the start
+of the scenario.]]
+    error(message)
+end
+
+--[[
+Calls diplomacy.enableEndogenousTreatyChanges for `tribe1` and `tribe2`.
+This is the name of a function from an earlier version of the diplomacy module.
+]]
+---@deprecated
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.enableTreatyChanges(tribe1,tribe2)
+    diplomacy.enableEndogenousTreatyChanges(tribe1,tribe2)
+end
+
+--[[
+Calls diplomacy.disableEndogenousTreatyChanges for `tribe1` and `tribe2`.
+This is the name of a function from an earlier version of the diplomacy module.
+]]
+---@deprecated
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.disableTreatyChanges(tribe1,tribe2)
+    diplomacy.disableEndogenousTreatyChanges(tribe1,tribe2)
+end
+
 -- setTreatiesBit1(tribe1,tribe2,bitNumber,tribe1Only=nil)-->void
 -- changes the treaties for tribe1 and tribe2, setting the corresponding
 -- bit to 1, unless tribe1Only is true, in which case, only tribe1's treaties
@@ -219,829 +372,886 @@ local function setTreatiesBit0(tribe1,tribe2,bitNumber,tribe1Only)
 
 end
 
-
-local function warExists(tribe1,tribe2)
+--[[Returns true if `tribe1` and `tribe2` are at war with each other, and false otherwise.  (Note that if tribes have no contact with each other, they can attack each other's units but will not be at war.)]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+---@return boolean
+function diplomacy.warExists(tribe1,tribe2)
     return checkSymmetricBit1(tribe1.treaties[tribe2],tribe2.treaties[tribe1],14,
     "warExists: the "..tribe1.name.." and "..tribe2.name.." do not have a symmetric war status.")
 end
-diplomacy.warExists = warExists
 
-local function setWar(tribe1,tribe2)
+--[[
+Sets treaties so that `tribe1` and `tribe2` are at war with each other.
+(Note, you may also have to use `civ.makeAggression` to make the tribes actually fight each other.) 
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.setWar(tribe1,tribe2)
     setTreatiesBit1(tribe1,tribe2,14)
 end
-diplomacy.setWar = setWar
 
-local function clearWar(tribe1,tribe2)
+--[[
+Clears the "war" "treaty" between `tribe1` and `tribe2`.  Does not establish
+any other treaty between the tribes. 
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.clearWar(tribe1,tribe2)
     setTreatiesBit0(tribe1,tribe2,14)
 end
-diplomacy.clearWar = clearWar
 
-local function contactExists(tribe1,tribe2)
+--[[
+Returns true if "contact" "treaties" exists between `tribe1` and `tribe2`, and false otherwise.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+---@return boolean
+function diplomacy.contactExists(tribe1,tribe2)
     return checkSymmetricBit1(tribe1.treaties[tribe2],tribe2.treaties[tribe1],1,
     "contactExists: the "..tribe1.name.." and "..tribe2.name.." do not have a symmetric contact status.")
 end
-diplomacy.contactExists = contactExists
 
-local function setContact(tribe1,tribe2)
+--[[
+Sets treaties so that "contact" exists between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.setContact(tribe1,tribe2)
     setTreatiesBit1(tribe1,tribe2,1)
 end
-diplomacy.setContact = setContact
 
-local function clearContact(tribe1,tribe2)
+--[[
+Clears treaties so that "contact" does not exist between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.clearContact(tribe1,tribe2)
     setTreatiesBit0(tribe1,tribe2,1)
 end
-diplomacy.clearContact = clearContact
 
-local function ceaseFireExists(tribe1,tribe2)
+--[[
+Returns true if a cease fire treaty exists between `tribe1` and `tribe2`, and false otherwise.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+---@return boolean
+function diplomacy.ceaseFireExists(tribe1,tribe2)
     return checkSymmetricBit1(tribe1.treaties[tribe2],tribe2.treaties[tribe1],2,
     "ceaseFireExists: the "..tribe1.name.." and "..tribe2.name.." do not have a symmetric Cease Fire status.")
 end
-diplomacy.ceaseFireExists = ceaseFireExists
 
-local function setCeaseFire(tribe1,tribe2)
+--[[
+Sets treaties so that a cease fire exists between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.setCeaseFire(tribe1,tribe2)
     setTreatiesBit1(tribe1,tribe2,2)
 end
-diplomacy.setCeaseFire = setCeaseFire
 
-local function clearCeaseFire(tribe1,tribe2)
+--[[
+Clears treaties so that a cease fire does not exist between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.clearCeaseFire(tribe1,tribe2)
     setTreatiesBit0(tribe1,tribe2,2)
 end
-diplomacy.clearCeaseFire = clearCeaseFire
 
-local function peaceTreatyExists(tribe1,tribe2)
+--[[
+Returns true if a peace treaty exists between `tribe1` and `tribe2`, and false otherwise.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+---@return boolean
+function diplomacy.peaceTreatyExists(tribe1,tribe2)
     return checkSymmetricBit1(tribe1.treaties[tribe2],tribe2.treaties[tribe1],3,
     "peaceTreatyExists: the "..tribe1.name.." and "..tribe2.name.." do not have a symmetric Peace Treaty status.")
 end
-diplomacy.peaceTreatyExists = peaceTreatyExists
 
-local function setPeaceTreaty(tribe1,tribe2)
+--[[
+Sets treaties so that a peace treaty exists between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.setPeaceTreaty(tribe1,tribe2)
     setTreatiesBit1(tribe1,tribe2,3)
 end
-diplomacy.setPeaceTreaty = setPeaceTreaty
 
-local function clearPeaceTreaty(tribe1,tribe2)
+--[[
+Clears treaties so that a peace treaty does not exist between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.clearPeaceTreaty(tribe1,tribe2)
     setTreatiesBit0(tribe1,tribe2,3)
 end
-diplomacy.clearPeaceTreaty = clearPeaceTreaty
 
-local function allianceExists(tribe1,tribe2)
+--[[
+Returns true if an alliance exists between `tribe1` and `tribe2`, and false otherwise.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+---@return boolean
+function diplomacy.allianceExists(tribe1,tribe2)
     return checkSymmetricBit1(tribe1.treaties[tribe2],tribe2.treaties[tribe1],4,
     "allianceExists: the "..tribe1.name.." and "..tribe2.name.." do not have a symmetric Alliance status.")
 end
-diplomacy.allianceExists = allianceExists
 
-local function setAlliance(tribe1,tribe2)
+--[[
+Sets treaties so that an alliance exists between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.setAlliance(tribe1,tribe2)
     setTreatiesBit1(tribe1,tribe2,4)
 end
-diplomacy.setAlliance = setAlliance
 
-local function clearAlliance(tribe1,tribe2)
+--[[
+Clears treaties so that an alliance does not exist between `tribe1` and `tribe2`.
+]]
+---@param tribe1 tribeObject
+---@param tribe2 tribeObject
+function diplomacy.clearAlliance(tribe1,tribe2)
     setTreatiesBit0(tribe1,tribe2,4)
 end
-diplomacy.clearAlliance = clearAlliance
 
-local function hasEmbassyWith(ownerTribe,hostTribe)
+--[[
+Returns true if the `ownerTribe` has an embassy with the `hostTribe`, and false otherwise.  That is, the `ownerTribe` receives an intelligence report about `hostTribe`.
+]]
+---@param ownerTribe tribeObject
+---@param hostTribe tribeObject
+---@return boolean
+function diplomacy.hasEmbassyWith(ownerTribe,hostTribe)
     return gen.isBit1(ownerTribe.treaties[hostTribe],8)
 end
-diplomacy.hasEmbassyWith = hasEmbassyWith
 
-local function setEmbassyWith(ownerTribe,hostTribe)
+--[[
+Sets treaties so that the `ownerTribe` has an embassy with the `hostTribe`.  That is, the `ownerTribe` will receive an intelligence reports about `hostTribe`.
+]]
+---@param ownerTribe tribeObject
+---@param hostTribe tribeObject
+function diplomacy.setEmbassyWith(ownerTribe,hostTribe)
     setTreatiesBit1(ownerTribe,hostTribe,8,true)
 end
-diplomacy.setEmbassyWith = setEmbassyWith
 
-local function clearEmbassyWith(ownerTribe,hostTribe)
+--[[
+Clears treaties so that the `ownerTribe` does not have an embassy with the `hostTribe`.  That is, the `ownerTribe` will not receive an intelligence reports about `hostTribe`.
+]]
+---@param ownerTribe tribeObject
+---@param hostTribe tribeObject
+function diplomacy.clearEmbassyWith(ownerTribe,hostTribe)
     setTreatiesBit0(ownerTribe,hostTribe,8,true)
 end
-diplomacy.clearEmbassyWith = clearEmbassyWith
 
-local function hasVendettaWith(angryTribe,offendingTribe)
+--[[
+Returns true if the `angryTribe` has a vendetta with the `offendingTribe`, and false otherwise.
+]]
+---@param angryTribe tribeObject
+---@param offendingTribe tribeObject
+---@return boolean
+function diplomacy.hasVendettaWith(angryTribe,offendingTribe)
     return gen.isBit1(angryTribe.treaties[offendingTribe],5)
 end
-diplomacy.hasVendettaWith = hasVendettaWith
 
-local function setVendettaWith(angryTribe,offendingTribe)
+--[[
+Sets treaties so that the `angryTribe` has a vendetta with the `offendingTribe`.
+]]
+---@param angryTribe tribeObject
+---@param offendingTribe tribeObject
+function diplomacy.setVendettaWith(angryTribe,offendingTribe)
     setTreatiesBit1(angryTribe,offendingTribe,5,true)
 end
-diplomacy.setVendettaWith = setVendettaWith
 
-local function clearVendettaWith(angryTribe,offendingTribe)
+--[[
+Clears treaties so that the `angryTribe` does not have a vendetta with the `offendingTribe`.
+]]
+---@param angryTribe tribeObject
+---@param offendingTribe tribeObject
+function diplomacy.clearVendettaWith(angryTribe,offendingTribe)
     setTreatiesBit0(angryTribe,offendingTribe,5,true)
 end
-diplomacy.clearVendettaWith = clearVendettaWith
 
+-- Forbid Technology Transfer
+-- The diplomacy module provides ways to forbid technology transfer
+-- between tribes, even if the receiving tribe can research the
+-- technology on its own.
 
--- a diplomaticOffer is a table with the following keys
---  .offerMaker = tribeID
---      the ID number of the tribe making the offer of a change in the
---      diplomatic state
---  .offerReceiver = tribeID
---      the ID number of the tribe receiving the offer of a change in
---      the diplomatic state
---  .offerType = string
---      "peace" offer is to establish a peace treaty
---      "ceaseFire" offer is to establish a cease fire state
---      "alliance" offer is to establish an alliance
---  .offerMoney = integer
---      The tribe making the offer will give this amount of money
---      to the receiver if the offer is accepted (or all money, 
---      if treasury is smaller)
---  .demandMoney = integer
---      The tribe making the offer will take this amount of money
---      from the receiver if the offer is accepted.  Offer can't be
---      accepted if receiver doesn't have the money
---
+-- The following functions can be registered to determine
+-- whether a tribe can receive a technology from another tribe.
+-- If the function returns true, then the technology transfer
+-- is prevented, if false (or nil), it is allowed.
 
--- manageDiplomaticOffers(tribeID,functionState,offer)
---      
-local function manageDiplomaticOffers(tribeID,functionState,offer)
-   local functionState = functionState or "choose"
+-- forbidTechTrade(tech,receiverTribe,giverTribe)-->bool
+-- If true, the `giverTribe` can't give or trade the tech
+-- to the `receiverTribe`. (Either in in-game negotiations, or
+-- using the diplomacy module's gift system.)
+-- If false (or nil), the `giverTribe` can give or trade the tech
+-- to the `receiverTribe`.
+local forbidTechTradeRegisteredFn = function(tech,receiverTribe,giverTribe)
+    return false
 end
 
-local function textTransform(s, translationTable)
-   for i,v in pairs(translationTable) do
-      s = s:gsub(v.code, v.value)
-   end
-   return s
-end
-      
-
-
--- Default amounts of money for gift-money screen
-local defaultGiftMoneyAmounts = {}
-defaultGiftMoneyAmounts[1] = "Add 1"
-defaultGiftMoneyAmounts[5] = "Add 5"
-defaultGiftMoneyAmounts[10] = "Add 10"
-defaultGiftMoneyAmounts[50] = "Add 50"
-defaultGiftMoneyAmounts[100] = "Add 100"
-defaultGiftMoneyAmounts[500] = "Add 500"
-defaultGiftMoneyAmounts[1000] = "Add 1000"
-defaultGiftMoneyAmounts[5000] = "Add 5000"
-defaultGiftMoneyAmounts[10000] = "Add 5000"
-
--- Offers a menu to gift a given amount of money 
---
---    options is to be pased on, and may contain different configuration
---    parameters for what and how to offer
---                 * giftMoneyText -> Text to display in main dialog text
---                 * giftMoneyConfirmation -> Text to display when money is gifted
---                 * giftMoneyAmounts -> A table with the available amounts and the text associated with them
---    You can use the following replacement parameters
---                 * %RECEIVER -> Tribe name of who is receiving the gift
---                 * %RECEIVERADJECTIVE -> Tribe adjective of who is receiving the gift
---                 * %MONEY -> The amount of money given out
---
---    Tribe: The tribe to pass money to
-local function giftMoneyMenu(tribe, options)
-   local translationTable = { { code = "%%RECEIVER", value = tribe.name }, { code = "%%RECEIVERADJECTIVE", value = tribe.adjective } };
-   options = options or {}
-   local giftMoneyText = options.giftMoneyText or "Which amount should we gift to our %RECEIVER friends?"
-   giftMoneyText = textTransform(giftMoneyText, translationTable)
-   local giftMoneyAmounts = options.giftMoneyAmounts or defaultGiftMoneyAmounts
-   local player = civ.getCurrentTribe()
-   local totalMoney  = 0
-   local prevMoney = -1
-   local ended = false
-   repeat
-      local menuTable = {}
-      local lastOne = 1
-      for i,v in pairs(giftMoneyAmounts) do
-	 if(i<=(player.money-totalMoney)) then
-	    menuTable[i] = v
-	 end
-	 if(i+1) > lastOne then
-	    lastOne = i+1
-	 end
-      end
-      if(prevMoney~=-1) then
-         menuTable[lastOne] = "Substract "..tostring(prevMoney).."!"
-      end
-      if(totalMoney>0) then
-	 menuTable[lastOne+1] = "Yes, give "..tostring(totalMoney).."!"
-      end
-
-      local tmp = giftMoneyText .. "(".. tostring(totalMoney).. " cumulated)"
-      local money = text.menu(menuTable, tmp, tmp, true)
-      if giftMoneyAmounts[money]~=nil then
-	 totalMoney = totalMoney + money
-         prevMoney = money
-      elseif money == lastOne then
-         totalMoney = totalMoney - prevMoney
-         prevMoney =  -1
-      end
-   until giftMoneyAmounts[money]==nil and money~=lastOne
-   if totalMoney~=0 then
-      tribe.money = tribe.money + totalMoney
-      player.money = player.money - totalMoney
-      translationTable[#translationTable + 1 ] = { code = "%%MONEY", value = totalMoney }
-      local message = options.giftMoneyConfirmation or "%MONEY sent to our %RECEIVER friends!"
-      message = textTransform(message, translationTable)
-      civ.ui.text(message)
-   end
-end
-
---- Destroy (and retun all units in tile)
----
----   param is tile
----
----   returns array of units that have been destroyed
-local function destroyUnitsIn(tile)
-   local units = {}
-   for unit in tile.units do
-      units[#units+1] = { unittype = unit.type, veteran = unit.veteran, damage = unit.damage, needsHome = (not not unit.homeCity) }
-   end
-   for unit in tile.units do
-      civ.deleteUnit(unit)
-   end
-   return units
-end
-
--- Recreate array of units in tile (or set of tiles) for tribe
---
---   params are
---             units = array of units to be recreated
---             tile = Position, or a table of positions (see civlua.createUnit)
---             tribe = Owner of the unit
---
---   returns true if all are created, false otherwise
-local function recreateUnitsIn(units, position, tribe)
-   local allGood = true
-   for i,unit in pairs(units) do
-      local x = civlua.createUnit(unit.unittype, tribe, position)[1]
-      if x~=nil then
-	 x.veteran = unit.veteran
-	 x.damage = unit.damage
-     x.homeCity = nil
-     if unit.needsHome then
-         gen.homeToNearestCity(x)
-     end
-
-
-      else
-	 allGood = false
-      end
-   end
-   return allGood
-end
-
-
-
--- Gift units to another tribe and display text
---
---    options is to be pased on, and may contain different configuration
---    parameters for what and how to offer
---                 * giftUnitsMaxCharUnitList -> Limit of characters for the list of units description (default: 300)
---                 * giftUnitsText -> Text to be shown to ask for confirmation
---                 * giftUnitsConfirmation -> Dialog to show after confirmation
---                 * giftUnitsLocations -> A list of locations per tribe name to put the gift. It will start with the first one,
---                                           and use all of them until one is valid
---                 * giftUnitsError -> A error message to be displayed in case no suitable location is found
---                   (only happens when giftUnitsLocations is provided)
---
---    You can use the following replacement parameters
---                 * %RECEIVER -> Tribe name of who is receiving the gift
---                 * %RECEIVERADJECTIVE -> Tribe adjective of who is receiving the gift
---                 * %TILE     -> Tile where it happens
---                 * %UNITS     -> Friendly text about the units given
---
-local function giftUnits(tribe, options)
-   local function buildUnitsText(tile, maxChar)
-      local text = ""
-      local byType = {}
-      local unitCount = 0
-      for unit in tile.units do
-          unitCount = unitCount+1
-	 if byType[unit.type.id] == nil then
-	    byType[unit.type.id] = 1
-	 else
-	    byType[unit.type.id] = byType[unit.type.id] + 1
-	 end
-      end
-      local unitsInText = 0
-      for i,v in pairs(byType) do
-	 if text:len() < maxChar then
-	    local thisPart = tostring(v).." "..civ.getUnitType(i).name
-	    if text == "" then
-	       text = thisPart
-	    else
-	       text = text..", "..thisPart
-	    end
-            unitsInText = unitsInText + v
-	 end
-      end
-      
-      if unitsInText < unitCount then
-         text = text.." and "..tostring(unitCount-unitsInText).." other units"
-      end
-      return text
-   end
-	 
-   local tile = civ.getCurrentTile()
-   local maxChar = options.giftUnitsMaxCharUnitList or 300
-   local translationTable = { { code = "%%RECEIVER", value = tribe.name },
-      { code = "%%RECEIVERADJECTIVE", value = tribe.adjective },
-      { code = "%%TILE", value = tostring(tile.x)..","..tostring(tile.y).." in map "..tostring(tile.z) },
-      { code = "%%UNITS", value = buildUnitsText(tile,maxChar) }}
-   local giftUnitsQuestion = options.giftUnitsText or "Do you confirm gifting %UNITS to %RECEIVER in %TILE?"
-   giftUnitsQuestion = textTransform(giftUnitsQuestion, translationTable)
-   local menuTable = {}
-   menuTable[1] = "Ok!"
-   local goAhead = text.menu(menuTable, giftUnitsQuestion, giftUnitsQuestion, true)
-   if goAhead == 1 then
-      local units = destroyUnitsIn(tile)
-      local position = nil
-      if options.giftUnitsLocations ~= nil and options.giftUnitsLocations[tribe.name] ~= nil then
-	 position = options.giftUnitsLocations[tribe.name]
-      else
-	 position = {{ tile.x, tile.y, tile.z }}
-      end
-      local message = nil
-      if recreateUnitsIn(units, position, tribe) then
-	 message = options.giftUnitsConfirmation or "Units in %TILE transferred to %RECEIVER"
-      else
-	 message = options.giftUnitsError or "Some units were lost as no suitable destination square was found!"
-      end
-      message = textTransform(message, translationTable)
-      civ.ui.text(message)
-   end
-end
-
--- Gift a city (non-captial) to another tribe and display text
---
---    options is to be pased on, and may contain different configuration
---    parameters for what and how to offer
---                 * giftCityText -> Text to be shown to ask for confirmation
---                 * giftCityConfirmation -> Dialog to show after confirmation
---                 * giftCityDestroyUnits -> Whether all units needs to be destroyed after the city is given out
---
---    You can use the following replacement parameters
---                 * %RECEIVER -> Tribe name of who is receiving the gift
---                 * %RECEIVERADJECTIVE -> Tribe adjective of who is receiving the gift
---                 * %CITY     -> Name of the city
---
-local function giftCity(tribe, options)
-   local tile = civ.getCurrentTile()
-   local city = tile.city
-   local translationTable = { { code = "%%RECEIVER", value = tribe.name },
-      { code = "%%RECEIVERADJECTIVE", value = tribe.adjective },
-      { code = "%%CITY", value = city.name } }
-   local giftCityQuestion = options.giftCityText or "Do you confirm gifting %CITY to %RECEIVER?"
-   giftCityQuestion = textTransform(giftCityQuestion, translationTable)
-   local menuTable = {}
-   menuTable[1] = "Ok!"
-   local goAhead = text.menu(menuTable, giftCityQuestion, giftCityQuestion, true)
-   if goAhead == 1 then
-      local units = destroyUnitsIn(tile)
-      local destroyUnits = options.giftCityDestroyUnits or false
-      city.owner = tribe
-      local position = {{ tile.x, tile.y, tile.z }}
-      local message = nil
-      if destroyUnits or recreateUnitsIn(units, position, tribe) then
-	 message = options.giftCityConfirmation or "%CITY transferred to %RECEIVER"
-      else
-	 message = "Unexpected error - Some units were lost!"
-      end
-      message = textTransform(message, translationTable)
-      civ.ui.text(message)
-   end
-end
-
-
--- Gift a technology to another tribe and display text
---
---    options is to be pased on, and may contain different configuration
---    parameters for what and how to offer
---                 * giftTechText -> Tech to be shown in the Tech window
---                 * giftTechConfirmation -> Text to show when map is passed
---                 * giftTechNoTechs -> Text to show when no tech to offer
---                 * giftTechNotTrade -> Table with names of techs that can't be traded
---
---    You can use the following replacement parameters
---                 * %RECEIVER -> Tribe name of who is receiving the gift
---                 * %RECEIVERADJECTIVE -> Tribe adjective of who is receiving the gift
---                 * $tech     -> Name of the tech
---
-local function giftTechnology(tribe, options) -- 
-   local function techInTable(tech, techTable)
-      for i, v in pairs(techTable) do
-	 if v == tech.name then
-	    return true
-	 end
-      end
-      return false
-   end
-
-   local translationTable = { { code = "%%RECEIVER", value = tribe.name },  { code = "%%RECEIVERADJECTIVE", value = tribe.adjective },};
-   local player = civ.getCurrentTribe()
-   local listTechs = {}
-   local techTechs = {}
-   local techTable = options.giftTechNotTrade or {}
-   for techId = 0,255 do
-       -- 253 techs max, so 0-252 is probably enough
-       if civ.getTech(techId) then
-        local tech = civ.getTech(techId)
-        ---@cast tech techObject
-        if not tribe:hasTech(tech) and player:hasTech(tech) and not techInTable(tech, techTable)
-        then
-	      listTechs[#listTechs+1] = tech.name
-	      techTechs[#techTechs+1] = tech
-        end
+--Register a function to determine whether a tribe can receive a technology from another tribe through diplomacy.<br><br>
+-- forbidTechTrade(tech,receiverTribe,giverTribe)-->bool
+-- If true, the `giverTribe` can't give or trade the tech
+-- to the `receiverTribe`. (Either in in-game negotiations, or
+-- using the diplomacy module's gift system.)
+-- If false (or nil), the `giverTribe` can give or trade the tech
+-- to the `receiverTribe`.
+---@param forbidTechTrade fun(tech:techObject,receiverTribe:tribeObject,giverTribe:tribeObject):boolean
+function diplomacy.registerForbidTechTradeFunction(forbidTechTrade)
+    if type(forbidTechTrade)~="function" then
+        error("diplomacy.registerForbidTechTradeFunction: argument must be a function.")
     end
-   end
-   if #listTechs == 0 then
-      local message = options.giftTechNoTechs or  "There are no tech we can give to %RECEIVER"
-      message = textTransform(message, translationTable)
-      civ.ui.text(message)
-   else
-      local giftTechText = options.giftTechText or "Which tech to give our friends %RECEIVER?"
-      giftTechText = textTransform(giftTechText, translationTable)
-      local techId = text.menu(listTechs, giftTechText, giftTechText, true)
-      if techId ~= 0 then
-	 local tech = techTechs[techId]
-	 translationTable[#translationTable + 1] = { code = "$tech", value = tech.name } ;
-	 tribe:giveTech(tech)
-	 local message = options.giftTechConfirmation or "$tech given to %RECEIVER"
-	 message = textTransform(message, translationTable)
-	 civ.ui.text(message)
-      end
-   end
+    forbidTechTradeRegisteredFn = forbidTechTrade
 end
-   
 
-
-
--- Offers a menu to present what can be given as a present to other civ
---
---    options is an optional table, and may contain different configuration
---    parameters for what and how to offer
---                 * mainDialogText -> Text to display in main dialog text
---                 * civSelectionText -> Text to display when selecting destination civ
---                 * giftMoneyText -> Text to display in main dialog text
---                 * giftMoneyConfirmation -> Text to display when money is gifted
---                 * giftMoneyAmounts -> A table with the available amounts and the text associated to them
---                 * sameCivPlayer -> Text when a player attemps to gift something to his/herself.
---                 * giftUnitsMaxCharUnitList -> Limit of characters for the list of units description (default: 300)
---                 * giftUnitsText -> Text to be shown to ask for confirmation
---                 * giftUnitsConfirmation -> Dialog to show after confirmation
---                 * giftUnitsLocations -> A list of locations per tribe name to put the gift. It will start with the first one,
---                                           and use all of them until one is valid
---                 * giftUnitsError -> A error message to be displayed in case no suitable location is found
---                   (only happens when giftUnitsLocations is provided)
---                 * giftCityText -> Text to be shown to ask for confirmation
---                 * giftCityConfirmation -> Dialog to show after confirmation
---                 * giftCityDestroyUnits -> Whether all units needs to be destroyed after the city is given out
---                 * forbidTileGiveaway -> if true, the option to give away units/city on the tile is not available
---
---    
---    You can use the following replacement parameters
---                 * %RECEIVER -> Tribe name of who is receiving the gift
---                 * %RECEIVERADJECTIVE -> Tribe adjective of who is receiving the gift
---                 * %MONEY -> The amount of money given out
---                 * %TILE     -> Tile where it happens
---                 * %CITY0     -> Name of the city
---                 * %UNITS     -> Friendly text about the units given
---
---    Offers present regardless of the cursor position
---                    * Money
---                    * Technology
---                    * Map
---
---    Offers that depend on city/units present on the cursor
---                    * Unit
---                    * City
---
---      
-local function diplomacyMenu(options)
-   -- Returns if the city is capital
-      local function isCapital(city)
-	 return city and city:hasImprovement(civ.getImprovement(1))
-      end
-      local function buildOptions()
-	 local tile = civ.getCurrentTile()
-	 local menuTable = {}
-	 menuTable[1] = "Gift money"
-	 menuTable[2] = "Gift technology"
-	 if (not options.forbidTileGiveaway) and tile.owner == civ.getCurrentTribe() then
-	    if tile.city == nil then
-	       local count = 0
-	       for i in tile.units do
-		  count = count + 1
-	       end
-	       if count > 0 then
-		  menuTable[3] = "Gift units"
-	       end
-	    else
-	       if not isCapital(tile.city) then
-		  menuTable[4] = "Gift city"
-	       end
-	    end
-	 end
-	 return menuTable
-      end
-
-      options = options or {}
-      local mainDialogText = options.mainDialogText or "Choose your option"
-      local menuTable = buildOptions()
-      local gift = text.menu(menuTable, mainDialogText, mainDialogText, true)
-      local tribeId = nil
-      if gift ~= 0 then
-	 local civSelectionText = options.civSelectionText or "Choose the civ to gift to"
-	 for i = 0, 7 do
-	    menuTable[i+1] = civ.getTribe(i).name
-	 end
-	 tribeId = text.menu(menuTable, civSelectionText, civSelectionText, true)
-      end
-      if tribeId~=0 and gift ~=0 then
-	 -- How I miss switch/case
-	 tribeId = tribeId -1
-	 local tribe  = civ.getTribe(tribeId)
-	 local player = civ.getCurrentTribe()
-	 if tribe.name ~= player.name
-	 then
-	    if gift == 1 then
-	       giftMoneyMenu(tribe, options)
-	    elseif gift == 2 then
-	       giftTechnology(tribe, options)
-	    elseif gift == 3 then
-	       giftUnits(tribe, options)
-	    elseif gift == 4 then
-	       giftCity(tribe, options)
-	    end
-	 else
-	    local errorMessage = options.sameCivPlayer or "You can't gift yourself!"
-	    civ.ui.text(errorMessage)
-	 end
-      end
+-- forbidTechFromConquest(tech,conqueringTribe,losingTribe)-->bool
+-- If true, the `conqueringTribe` can't receive the `tech`
+-- from the `losingTribe` as a result of conquering a city 
+-- owned by the `losingTribe`.
+-- If false (or nil), the `conqueringTribe` can receive the `tech`
+-- from the `losingTribe` as a result of conquering a city
+-- owned by the `losingTribe`.
+local forbidTechFromConquestRegisteredFn = function(tech,conqueringTribe,losingTribe)
+    return false
 end
-diplomacy.diplomacyMenu = diplomacyMenu
 
---[==[
-    This shouldn't be necessary anymore
-
---  an alternate diplomacy model menu used in a cold war scenario
---      canGiveUnitFn(unit)-->bool
---          determines if a unit can be given away as a single unit
---      tribeCanReceiveUnitFn(unitBeforeGift,tribe)-->bool
---          determines if a tribe can receive a unit as a gift (so that a tribe
---          can be selected to receive a gift)
---      cityCanReceiveUnitFn(unitBeforeGift,destinationCity)--> bool or number
---          if false, city can't receive unit
---          if number, city can receive unit, but giver must pay that cost
---          if true, city can receive unit for free
---      afterUnitTransferFn(sourceCity,destinationCity,unitAfterTransfer)-->void
---          performs actions after a unit is transferred
---      canGiveTileFn(tile,giver)
---          if true, the tile and all its contents can be transferred to a new owner
---          if false, it can't
---      canReceiveTileFn(tile,giver,receiver)
---          if true, the tribe can receive the tile
---          if false, it can't
---
-
-local function giftSingleUnit(canGiveUnitFn,tribeCanReceiveUnitFn,cityCanReceiveUnitFn,afterUnitTransferFn)
-    -- choose unit to give
-    local unitToGive = nil
-    local menuTable = {}
-    local choiceOffset = 2
-    for unit in civ.getCurrentTile().units do
-        if canGiveUnitFn(unit) then
-            menuTable[unit.id+choiceOffset] = unit.type.name.." ("..((unit.homeCity and unit.homeCity.name) or "NONE")..((unit.veteran and ", Veteran)") or ")")
-        end
+--Register a function to determine whether a tribe can receive a technology when conquering another tribe's city.<br><br>
+--forbidTechFromConquest(tech,conqueringTribe,losingTribe)-->bool
+-- If true, the `conqueringTribe` can't receive the `tech`
+-- from the `losingTribe` as a result of conquering a city
+-- owned by the `losingTribe`.
+-- If false (or nil), the `conqueringTribe` can receive the `tech`
+-- from the `losingTribe` as a result of conquering a city
+-- owned by the `losingTribe`.
+---@param forbidTechFromConquest fun(tech:techObject,conqueringTribe:tribeObject,losingTribe:tribeObject):boolean
+function diplomacy.registerForbidTechFromConquestFunction(forbidTechFromConquest)
+    if type(forbidTechFromConquest)~="function" then
+        error("diplomacy.registerForbidTechFromConquestFunction: argument must be a function.")
     end
-    local choice = text.menu(menuTable,"Choose a unit to give away.","",true)
-    if choice == 0 then
+    forbidTechFromConquestRegisteredFn = forbidTechFromConquest
+end
+
+-- forbidTechTheft(tech,thievingTribe,thievingUnit)-->boolean
+-- If true, the `thievingTribe` can't steal the `tech`
+-- from another tribe using the `thievingUnit` (if it has 
+-- role 6 for diplomatic units).
+-- If false (or nil), the `thievingTribe` can steal the `tech`.
+-- (The giving tribe can't be specified, because there isn't a
+-- way to control which tribe the spy or diplomat steals from.)
+local forbidTechTheftRegisteredFn = function(tech,thievingTribe,thievingUnit)
+    return false
+end
+
+
+-- Register a function to determine whether a tribe can
+-- steal a technology using a diplomatic (role 6) unit.<br><br>
+-- forbidTechTheft(tech,thievingTribe,thievingUnit)-->boolean
+-- If true, the `thievingTribe` can't steal the `tech`
+-- from another tribe using the `thievingUnit` (if it has 
+-- role 6 for diplomatic units).
+-- If false (or nil), the `thievingTribe` can steal the `tech`.
+-- (The giving tribe can't be specified, because there isn't a
+-- way to control which tribe the spy or diplomat steals from.)
+---@param forbidTechTheft fun(tech:techObject,thievingTribe:tribeObject,thievingUnit:unitObject):boolean
+function diplomacy.registerForbidTechTheftFunction(forbidTechTheft)
+    if type(forbidTechTheft)~="function" then
+        error("diplomacy.registerForbidTechTheftFunction: argument must be a function.")
+    end
+    forbidTechTheftRegisteredFn = forbidTechTheft
+end
+
+--[[
+stopTechTransferTable[techObject.id] = {
+    * noPrereqs = bool
+        - If true, then the tech can't be given or traded to another tribe, or conquered, or stolen, if the receiving tribe doesn't have the tech's prerequisites.
+        - If false (or nil), a tribe can receive the tech even if it  doesn't have the tech's prerequisites.
+    * noTrade = bool
+        - If true, then the tech can't be given or traded to another tribe.
+        - If false (or nil), a tribe can receive the tech through diplomacy.
+    * noConquest = bool
+        - If true, then the tech can't be received by conquering a city.
+        - If false (or nil), a tribe can receive the tech by conquering a city.
+    * noTheft = bool
+        - If true, then the tech can't be stolen with a diplomat or spy.
+        - If false (or nil), a tribe can steal the tech.
+    }
+    If there is no value for a particular tech object, then all these
+    values are considered false
+]]
+---@param stopTechTransferTable table stopTechTransferTable[techObject.id] = {noPrereqs=bool,noTrade=bool,noConquest=bool,noTheft=bool}
+---@return fun(tech:techObject,receiverTribe:tribeObject,giverTribe:tribeObject):boolean forbidTechTrade
+---@return fun(tech:techObject,conqueringTribe:tribeObject,losingTribe:tribeObject):boolean forbidTechFromConquest
+---@return fun(tech:techObject,thievingTribe:tribeObject,thievingUnit:unitObject):boolean forbidTechTheft
+function diplomacy.techTransferTableToFunctions(stopTechTransferTable)
+    stopTechTransferTable = gen.copyTable(stopTechTransferTable)
+    ---@param tech techObject
+    ---@param receiverTribe tribeObject
+    ---@param giverTribe tribeObject
+    ---@return boolean
+    local function forbidTechTrade(tech,receiverTribe,giverTribe)
+        if not stopTechTransferTable[tech.id] then
+            return false
+        end
+        if stopTechTransferTable[tech.id].noTrade then
+            return true
+        end
+        if stopTechTransferTable[tech.id].noPrereqs then
+            if tech.prereq1 and not receiverTribe:hasTech(tech.prereq1) then
+                return true
+            end
+            if tech.prereq2 and not receiverTribe:hasTech(tech.prereq2) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function forbidTechFromConquest(tech,conqueringTribe,losingTribe)
+        if not stopTechTransferTable[tech.id] then
+            return false
+        end
+        if stopTechTransferTable[tech.id].noConquest then
+            return true
+        end
+        if stopTechTransferTable[tech.id].noPrereqs then
+            if tech.prereq1 and not conqueringTribe:hasTech(tech.prereq1) then
+                return true
+            end
+            if tech.prereq2 and not conqueringTribe:hasTech(tech.prereq2) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function forbidTechTheft(tech,thievingTribe,thievingUnit)
+        if not stopTechTransferTable[tech.id] then
+            return false
+        end
+        if stopTechTransferTable[tech.id].noTheft then
+            return true
+        end
+        if stopTechTransferTable[tech.id].noPrereqs then
+            if tech.prereq1 and not thievingTribe:hasTech(tech.prereq1) then
+                return true
+            end
+            if tech.prereq2 and not thievingTribe:hasTech(tech.prereq2) then
+                return true
+            end
+        end
+        return false
+    end
+    return forbidTechTrade,forbidTechFromConquest,forbidTechTheft
+end
+
+
+
+local noTransferTechGroup = 7
+diplomacy.reservedTechGroup = noTransferTechGroup
+local techGroupsAreModified = false
+
+local function restoreTechGroupDefaults()
+    if not techGroupsAreModified then
+        -- don't need to do anything if the tech groups haven't been modified
         return
-    else
-        unitToGive = civ.getUnit(choice - choiceOffset)
     end
+    local authoritativeDefaultRules = changeRules.authoritativeDefaultRules
+    for tech in gen.iterateTechs() do
+        tech.group = authoritativeDefaultRules[tech].group
+    end
+    techGroupsAreModified = false
+end
+
+
+local negotiationConquestRecent = false
+local function prepareTechGroupsForNegotiation(talker,listener)
+    civ.enableTechGroup(talker,noTransferTechGroup,2)
+    civ.enableTechGroup(listener,noTransferTechGroup,2)
+    for tech in gen.iterateTechs() do
+        if talker:hasTech(tech) and forbidTechTradeRegisteredFn(tech,listener,talker) then
+            -- if the talker has the tech, and the listener can't receive it
+            -- then the tech is moved to the noTransferTechGroup
+            tech.group = noTransferTechGroup
+        elseif listener:hasTech(tech) and forbidTechTradeRegisteredFn(tech,talker,listener) then
+            -- if the listener has the tech, and the talker can't receive it
+            -- then the tech is moved to the noTransferTechGroup
+            tech.group = noTransferTechGroup
+        end
+    end
+    techGroupsAreModified = true
+    negotiationConquestRecent = true
+end
+
+
+function diplomacy.onNegotiation(talker,listener,canNegotiate)
+    if canNegotiate then
+        prepareTechGroupsForNegotiation(talker,listener)
+    end
+end
+
+
+local function prepareTechGroupsForConquest(conqueringTribe,losingTribe)
+    civ.enableTechGroup(conqueringTribe,noTransferTechGroup,2)
+    civ.enableTechGroup(losingTribe,noTransferTechGroup,2)
+    for tech in gen.iterateTechs() do
+        if losingTribe:hasTech(tech) and forbidTechFromConquestRegisteredFn(tech,conqueringTribe,losingTribe) then
+            -- if the losing tribe has the tech, and the conquering tribe can't receive it
+            -- then the tech is moved to the noTransferTechGroup
+            tech.group = noTransferTechGroup
+        end
+    end
+    techGroupsAreModified = true
+    negotiationConquestRecent = true
+end
+
+function diplomacy.onCityTaken(city,defender)
+    local conqueringTribe = city.owner
+    local losingTribe = defender
+    prepareTechGroupsForConquest(conqueringTribe,losingTribe)
+end
+
+local function prepareTechGroupsForTheft(thievingTribe,thievingUnit)
+    civ.enableTechGroup(thievingTribe,noTransferTechGroup,2)
+    for tech in gen.iterateTechs() do
+        if forbidTechTheftRegisteredFn(tech,thievingTribe,thievingUnit) then
+            -- if the thieving tribe can't receive the tech
+            -- then the tech is moved to the noTransferTechGroup
+            tech.group = noTransferTechGroup
+        end
+    end
+    techGroupsAreModified = true
+end
+
+function diplomacy.onActivateUnit(unit,source,repeatedActivation)
+    if unit.type.role ~= gen.c.roleDiplomacy then
+        restoreTechGroupDefaults()
+        return
+    end
+    prepareTechGroupsForTheft(unit.owner,unit)
+end
+
+function diplomacy.onDateCheck()
+    if negotiationConquestRecent then
+        restoreTechGroupDefaults()
+        negotiationConquestRecent = false
+    end
+end
+
+-- If true, the givingTribe can transfer ownership of everything
+-- on the tile to the receiving tribe.
+-- Note that this will not be called if the giving tribe
+-- doesn't own the tile
+local canGiveTileFn = function(tile,givingTribe,receivingTribe) return true end
+
+
+--[[Registers a function(tile,givingTribe,receivingTribe)  
+to determine whether the givingTribe can transfer ownership
+of everything (units and city) on the tile to the receivingTribe.
+
+There is no need to check that the giving tribe owns the units/city
+on the tile.  That is taken care of within the diplomacy module.
+]]
+---@param canGiveAwayTileFn fun(tile:tileObject,givingTribe:tribeObject,receivingTribe:tribeObject):boolean
+function diplomacy.registerCanGiveAwayTileFn(canGiveAwayTileFn)
+    if type(canGiveAwayTileFn) ~= "function" then
+        error("diplomacy.registerCanGiveAwayTileFn: argument must be a function.")
+    end
+    canGiveTileFn = canGiveAwayTileFn
+end
+
+
+-- Diplomacy menu choice history spec
+--[[
+    table with the following keys (all of which can be nil at some point):
+    giftReceiver = tribeObject
+        The tribe that will receive the gift
+    giftGiver = tribeObject
+        The tribe giving the gift (that opened the menu)
+    moneyGift = number
+        The amount of money to be given
+    techGift = techObject
+        The tech to be given
+    tileGift = tileObject
+        The tile where everything on it will be given
+]]
+
+local confirmMoneyGiftMenu = text.newMenuRecord({menuName="Diplomacy confirm money gift menu"})
+confirmMoneyGiftMenu.menuText = function(callingArgument,history)
+    local lastHist = history[1]
+    return "Shall we send "..text.money(lastHist.moneyGift).." (out of "..text.money(lastHist.giftGiver.money)..") to the "..lastHist.giftReceiver.name.."?"
+end
+confirmMoneyGiftMenu.menuTitle = "Prepare a Gift"
+
+confirmMoneyGiftMenu.menuGenerator = function(callingArgument,history)
+    local lastHist = history[1]
+    local giftGiver = lastHist.giftGiver
+    local menuOptionTable = {}
+    if giftGiver.money < lastHist.moneyGift then
+        menuOptionTable[1] = {
+            choice = nil,
+            optionName = "We don't have enough money, so let us prepare a smaller gift.",
+            nextMenu = 1,
+        }
+    else
+        menuOptionTable[1] = {
+            choice = nil,
+            optionName = "No, the amount is incorrect, so let us change it.",
+            nextMenu = 1,
+        }
+        menuOptionTable[2] = {
+            choice = lastHist,
+            optionName = "Yes, send "..text.money(lastHist.moneyGift)..".",
+            nextMenu = nil,
+        }
+    end
+    menuOptionTable[3] = {
+        choice = nil,
+        optionName = "No, let us cancel the gift.",
+        nextMenu = nil,
+    }
+    menuOptionTable[4] = {
+        choice = nil,
+        optionName = "No, let us prepare a different kind of gift.",
+        nextMenu = 2,
+    }
+    return menuOptionTable
+end
     
-    local menuTable = {}
-    local choiceOffset = 2
-    local receiverTribe = nil
+local goBackOptions = {
+    [1] = {goBack = 1, optionName = "Let's give them something other than money."},}
+
+local chooseMoneyGiftMenu = text.makeChooseNumberMenu({1,10,50,100,500,1000,5000,10000,-1,-10,-100,-1000},{min=0,max=100000},"moneyGift",confirmMoneyGiftMenu,goBackOptions,"Choose Money Amount Menu","Add %MONEY1","Subtract %MONEY1","Select %MONEY1")
+
+chooseMoneyGiftMenu.menuTitle = "Prepare a Gift"
+
+chooseMoneyGiftMenu.menuText = function(callingArgument,history)
+    local lastHist = history[1]
+    return "We're preparing a gift of money to the "..lastHist.giftReceiver.name..".  Is "..text.money(lastHist.moneyGift).." the correct amount?"
+end
+
+local confirmTileGiftMenu = text.newMenuRecord({menuName="Diplomacy confirm tile gift menu"})
+
+confirmTileGiftMenu.menuText = function(callingArgument,history)
+    local lastHist = history[1]
+    local city = lastHist.tileGift.city
+    local unitList = {}
+    local unitCount = 0
+    for unit in lastHist.tileGift.units do
+        unitList[unit.type.name] = (unitList[unit.type.name] or 0) + 1
+        unitCount = unitCount+1
+    end
+    local keyList = gen.sortTableKeysInDescendingValueOrder(unitList)
+    local textList = {}
+    local explicitCount = 0
+    for i=1,5 do
+        if keyList[i] and unitList[keyList[i]] > 0 then
+            textList[i] = unitList[keyList[i]].." "..keyList[i].." unit"
+            if unitList[keyList[i]] > 1 then
+                textList[i] = textList[i].."s"
+            end
+            explicitCount = explicitCount + unitList[keyList[i]]
+        else
+            break
+        end
+    end
+    if explicitCount < unitCount then
+        textList[#textList+1] = (unitCount-explicitCount).." other unit"
+        if unitCount-explicitCount > 1 then
+            textList[#textList] = textList[#textList].."s"
+        end
+    end
+    local message = ""
+    if #keyList > 0 and city then
+        message = "We are preparing to give the "..lastHist.giftReceiver.name.." the city of "..city.name..", "..text.niceList(textList).."."
+    elseif #keyList > 0 then
+        message = "We are preparing to give the "..lastHist.giftReceiver.name.." "..text.niceList(textList)..", which are located on tile ("..text.coordinates(lastHist.tileGift)..")."
+    elseif city then
+        message = "We are preparing to give the "..lastHist.giftReceiver.name.." the city of "..city.name..".  There are no units in that city."
+    end
+    return message
+end
+confirmTileGiftMenu.menuTitle = "Prepare a Gift"
+confirmTileGiftMenu.menuGenerator = function(callingArgument,history)
+    local lastHist = history[1]
+    local menuOptionTable = {}
+    menuOptionTable[1] = {
+        choice = nil,
+        optionName = "No, let us cancel the gift.",
+        nextMenu = nil,
+    }
+    menuOptionTable[2] = {
+        choice = nil,
+        optionName = "No, let us prepare a different kind of gift.",
+        nextMenu = 1,
+    }
+    menuOptionTable[3] = {
+        choice = lastHist,
+        optionName = "Yes, send the gift.",
+        nextMenu = nil,
+    }
+    return menuOptionTable
+end
+
+local confirmTechGiftMenu = text.newMenuRecord({menuName="Diplomacy confirm tech gift menu"})
+confirmTechGiftMenu.menuText = function(callingArgument,history)
+    local lastHist = history[1]
+    return "Shall we send the "..lastHist.techGift.name.." to the "..lastHist.giftReceiver.name.."?"
+end
+confirmTechGiftMenu.menuGenerator = function(callingArgument,history)
+    local lastHist = history[1]
+    local menuOptionTable = {}
+    menuOptionTable[1] = {
+        choice = 1,
+        optionName = "No, let us give a different technology.",
+        nextMenu = nil,
+    }
+    menuOptionTable[2] = {
+        choice = lastHist,
+        optionName = "Yes, send the secret of "..lastHist.techGift.name..".",
+        nextMenu = nil,
+    }
+    menuOptionTable[3] = {
+        choice = nil,
+        optionName = "No, let us cancel the gift.",
+        nextMenu = nil,
+    }
+    menuOptionTable[4] = {
+        choice = nil,
+        optionName = "No, let us prepare a different kind of gift.",
+        nextMenu = 2,
+    }
+    return menuOptionTable
+end
+
+local chooseTechGiftMenu = text.newMenuRecord({menuName="Diplomacy Choose Tech Gift Menu"})
+chooseTechGiftMenu.menuText = "What secret shall we teach the %NAME[giftReceiver]?"
+
+
+
+
+-- Returns true if the `tribe` can own the `tech`, and false otherwise.
+-- At the moment always returns true, since there is no way to determine
+-- the current status of a tech group.
+---@param tribe tribeObject
+---@param tech techObject
+---@return boolean
+local function tribeCanOwnTech(tribe,tech)
+    return true
+end
+
+chooseTechGiftMenu.menuGenerator = function(callingArgument,history)
+    local lastHist = history[1]
+    local giver = lastHist.giftGiver
+    local receiver = lastHist.giftReceiver
+    local menuOptionTable = {}
+    menuOptionTable[-2] = {
+        choice = nil,
+        optionName = "No, let us prepare a different kind of gift.",
+        nextMenu = 1,
+    }
+    menuOptionTable[-1] = {
+        choice = nil,
+        optionName = "Let us cancel the gift.",
+        nextMenu = nil,
+    }
+    for i=0,gen.c.maxTechID do
+        local tech = civ.getTech(i)
+        if tech and giver:hasTech(tech) and 
+            (not receiver:hasTech(tech)) and
+            (not forbidTechTradeRegisteredFn(tech,receiver,giver)) and
+            tribeCanOwnTech(receiver,tech) then
+            menuOptionTable[i] = {
+                choice = {giftGiver = lastHist.giftGiver,giftReceiver = lastHist.giftReceiver,techGift = tech},
+                optionName = tech.name,
+                nextMenu = confirmTechGiftMenu,
+            }
+        end
+    end
+    return menuOptionTable
+end
+
+---Returns true if the `tribe` owns the units and/or city on the tile.
+---Returns false if it does not, or if the tile has no units or city.
+---@param tile tileObject
+---@param tribe tribeObject
+---@return boolean
+local function tileOwnedByTribe(tile,tribe)
+    if tile.city then
+        return tile.city.owner == tribe
+    end
+    return tile.defender == tribe
+end
+
+local chooseGiftTypeMenu = text.newMenuRecord({menuName="Diplomacy Choose Gift Type Menu"})
+chooseGiftTypeMenu.menuText = "What kind of gift shall we give the %NAME[giftReceiver]?"
+chooseGiftTypeMenu.menuTitle = "Prepare a Gift"
+chooseGiftTypeMenu.menuGenerator = function(callingArgument,history)
+    local lastHist = history[1]
+    local giver = lastHist.giftGiver
+    local receiver = lastHist.giftReceiver
+    local menuOptionTable = {}
+    menuOptionTable[1] = {
+        choice = nil,
+        optionName = "Let us cancel the gift.",
+        nextMenu = nil,
+    }
+    menuOptionTable[2] = {
+        choice = nil,
+        optionName = "Choose a different recipient.",
+        nextMenu = 1,
+    }
+    if receiver.id ~= 0 then
+        menuOptionTable[3] = {
+            choice = {giftGiver = lastHist.giftGiver,giftReceiver = lastHist.giftReceiver,moneyGift = 0},
+            optionName = "Money",
+            nextMenu = chooseMoneyGiftMenu,
+        }
+    end
+    local currentTile = civ.getCurrentTile()
+    if currentTile and canGiveTileFn(currentTile,giver,receiver) and tileOwnedByTribe(currentTile,giver) then
+        local optionText = ""
+        local tile = currentTile
+        if tile.city then
+            optionText = "The city of "..tile.city.name
+        else
+            optionText = "Tile ("..text.coordinates(tile)..")"
+        end
+        local numUnits = 0
+        for unit in tile.units do
+            numUnits = numUnits + 1
+        end
+        if numUnits > 0 then
+            optionText = optionText.." and "..numUnits.." unit"
+            if numUnits > 1 then
+                optionText = optionText.."s"
+            end
+        end
+        menuOptionTable[4] = {
+            choice = {giftGiver = lastHist.giftGiver,giftReceiver = lastHist.giftReceiver,tileGift = tile},
+            optionName = optionText,
+            nextMenu = confirmTileGiftMenu,
+        }
+    end
+    if receiver.id ~= 0 then
+        menuOptionTable[5] = {
+            choice = {giftGiver = lastHist.giftGiver,giftReceiver = lastHist.giftReceiver,techGift = nil},
+            optionName = "A technology",
+            nextMenu = chooseTechGiftMenu,
+        }
+    end
+    return menuOptionTable
+end
+
+-- Return true if giftGiver can give giftReceiver a gift through the gift giving menu.
+local canGiveGiftFn = function(giftGiver,giftReceiver)
+    return true
+end
+
+--[[
+Registers a function(giftGiver,giftReceiver) that determines whether the `giftGiver` can give a gift to the `giftReceiver` through the gift giving menu.
+
+If the function returns true, then the giftReceiver will be an option in
+the gift giving menu for giftGiver.
+]]
+---@param canGiveGiftFunction fun(giftGiver:tribeObject,giftReceiver:tribeObject):boolean
+function diplomacy.registerCanGiveGiftFunction(canGiveGiftFunction)
+    if type(canGiveGiftFunction) ~= "function" then
+        error("diplomacy.registerCanGiveGiftFunction: argument must be a function.")
+    end
+    canGiveGiftFn = canGiveGiftFunction
+end
+
+local chooseGiftRecipientMenu = text.newMenuRecord({menuName="Diplomacy Choose Gift Recipient Menu"})
+chooseGiftRecipientMenu.menuText = "To whom shall we give a gift?"
+chooseGiftRecipientMenu.menuTitle = "Prepare a Gift"
+chooseGiftRecipientMenu.menuGenerator = function(callingArgument,history)
+    local lastHist = {giftGiver = civ.getCurrentTribe()}
+    local giver = lastHist.giftGiver
+    local menuOptionTable = {}
+    menuOptionTable[-1] = {
+        choice = nil,
+        optionName = "Let us cancel the gift.",
+        nextMenu = nil,
+    }
     for i=0,7 do
-        if tribeCanReceiveUnitFn(unitToGive,civ.getTribe(i)) then
-            menuTable[i+choiceOffset] = civ.getTribe(i).name
+        local receiver = civ.getTribe(i)
+        if receiver and receiver.active and receiver ~= giver and canGiveGiftFn(giver,receiver) then
+            menuOptionTable[i] = {
+                choice = {giftGiver = lastHist.giftGiver,giftReceiver = receiver},
+                optionName = receiver.name,
+                nextMenu = chooseGiftTypeMenu,
+            }
         end
     end
-    local choice = text.menu(menuTable,"To whom shall we send our "..unitToGive.type.name.."?","",true)
-    if choice == 0 then
+    return menuOptionTable
+end
+local broadcast = true
+function diplomacy.giveGiftMenu()
+    local gift = chooseGiftRecipientMenu()
+    if gift == nil then
         return
-    else
-        receiverTribe = civ.getTribe(choice-choiceOffset)
     end
-    menuTable = {}
-    local destination = nil
-    for city in civ.iterateCities() do
-        if city.owner == receiverTribe then
-            local transportCost = cityCanReceiveUnitFn(unitToGive,city)
-            if transportCost == true then
-                transportCost = 0
-            end
-            if transportCost then
-                menuTable[city.id+choiceOffset] = city.name.." ("..tostring(transportCost)..")"
-            end
+    if gift.moneyGift then
+        gift.giftGiver.money = gift.giftGiver.money - gift.moneyGift
+        gift.giftReceiver.money = gift.giftReceiver.money + gift.moneyGift
+        text.displayNextOpportunity(gift.giftReceiver,"We have received "..text.money(gift.moneyGift).." from the "..gift.giftGiver.name..".","Foreign Minister","Gift From the "..gift.giftGiver.name)
+        return
+    end
+    if gift.techGift then
+        gift.giftReceiver:giveTech(gift.techGift)
+        text.displayNextOpportunity(gift.giftReceiver,"We have received the secret of "..gift.techGift.name.." from the "..gift.giftGiver..".","Foreign Minister","Gift From the "..gift.giftGiver.name)
+        return
+    end
+    if gift.tileGift then
+        gen.transferTileContents(gift.tileGift,gift.giftReceiver)
+        local tileName = "the tile ("..text.coordinates(gift.tileGift)..")"
+        if gift.tileGift.city then
+            tileName = "the city of "..gift.tileGift.city.name
         end
-    end
-    choice = text.menu(menuTable,"Where shall we send our "..unitToGive.type.name.."?","",true)
-    if choice == 0 then
-        return
-    else
-        destination = civ.getCity(choice-choiceOffset)
-    end
-    local transportCost = cityCanReceiveUnitFn(unitToGive,destination)
-    if transportCost == true then
-        transportCost = 0
-    end
-    menuTable = {[1]="Yes.",[2]="No."}
-    local menuText = "Shall we send our "..unitToGive.type.name.." unit to "..destination.name
-    if transportCost > 0 then
-        menuText = menuText.." and pay "..tostring(transportCost).." in transportation costs?"
-    else
-        menuText = menuText.."?"
-    end
-    choice = text.menu(menuTable,menuText,"")
-    if choice == 2 then
-        return
-    end
-    if transportCost > unitToGive.owner.money then
-        text.simple("We can't afford to transport this unit.")
-        return
-    end
-    local sourceCity = unitToGive.homeCity
-    unitToGive.owner.money = unitToGive.owner.money - transportCost
-    unitToGive.owner = destination.owner
-    unitToGive:teleport(destination.location)
-    unitToGive.homeCity = destination
-    afterUnitTransferFn(sourceCity,destination,unitToGive)
-
-    return
-end
-
-
-local function coldWarDiplomacyMenu(options,canGiveUnitFn,tribeCanReceiveUnitFn,cityCanReceiveUnitFn,afterUnitTransferFn,canGiveTileFn,canReceiveTileFn)
-   -- Returns if the city is capital
-      local function isCapital(city)
-	 return city and city:hasImprovement(civ.getImprovement(1))
-      end
-      local function buildOptions()
-	 local tile = civ.getCurrentTile()
-	 local menuTable = {}
-	 menuTable[1] = "Gift money"
-	 menuTable[2] = "Gift technology"
-	 if canGiveTileFn(civ.getCurrentTile(),civ.getCurrentTribe()) and tile.owner == civ.getCurrentTribe() then
-	    if tile.city == nil then
-	       local count = 0
-	       for i in tile.units do
-		  count = count + 1
-	       end
-	       if count > 0 then
-		  menuTable[3] = "Gift all units on tile"
-	       end
-	    else
-	       if not isCapital(tile.city) then
-		  menuTable[4] = "Gift city"
-	       end
-	    end
-	 end
-     menuTable[5] = "Give a unit on this tile"
-	 return menuTable
-      end
-
-      options = options or {}
-      local mainDialogText = options.mainDialogText or "Choose your option"
-      local menuTable = buildOptions()
-      local gift = text.menu(menuTable, mainDialogText, mainDialogText, true)
-      if gift ~= 0 and gift ~= 5 then
-          menuTable = {}
-    	local civSelectionText = options.civSelectionText or "Choose the civ to gift to"
-	    for i = 0, 7 do
-            if (gift == 3 or gift == 4) and not canReceiveTileFn(civ.getCurrentTile(),civ.getCurrentTribe(),civ.getTribe(i)) then
-            else
-	            menuTable[i+1] = civ.getTribe(i).name
-            end
-	    end
-	    local tribeId = text.menu(menuTable, civSelectionText, civSelectionText, true)
-    elseif gift == 5 then
-           giftSingleUnit(canGiveUnitFn,tribeCanReceiveUnitFn,cityCanReceiveUnitFn,afterUnitTransferFn)
-           return
-    elseif gift == 0 then
-        return
-    end
-      if tribeId~=0 and gift ~=0 then
-	 -- How I miss switch/case
-	 tribeId = tribeId -1
-	 tribe  = civ.getTribe(tribeId)
-	 player = civ.getCurrentTribe()
-	 if tribe.name ~= player.name
-	 then
-	    if gift == 1 then
-	       giftMoneyMenu(tribe, options)
-	    elseif gift == 2 then
-	       giftTechnology(tribe, options)
-	    elseif gift == 3 then
-	       giftUnits(tribe, options)
-	    elseif gift == 4 then
-	       giftCity(tribe, options)
-       elseif gift == 5 then
-	    end
-	 else
-	    errorMessage = options.sameCivPlayer or "You can't gift yourself!"
-	    civ.ui.text(errorMessage)
-	 end
-      end
-end
-diplomacy.coldWarDiplomacyMenu = coldWarDiplomacyMenu
-
--- Some currently cancelled stuff, that might be used later
---      unitForPurchaseFn(buyerTribe,unit)-->false or number
---          determines if a unit can be bought, and if so, what the price is
---          false means unit not for sale, number means it is for sale at that price
---      cityCanReceivePurchaseFn(city,buyerTribe,unitBeforePurchase)-->bool or number
---          determines if a city can receive a purchased unit (unit is still owned by seller tribe at this point)
---          if true, unit can be received at that city, if number, add that number to purchase cost
---          if false, the city can't receive the unit
---          
---          not complete
-local function purchaseUnit(unitForPurchaseFn,cityCanReceivePurchaseFn)
-    local buyer = civ.getCurrentTribe()
-    local deliveryCity = nil
-    local purchaseUnit = nil
-    local choice = nil
-    local function selectUnit(destCity)
-        local choiceOffset = 2
-        for unit in civ.iterateUnits() do
-            local price = unitForPurchaseFn(buyer,unit)
-            local transport = true
-            if destCity then
-                transport = cityCanReceivePurchaseFn(destCity,buyer,unit)
-            end
-            if transport then
-                local costText = nil
-                if transport == true then
-                    costText = "Price: "..tostring(price)
-                else
-                    costText = "Total: "..tostring(price+transport).." Price: "..tostring(price).." Shipping: "..tostring(transport)
+        local unitList = {}
+        local unitCount = 0
+        for unit in gift.tileGift.units do
+            unitList[unit.type.name] = (unitList[unit.type.name] or 0) + 1
+            unitCount = unitCount+1
+        end
+        local keyList = gen.sortTableKeysInDescendingValueOrder(unitList)
+        local textList = {}
+        local explicitCount = 0
+        for i=1,5 do
+            if keyList[i] and unitList[keyList[i]] > 0 then
+                textList[i] = unitList[keyList[i]].." "..keyList[i].." unit"
+                if unitList[keyList[i]] > 1 then
+                    textList[i] = textList[i].."s"
                 end
-                
-                local description = unit.type.name.." ("..unit.owner.adjective
-
-            end
-        end
-
-
-
-    end
-    local function selectCity(boughtUnit)
-
-    end
-    while choice ~= 3 do
-        menuTable = {}
-
-        if purchaseUnit then
-            menuTable[1] = "Purchase a different unit."
-            menuTable[4] = "Clear unit purchase choice."
-        else
-            menuTable[1] = "Choose a unit to purchase."
-        end
-        if deliveryCity then
-            menuTable[2] = "Choose a different city to receive the purchase."
-            menuTable[5] = "Clear delivery city choice."
-        else
-            menuTable[2] = "Choose a city to receive your purchase."
-        end
-        if purchaseUnit and deliveryCity then
-            local unitCost = unitForPurchaseFn(buyer,purchaseUnit)
-            local deliveryCost = cityCanReceivePurchaseFn(deliveryCity,buyer,purchaseUnit)
-            if deliveryCost == true then
-                deliveryCost = 0
-            end
-            if deliveryCost > 0 then
-                menuTable[3] = "Spend "..tostring(unitCost+deliveryCost).." ("..tostring(unitCost).."+"..tostring(deliveryCost)..") to have a "..purchaseUnit.type.name.." delivered to "..deliveryCity.name.."."
+                explicitCount = explicitCount + unitList[keyList[i]]
             else
-                menuTable[3] = "Spend "..tostring(unitCost+deliveryCost).." to have a "..purchaseUnit.type.name.." delivered to "..deliveryCity.name.."."
+                break
             end
-
         end
-        
-
-        choice = text.menu(menuTable,"","",true)
-        if choice == 0 then
-            return
-        elseif choice == 1 then
-            purchaseUnit = selectUnit(deliveryCity)
-        elseif choice == 2 then
-            deliveryCity = selectCity(purchaseUnit)
-        elseif choice == 4 then
-            purchaseUnit = nil
-        elseif choice == 5 then
-            deliveryCity = nil
+        if explicitCount < unitCount then
+            textList[#textList+1] = (unitCount-explicitCount).." other unit"
+            if unitCount-explicitCount > 1 then
+                textList[#textList] = textList[#textList].."s"
+            end
         end
+        local message = "We have received "..tileName
+        if #textList > 0 then
+            message = message..", with "..text.niceList(textList)..","
+        end
+        message = message.." from the "..gift.giftGiver.name.."."
+        text.displayNextOpportunity(gift.giftReceiver,message,"Foreign Minister","Gift From the "..gift.giftGiver.name)
+        return
     end
 
 end
---]==]
-if rawget(_G,"console") then
-    _G["console"].diplomacy = diplomacy
+
+if _G.console then
+    console.diplomacy = diplomacy
 end
+
 
 return diplomacy

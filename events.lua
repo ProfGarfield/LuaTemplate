@@ -227,7 +227,9 @@ local simpleSettings = require("simpleSettings"):recommendedVersion(1)
 attemptToRun("getLegacyEvents","WARNING: getLegacyEvents.lua not found.  You will not have any legacy events.")
 --legacy.supplyLegacyEventsTable(legacyEventTable)
 --local delay = require("delayedAction")
-local diplomacy = require("diplomacy")
+local diplomacy = require("diplomacy"):minVersion(2)
+local diplomacySettings = require("diplomacySettings")
+diplomacy.defineEndogenousFlags()
 local cityYield = require("calculateCityYield")
 local combatSettings = require("combatSettings"):minVersion(4)
 local setTraits = require("setTraits")
@@ -668,6 +670,7 @@ local function doOnUnitActivation(unit,source,repeatMove)
         previousUnitActivationTime = os.time()+os.clock()
         return
     end
+    diplomacy.onActivateUnit(unit,source,repeatMove)
     activateUnitBackstopMostRecent = false
     previousUnitActivationTime = os.time()+os.clock()
 end
@@ -894,7 +897,8 @@ end
 local mostRecentOpenCity = nil
 civ.scen.onGetFormattedDate(function(turn,defaultDateString)
     cancelledActivationCleanUp()
-        if humanUnitActive and (not suppressActivateUnitBackstop) and (not activateUnitBackstopMostRecent) and os.time()+os.clock() >= previousUnitActivationTime + 2 and (not civ.getActiveUnit()) then
+    diplomacy.onDateCheck()
+    if humanUnitActive and (not suppressActivateUnitBackstop) and (not activateUnitBackstopMostRecent) and os.time()+os.clock() >= previousUnitActivationTime + 2 and (not civ.getActiveUnit()) then
             activateUnitBackstop()
         end
         local openCity = civ.getOpenCity()
@@ -957,6 +961,7 @@ civ.scen.onCityTaken(function (city,defender)
     discreteEvents.performOnCityTaken(city,defender)
     consolidated.onCityTaken(city,defender)
     eventsFiles.onCityTaken(city,defender)
+    diplomacy.onCityTaken(city,defender)
     suppressActivateUnitBackstop = false
 end)
 registeredInThisFile["onCityTaken"]=true
@@ -1001,7 +1006,9 @@ civ.scen.onNegotiation(function(talker,listener)
     local individualEventsResult = eventsFiles.onNegotiation(talker,listener)
     suppressActivateUnitBackstop = false
 ---@diagnostic disable-next-line: return-type-mismatch
-    return discreteEventsResult and consolidatedEventsResult and individualEventsResult
+    local canNegotiate = discreteEventsResult and consolidatedEventsResult and individualEventsResult
+    diplomacy.onNegotiation(talker,listener,canNegotiate)
+    return canNegotiate
 end)
 registeredInThisFile["onNegotiation"] = true
 

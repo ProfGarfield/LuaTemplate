@@ -1,4 +1,4 @@
-local versionNumber = 10
+local versionNumber = 11
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -75,6 +75,11 @@ gen.constants = {
     maxMaps = 4,
     maxMapID = 3,
     maxTechID = 252,
+    maxTechGroups = 8,
+    maxTechGroupID = 7,
+    techGroupCanOwnCanResearch = 0,
+    techGroupCanOwnCannotResearch = 1,
+    techGroupCannotOwnCannotResearch = 2,
     roleAttack = 0,
     roleDefend = 1,
     roleNavalSuperiority = 2,
@@ -3129,6 +3134,7 @@ function gen.homeToNearestCity(unit)
     local function dist(unit,city)
         return tileDist(unit.location,city.location,0)
     end
+    print(tostring(bestCity))
     for city in civ.iterateCities() do
         if city.owner == unit.owner and dist(unit,city) < bestDist and
             gen.cityCanSupportAnotherUnit(city) then
@@ -3136,6 +3142,7 @@ function gen.homeToNearestCity(unit)
             bestDist = dist(unit,city)
         end
     end
+    print(tostring(bestCity))
     if bestCity then
         unit.homeCity = bestCity
     end
@@ -3502,6 +3509,9 @@ gen.getTerrainFromId = gen.getTerrainFromID
 function gen.unitTypeOnTile(tile,unitTypeTable,excludeFromCheck)
     if civ.isUnitType(unitTypeTable) then
         unitTypeTable = {unitTypeTable}
+    end
+    if type(unitTypeTable) ~= "table" then
+        error("gen.unitTypeOnTile: Arg #2 must be a unit type or table of unit types.  Received: "..tostring(unitTypeTable))
     end
     local exclusionSet = {}
     if civ.isUnit(excludeFromCheck) then
@@ -4258,6 +4268,7 @@ function gen.linkGeneralLibraryState(stateTable)
     genStateTable.persistentRandom = genStateTable.persistentRandom or {}
     genStateTable.tileMarkerTable = genStateTable.tileMarkerTable or {}
 end
+
 
 local discreteEventsFileFound, discreteEvents = gen.requireIfAvailable("discreteEventsRegistrar")
 if discreteEventsFileFound then
@@ -5681,6 +5692,8 @@ gen.original.tOcean                   =civ.getTerrain(0,10,0)
 gen.original.tFish                    =civ.getTerrain(0,10,1) -- Fish Resource
 gen.original.tWhales                  =civ.getTerrain(0,10,2) -- Whale Resource
 --]=]
+
+gen.errorForNilKey(gen.original, "gen.original")
 
 --[=[
 gen.original = {
@@ -9087,6 +9100,110 @@ function gen.complementList(list,itemIterator)
     return complement
 end
 
+--[[
+Returns an array of all the keys in the table with number values,
+in descending order, starting with the largest value at index 1.
+
+If there are multiple keys with the same value, the order of those
+keys is not guaranteed.
+
+Keys with non-number values are ignored.  If no key has a number value,
+an empty table is returned.
+]]
+---@param table table
+---@return table<integer,any>
+function gen.sortTableKeysInDescendingValueOrder(table)
+    local keys = {}
+    local index = 1
+    for key,value in pairs(table) do
+        if type(value) == "number" then
+            keys[index] = key
+            index = index + 1
+        end
+    end
+    _G.table.sort(keys,function(a,b)
+        return table[a] > table[b]
+    end)
+    return keys
+end
+
+--[[
+Returns an array of all the keys in the table with number values,
+in increasing order, starting with the smallest value at index 1.
+
+If there are multiple keys with the same value, the order of those
+keys is not guaranteed.
+
+Keys with non-number values are ignored.  If no key has a number value,
+an empty table is returned.
+]]
+---@param table table
+---@return table<integer,any>
+function gen.sortTableKeysInAscendingValueOrder(table)
+    local keys = {}
+    local index = 1
+    for key,value in pairs(table) do
+        if type(value) == "number" then
+            keys[index] = key
+            index = index + 1
+        end
+    end
+    table.sort(keys,function(a,b)
+        return table[a] < table[b]
+    end)
+    return keys
+end
+
+local changeUnitValidationInfo = function(unit) end
+
+--Registers a function that updates the validation information
+--for a unit, to be called when a unit's owner is changed.
+--(This is called in unitData.lua, and will probably not be used
+--directly by a scenario creator.)
+---@param changeValidationInfo fun(unit:unitObject)
+function gen.registerUpdateUnitValidationInfo(changeValidationInfo)
+    changeUnitValidationInfo = changeValidationInfo
+end
+
+local changeCityValidationInfo = function(city) end
+
+--Registers a function that updates the validation information
+--for a city, to be called when a city's owner is changed.
+--(This is called in cityData.lua, and will probably not be used
+--directly by a scenario creator.)
+---@param changeValidationInfo fun(city:cityObject)
+function gen.registerUpdateCityValidationInfo(changeValidationInfo)
+    changeCityValidationInfo = changeValidationInfo
+end
+
+
+
+
+--[[
+Changes the owner of the city and or units on the tile
+to newOwner from the current owner.
+]]
+---@param tile tileObject
+---@param newOwner tribeObject
+function gen.transferTileContents(tile,newOwner)
+    if tile.city then
+        local originalOwner = tile.city.owner
+        tile.city.owner = newOwner
+        changeCityValidationInfo(tile.city)
+        for unit in civ.iterateUnits() do
+            if unit.owner == originalOwner and unit.homeCity == tile.city and unit.location ~= tile then
+                print(tostring(unit))
+                gen.homeToNearestCity(unit)   
+            end
+        end
+    end
+    for unit in tile.units do
+        unit.owner = newOwner
+        gen.homeToNearestCity(unit)
+        changeUnitValidationInfo(unit)
+    end
+    tile.owner = newOwner
+end
 
 
 if rawget(_G,"console") then

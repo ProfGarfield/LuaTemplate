@@ -9,7 +9,6 @@ local register = {}
 -- If any of the events return false, negotiations are
 -- prevented, even if other negotiation events return true
 function register.onNegotiation(talker,listener)
-
     return true
 end
 ---&endAutoDoc
