@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -448,7 +448,11 @@ function supplementalData.buildModuleFunctions(moduleName, itemName, isItem,
         if not dataTable[itemID] then
             return keyDefinitions[flagName].defaultValue
         end
-        return dataTable[itemID][flagName] or keyDefinitions[flagName].defaultValue
+        if dataTable[itemID][flagName] == nil then
+            return keyDefinitions[flagName].defaultValue
+        else
+            return dataTable[itemID][flagName]
+        end
     end
 
     -- guaranteeDatum(<item>) --> void
@@ -489,7 +493,7 @@ function supplementalData.buildModuleFunctions(moduleName, itemName, isItem,
         gen.validateFunctionArgument(modName, moduleName, "flagSetValue",4, "moduleName",anyStringNil,"flagName: "..flagName)
         gen.validateFunctionArgument(value, moduleName, "flagSetValue",3, "value",{["boolean"]=true},"flagName: "..flagName)
         flagName = makeModuleKeyName(modName,flagName) 
-        standardChecks(item,flagName,"flagSetFalse","flag")
+        standardChecks(item,flagName,"flagSetValue","flag")
         guaranteeDatum(item)
         local itemID = getItemID(item)
         dataTable[itemID][flagName] = value
