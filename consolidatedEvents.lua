@@ -42,9 +42,8 @@ local diplomacy = require("diplomacy")
 local delayed = require("delayedAction")
 local calendar = require("calendar")
 local keyboard = require("keyboard")
-local flag = require("flag")
-local counter = require("counter")
 local civlua = require("civluaModified")
+local data = require("data")
 
 local events = {}
 

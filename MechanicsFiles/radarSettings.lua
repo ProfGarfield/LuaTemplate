@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -13,7 +13,8 @@ local object = require("object")
 local keyboard = require("keyboard")
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local text = require("text")
-local flag = require("flag")
+---@module "data"
+local data = require("data"):minVersion(2)
 local radarSettings = {}
 gen.versionFunctions(radarSettings,versionNumber,fileModified,"MechanicsFiles".."\\".."radarSettings.lua")
 
@@ -383,7 +384,6 @@ end
 --      
 
 local radarTable = {}
-
 --[[
 radarTable["airport"] = {
     station = gen.original.iAirport,
@@ -395,7 +395,7 @@ radarTable["airport"] = {
     --tech = {gen.original.aAdvancedFlight, gen.original.aEnvironmentalism, gen.original.aAtomicTheory},
     --techNumber = 2,
 }
-flag.define("testingFlag",false)
+data.defineFlag("testingFlag",false)
 
 radarTable["tiles"] = {
     station = {civ.getTile(99,37,0),civ.getTile(99,37,1)},
@@ -419,9 +419,9 @@ radarTable["frigate"] = {
 
 local keyPressFunction, groupScanFunction = radar.buildKeyPressAndGroupScanFunctions(radarTable, airCrossSection, surfaceCrossSection)
 
-flag.define("noGroupScanThisTurn",true,"radarSettings")
+data.defineModuleFlag("radarSettings","noGroupScanThisTurn",true)
 function discreteEvents.onTribeTurnBegin(turn,tribe)
-    flag.setTrue("noGroupScanThisTurn","radarSettings")
+    data.flagSetTrue("noGroupScanThisTurn","radarSettings")
 end
 
 local function radarKey()
@@ -429,7 +429,7 @@ local function radarKey()
     local tile = civ.getCurrentTile()
     local menuTable = {}
     menuTable[1] = "Do Nothing"
-    if flag.value("noGroupScanThisTurn","radarSettings") then
+    if data.flagGetValue("noGroupScanThisTurn","radarSettings") then
         menuTable[2] = "Perform the group radar scan for this turn."
     end
     local jointMarker = airRadarMarker == surfaceRadarMarker
@@ -469,7 +469,7 @@ local function radarKey()
     if choice == 1 then
         return
     elseif choice == 2 then
-        flag.setFalse("noGroupScanThisTurn","radarSettings")
+        data.flagSetFalse("noGroupScanThisTurn","radarSettings")
         local scannedTiles = groupScanFunction(civ.getCurrentTribe())
         if not scannedTiles then
             return

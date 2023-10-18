@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -83,6 +83,13 @@ data on specific function call.
 ---@class data
 local data = {}
 
+-- These tables are used to keep track of the names of data keys
+-- assigned without a module component
+local flagKeyList = {}
+local counterKeyList = {}
+local phraseKeyList = {}
+local genericKeyList = {}
+
 
 --[[Defines a flag, which keeps boolean values
 * flagName = string
@@ -105,6 +112,7 @@ function data.defineFlag(flagName,defaultValue,resetTime)
         error("data.defineFlag: resetTime (arg #3) must be nil, 'never', 'onTurn', or 'custom'")
     end
     mapZeroData.defineFlag(flagName,defaultValue,resetTime)
+    flagKeyList[1+#flagKeyList] = flagName
 end
 
 
@@ -258,6 +266,7 @@ function data.defineCounter(counterName,defaultValue,minValue,maxValue,update,up
         error("data.defineCounter: when the update argument (#5) is 'function' or 'functionAll', the updateParameter argument (#7) must be a function(numberOrNil) --> numberOrNil.  Received: "..tostring(updateParameter))
     end
     mapZeroData.defineCounter(counterName,defaultValue,minValue,maxValue,update,updateTime,updateParameter,nonInteger)
+    counterKeyList[1+#counterKeyList] = counterName
 end
 
 
@@ -480,6 +489,7 @@ function data.definePhrase(phraseName,defaultValue,resetTime,allowedValuesTable)
         error("data.definePhrase: resetTime (arg #3) must be nil, 'never', 'onTurn', or 'custom'")
     end
     mapZeroData.definePhrase(phraseName,defaultValue,resetTime,allowedValuesTable)
+    phraseKeyList[1+#phraseKeyList] = phraseName
 end
 
 
@@ -595,6 +605,7 @@ function data.defineGeneric(dataName,updateTime,updateAll,updateFunction)
         error("data.defineGeneric: updateTime (arg #2) must be nil, 'never', 'onTurn', or 'custom'")
     end
     mapZeroData.defineGeneric(dataName,updateTime,updateAll,updateFunction)
+    genericKeyList[1+#genericKeyList] = dataName
 end
 
 
@@ -660,6 +671,8 @@ end
 function data.genericSetValue(keyName,value,moduleName)
     return mapZeroData.genericSetValue(map0,keyName,value,moduleName)
 end
+
+
 
 
 
@@ -745,6 +758,40 @@ function data.changeValidationInfo()
 end
 
 --]]
+
+
+
+-- Returns the list of all flag keys that have been defined without
+-- a module component.
+---@return table
+function data.listOfFlagKeys()
+    return gen.copyTable(flagKeyList)
+end
+
+-- Returns the list of all counter keys that have been defined without
+-- a module component.
+---@return table
+function data.listOfCounterKeys()
+    return gen.copyTable(counterKeyList)
+end
+
+-- Returns the list of all phrase keys that have been defined without
+-- a module component.
+---@return table
+function data.listOfPhraseKeys()
+    return gen.copyTable(phraseKeyList)
+end
+
+-- Returns the list of all generic keys that have been defined without
+-- a module component.
+---@return table
+function data.listOfGenericKeys()
+    return gen.copyTable(genericKeyList)
+end
+
+if rawget(_G,"console") then
+    console.data = data
+end
 
 gen.versionFunctions(data,versionNumber,fileModified,"LuaCore\\data.lua")
 

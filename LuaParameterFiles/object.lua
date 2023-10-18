@@ -1,4 +1,3 @@
-local flag = require("flag")
 local gen = require("generalLibrary")
 
 -- In the LuaCore folder, there is a script that will generate

@@ -24,6 +24,7 @@ local discreteEvents = require("discreteEventsRegistrar")
 
 local changeRules = require("changeRules")
 
+---@class diplomacy
 local diplomacy = {}
 
 gen.versionFunctions(diplomacy,versionNumber,fileModified,"LuaCore".."\\".."diplomacy.lua")

@@ -11,7 +11,8 @@ local fileModified = false -- set this to true if you change this file for your 
 
 local gen = require("generalLibrary")
 local text = require("text")
-local counter = require("counter")
+---@module "data"
+local data = require("data"):minVersion(2)
 local discreteEvents = require("discreteEventsRegistrar")
 
 
@@ -112,7 +113,7 @@ function configuration.defineSetting(settingSpec)
     end
     settingSpecTable[settingSpec.name] = settingSpec
     for i=1,gen.c.maxTribeID do
-        counter.define(settingSpec.name..tostring(i), settingSpec.defaultIndex, moduleName)
+        data.defineModuleCounter(moduleName,settingSpec.name..tostring(i), settingSpec.defaultIndex)
     end
     local settingMenu = makeSettingSpecMenu(settingSpec)
     if configurationMenuGenerator[settingSpec.placement] then
@@ -135,7 +136,7 @@ function configuration.getSettingValue(settingName,tribeID)
     if not settingSpec then
         error("configuration.getSettingValue: The setting "..settingName.." has not been defined.")
     end
-    local valueIndex = counter.value(settingName..playerTribeID, moduleName)
+    local valueIndex = data.counterGetValue(settingName..playerTribeID, moduleName)
     return settingSpec.values[valueIndex]
 end
 
@@ -152,7 +153,7 @@ function configuration.getSettingValueName(settingName,tribeID)
     if not settingSpec then
         error("configuration.getSettingValue: The setting "..settingName.." has not been defined.")
     end
-    local valueIndex = counter.value(settingName..playerTribeID, moduleName)
+    local valueIndex = data.counterGetValue(settingName..playerTribeID, moduleName)
     return settingSpec.valueNames[valueIndex] or tostring(settingSpec.values[valueIndex])
 end
 
@@ -169,7 +170,7 @@ function configuration.setSettingIndex(settingName,tribeID,valueIndex,suppressCh
         error("configuration.getSettingValue: The setting "..settingName.." has not been defined.")
     end
     local oldValue = configuration.getSettingValue(settingName,tribeID)
-    counter.setValue(settingName..playerTribeID, valueIndex, moduleName)
+    data.counterSetValue(settingName..playerTribeID, valueIndex, moduleName)
     if not suppressChangeFunction and settingSpec.changeFunction then
         settingSpec.changeFunction(configuration.getSettingValue(settingName, tribeID),oldValue,tribeID,settingSpec)
     end

@@ -97,7 +97,6 @@ Added land and air transport.
 
 Fixed worked around goto bug where unit.carriedBy cancelled goto orders when called during onActivateUnit for the unit.  Discovered due to land/air cargo.
 
-last update
 
 Updated events.lua and discreteEventsRegistrar to allow onEnterTile to cancel further code execution by returning true.  Also, onActivateUnit event is cancelled if onEnterTile kills the active unit.
 
@@ -116,6 +115,12 @@ Updated legacyEventEngine/Builder with some more helpful error messages.
 Events.lua now searches for duplicate files in the five default require folders.
 
 Some updates to version numbers that should have been done before.
+
+updated the diplomacy module
+
+Fixed major bug in supplementalData, where flags with a default value of true were never considered false by flagGetValue.
+
+Replaced flag/counter references with data references.  Flags and counters now just provide link to data module and are deprecated.
 
 todo
 

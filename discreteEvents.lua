@@ -54,8 +54,6 @@ local diplomacy = require("diplomacy"):minVersion(1)
 local delayed = require("delayedAction"):minVersion(1)
 local calendar = require("calendar")
 local keyboard = require("keyboard")
-local flag = require("flag")
-local counter = require("counter")
 local civlua = require("civluaModified")
 
 

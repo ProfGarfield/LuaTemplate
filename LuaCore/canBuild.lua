@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -6,8 +6,9 @@ local fileModified = false -- set this to true if you change this file for your 
 -- warn you that you've modified this file
 
 
-local flag = require("flag")
-local counter = require('counter')
+---@module "data"
+local data = require("data"):minVersion(2)
+---@module "generalLibrary"
 local gen = require("generalLibrary"):minVersion(1)
 local canBuildVersion = versionNumber
 
@@ -753,14 +754,14 @@ local function computeMaxNumberTribe(settings,activeTribe,item)
     end
     if settings.trueFlags then
         for flagKey,value in pairs(settings.trueFlags) do
-            if flag.value(flagKey) then
+            if data.flagGetValue(flagKey) then
                 total = total+value
             end
         end
     end
     if settings.counterValues then
         for counterKey,value in pairs(settings.counterValues) do
-            total = total+ counter.value(counterKey)*value
+            total = total+ data.counterGetValue(counterKey)*value
         end
     end
     if settings.customFunction then
@@ -818,14 +819,14 @@ local function computeMaxNumberGlobal(settings,activeTribe,item)
     end
     if settings.trueFlags then
         for flagKey,value in pairs(settings.trueFlags) do
-            if flag.value(flagKey) then
+            if data.flagGetValue(flagKey) then
                 total = total+value
             end
         end
     end
     if settings.counterValues then
         for counterKey,value in pairs(settings.counterValues) do
-            total = total+ counter.value(counterKey)*value
+            total = total+ data.counterGetValue(counterKey)*value
         end
     end
     if settings.customFunction then
@@ -977,7 +978,7 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
     end
     if itemParameters.allFlagsMatch then
         for flagKey,bool in pairs(itemParameters.allFlagsMatch) do
-            if flag.value(flagKey) ~= bool then
+            if data.flagGetValue(flagKey) ~= bool then
                 return false
             end
         end
@@ -985,7 +986,7 @@ local function parametersSatisfied(defaultBuildFunction,city,item,itemParameters
     if itemParameters.someFlagsMatch and itemParameters.numberOfFlags then
         local count = 0
         for flagKey,bool in pairs(itemParameters.allFlagsMatch) do
-            if flag.value(flagKey) == bool then
+            if data.flagGetValue(flagKey) == bool then
                 count = count+1
             end
         end
@@ -1168,7 +1169,6 @@ local initializationFunction = function(city)
 
 end
 
---flag.define("initializationFunctionNotRun",true,"canBuild")
 
 function canBuildFunctions.supplyInitializationFunction(fn)
     if type(fn) == "function" then
@@ -1421,7 +1421,31 @@ function canBuildFunctions.makeAddBuildConditions(unitTypeBuild,improvementBuild
     return addBuildConditions
 end
 
+---Provides the defaultCanBuildFunction to feed to customCanBuild
+---For canBuild.canCityBuild
+---@param city cityObject
+---@param item unitTypeObject|wonderObject|improvementObject
+---@return boolean
+local function defaultCanBuild(city,item)
+    return city:canBuild(item)
+end
 
+--[[
+Returns true if `city` can currently build `item`, and false otherwise.
+
+If `doNotInitializeStatistics` is true, then Lua does not count the number of units/improvements/etc on the map and instead uses the values from the last time the statistics were initialized.
+
+You should always recount the statistics when changing cities to one owned by a different tribe, when there is a chance that production orders have changed, and when there is a chance that units or improvements have been created or removed.
+]]
+---@param city cityObject
+---@param item unitTypeObject|wonderObject|improvementObject
+---@param doNotReCount? boolean If true, Lua does not count the number of units/improvements/etc. and instead uses the values from the last time the statistics were initialized.
+---@return boolean
+function canBuildFunctions.canCityBuild(city,item,doNotReCount)
+    return customCanBuild(defaultCanBuild,city,item,doNotReCount)
+end
+
+--console.canCityBuild = canBuildFunctions.canCityBuild
 
 canBuildFunctions.version = canBuildVersion
 gen.versionFunctions(canBuildFunctions,versionNumber,fileModified,"LuaCore".."\\".."canBuild.lua")
