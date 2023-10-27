@@ -122,6 +122,17 @@ Fixed major bug in supplementalData, where flags with a default value of true we
 
 Replaced flag/counter references with data references.  Flags and counters now just provide link to data module and are deprecated.
 
+Last Update
+
+The combatModifiers module allows you to set a function to compute a modifier value, instead of having to specify the number ahead of time.
+
+Require function is reassigned in events.lua and now checks for duplicate entries. This replaces a "scandir" function definition and call, which interacted with the command line, and briefly opened command windows.  The fix was made for customMusicIntegration as well.
+
+Added some new checks to catch more errors in legacyEvents.txt files.
+
+The civilopedia generator module now has a function to assign descriptions based on traits.
+
+
 todo
 
 

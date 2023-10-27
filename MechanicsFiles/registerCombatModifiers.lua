@@ -272,9 +272,9 @@ traits.assign({gen.original.wCopernicusObservatory, gen.original.wIsaacNewtonsCo
 --]]
 --
 --
---[[
 --
 -- air units get an attack bonus against ancient units
+--[[
 combatMod.registerCombatModificationRule({
     attacker = {gen.original.uFighter, gen.original.uStlthBmbr, gen.original.uStlthFtr, gen.original.uBomber, gen.original.uHelicopter},
     defender = {gen.original.uWarriors, gen.original.uPhalanx, gen.original.uArchers, gen.original.uLegion},
@@ -342,6 +342,16 @@ combatMod.registerCombatModificationRule({
         dFortified = 2,
     },
 })
+
+-- siege engines defend with their attack value against other siege engines
+combatMod.registerCombatModificationRule({
+    attacker = "siege engine",
+    defender = "siege engine",
+    combatSpec = {
+        dCustomAdd = function(attacker,defender) return defender.type.attack - defender.type.defense end,
+    },
+})
+
 -- A granary increases the defensive value of city walls to 5
 combatMod.registerCombatModificationRule({
     defenderDetail = gen.original.iGranary,

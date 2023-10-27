@@ -1,5 +1,5 @@
 --
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -95,6 +95,11 @@ local fileModified = false -- set this to true if you change this file for your 
 -- require("civilopedia").makeDescribeTxt()
 -- or, with Lua scenario template, 
 -- console.makeDescribeTxt()
+
+---@module "generalLibrary"
+local gen = require("generalLibrary"):minVersion(11)
+---@module "traits"
+local traits = require("traits"):minVersion(4)
 
 local pedia = {}
 local maxTechs = 253
@@ -475,6 +480,52 @@ function pedia.description(object,description,extra)
     end
 end
 
+local TRAIT_DESCRIPTIONS = {}
+-- indexed by trait name
+
+---Add a description to all items with a given trait.
+---@param trait string
+---@param description string
+function pedia.traitDescription(trait,description)
+    if type(trait) ~= "string" then
+        error("pedia.traitDescription: first argument must be a trait name.  Received:"..tostring(trait))
+    end
+    if type(description) ~= "string" then
+        error("pedia.traitDescription: second argument must be a string.  Received:"..tostring(description))
+    end
+    if not traits.isTrait(trait) then
+        error("pedia.traitDescription: first argument must be a trait name.  Received:"..tostring(trait))
+    end
+    standardAddDescription(TRAIT_DESCRIPTIONS,trait,description)
+end
+
+
+
+local function addTraitDescriptions(item)
+    for traitName,description in pairs(TRAIT_DESCRIPTIONS) do
+        if traits.hasTrait(item,traitName) then
+            pedia.description(item,description)
+        end
+    end
+end
+
+local function addAllTraitDescriptions()
+    for tech in gen.iterateTechs() do
+        addTraitDescriptions(tech)
+    end
+    for improvement in gen.iterateImprovements() do
+        addTraitDescriptions(improvement)
+    end
+    for wonder in gen.iterateWonders() do
+        addTraitDescriptions(wonder)
+    end
+    for unitType in gen.iterateUnitTypes() do
+        addTraitDescriptions(unitType)
+    end
+    for terrain in gen.iterateTerrain() do
+        addTraitDescriptions(terrain)
+    end
+end
 
 
 local function generateIndexLine(lineNumber,object,description,originalNameTable)
@@ -550,6 +601,7 @@ pedia.getVersion = versionNumber
 
 
 function pedia.makeDescribeTxt()
+addAllTraitDescriptions()
 local output = [==[
 ;
 ;   Civilopedia Descriptions Text File

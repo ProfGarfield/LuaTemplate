@@ -99,8 +99,21 @@ if string.find(package.path, scenarioFolderPath, 1, true) == nil then
     -- without looking in that folder for other modules
     -- this is unneeded with the new onSelectMusic event
     --..";?.lua"
-    
 end
+
+
+
+
+local scenFolder = scenarioFolder:sub(1,-2)
+local mainScenarioFolder = string.gsub(scenFolder,".*\\","")
+
+--[==[
+-- This code checks for duplicate file names in the standard required
+-- folders, since that can cause problems if the wrong module definition
+-- is loaded.
+-- However, this code opened several command line windows for brief seconds
+-- on Windows, so another method is used below, which involves redefining
+-- require.
 
 -- Found this code on stackoverflow.com
 -- https://stackoverflow.com/questions/5303174/how-to-get-list-of-directories-in-lua
@@ -114,8 +127,7 @@ local function scandir(directory)
     pfile:close()
     return t
 end
-local scenFolder = scenarioFolder:sub(1,-2)
-local mainScenarioFolder = string.gsub(scenFolder,".*\\","")
+
 local requirePathFiles = {}
 requirePathFiles[mainScenarioFolder] = scandir(scenarioFolder)
 requirePathFiles["LuaCore"] = scandir(scenarioFolder.."\\LuaCore")
@@ -139,6 +151,60 @@ end
 if duplicateFound then
     error("Duplicate file names found.  The list is printed above.  You must only have one file with a given name in "..mainScenarioFolder.." and the following subfolders: LuaCore, LuaParameterFiles, MechanicsFiles, EventsFiles.")
 end
+]==]
+
+
+--===========================================
+--          Duplicate Module Detection
+--===========================================
+
+-- This section of code replaces the standard require function
+-- with one that checks for duplicate file names in the standard
+-- required folders, since it can cause problems if the wrong module definition
+-- is loaded.
+
+-- Found this code on stackoverflow.com
+-- https://stackoverflow.com/questions/4990990/check-if-a-file-exists-with-lua
+local function fileExists(fileName)
+    local f = io.open(fileName,"r")
+    if f~=nil then
+        io.close(f)
+        return true
+    else
+        return false
+    end
+end
+
+local trueRequire = require
+
+local requirePathFolders = {}
+requirePathFolders[mainScenarioFolder] = scenarioFolder
+requirePathFolders["LuaCore"] = scenarioFolder.."\\LuaCore"
+requirePathFolders["LuaParameterFiles"] = scenarioFolder.."\\LuaParameterFiles"
+requirePathFolders["MechanicsFiles"] = scenarioFolder.."\\MechanicsFiles"
+requirePathFolders["EventsFiles"] = scenarioFolder.."\\EventsFiles"
+
+
+local function requireAndCheckForDuplicates(fileName)
+    if package.loaded[fileName] then
+        return trueRequire(fileName)
+    end
+    local foldersWithFileName = {}
+    for folderName,fullPath in pairs(requirePathFolders) do
+        if fileExists(fullPath.."\\"..fileName..".lua") then
+            foldersWithFileName[#foldersWithFileName+1] = folderName
+        end
+    end
+    if #foldersWithFileName > 1 then
+        error("Duplicate file name: "..fileName..".lua is found these "..tostring(#foldersWithFileName).." folders: "..table.concat(foldersWithFileName,", ")..".  You must only have one file with a given name in "..mainScenarioFolder.." and the following subfolders: LuaCore, LuaParameterFiles, MechanicsFiles, EventsFiles.")
+    end
+    return trueRequire(fileName)
+end
+
+_G.require = requireAndCheckForDuplicates
+
+--===========================================
+--===========================================
 
 -- requireIfAvailable(fileName) --> fileFound (bool), prefix (whatever is returned by a successful require, or nil)
 local function requireIfAvailable(fileName)

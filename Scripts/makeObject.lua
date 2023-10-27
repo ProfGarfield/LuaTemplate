@@ -42,6 +42,7 @@ local fileOutput =
 local text = require("text")
 local gen = require("generalLibrary")
 
+---@class object table
 local object = gen.makeDataTable({},"object")
 -- This line forbids reassignment of keys of the object table
 -- This should prevent errors

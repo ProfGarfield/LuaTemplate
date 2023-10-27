@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -238,58 +238,61 @@ local combatCalculator = require("combatCalculator"):minVersion(2)
 
 
 local posNumNil = {["nil"]=true,["number"]={minVal = 0}}
+local posNumNilFunc = {["nil"]=true,["number"]={minVal = 0},["function"]="function(attacker,defender) --> number>=0|nil"}
 local numNil = {["nil"]=true,["number"]=true}
+local numNilFunc = {["nil"]=true,["number"]=true,["function"]="function(attacker,defender) --> number|nil"}
 local falseNil = {["nil"]=true,["boolean"]="false"}
+local falseNilFunc = {["nil"]=true,["boolean"]="false",["function"]="function(attacker,defender) --> false|nil"}
 local traitUnitNil = {["nil"]=true,["userdata"] = {["unitType"]=civ.isUnitType},["string"]=traits.allTraits(),}
 
 
 local combatSpecSpecificKeys = {
 
-    aCustomAdd = numNil,
-    dCustomAdd = numNil,
-    aCustomMult = posNumNil,
-    dCustomMult = posNumNil,
-    aAddFirepower = numNil,
-    dAddFirepower = numNil,
+    aCustomAdd = numNilFunc,
+    dCustomAdd = numNilFunc,
+    aCustomMult = posNumNilFunc,
+    dCustomMult = posNumNilFunc,
+    aAddFirepower = numNilFunc,
+    dAddFirepower = numNilFunc,
 
-    aVeteran = posNumNil,
-    aPartisans = posNumNil,
-    aParadrop = posNumNil,
-    aSneakAttack = posNumNil,
-    aEasiestLevelHumanAttacker = posNumNil,
-    aEasyLevelsHumanDefender = posNumNil,
-    aBarbarianAttackerVsHumanDefender = posNumNil,
-    aBarbarianAttackerVsAiDefender = posNumNil,
-    aBarbarianAttackerVsDefendersOnlyCity = posNumNil,
-    aBarbarianAttackerVsDefendersCapitalCity = posNumNil,
-    aBarbarianAttackerVsDefenderWithGreatWall = posNumNil,
-    aGreatWallVsBarbarianDefender = posNumNil,
-    aFirepowerCaughtInPort = posNumNil,
-    dVeteran = posNumNil,
-    dScramblingFighterVsBomber = posNumNil,
-    dScramblingFighterVsFighter = posNumNil,
-    dHelicopter = posNumNil,
-    dCityWalls = posNumNil,
-    dFortress = posNumNil,
-    dFortified = posNumNil,
-    dPikemenFlag = posNumNil,
-    dAegisFlagVsMissile = posNumNil,
-    dAegisFlagVsOtherAir = posNumNil,
-    dSdiDefenseVsMissile = posNumNil,
-    dSamMissileBattery = posNumNil,
-    dCoastalFortress = posNumNil,
-    dBarbarianDefenderArchers = posNumNil,
-    dBarbarianDefenderLegion = posNumNil,
+    aVeteran = posNumNilFunc,
+    aPartisans = posNumNilFunc,
+    aParadrop = posNumNilFunc,
+    aSneakAttack = posNumNilFunc,
+    aEasiestLevelHumanAttacker = posNumNilFunc,
+    aEasyLevelsHumanDefender = posNumNilFunc,
+    aBarbarianAttackerVsHumanDefender = posNumNilFunc,
+    aBarbarianAttackerVsAiDefender = posNumNilFunc,
+    aBarbarianAttackerVsDefendersOnlyCity = posNumNilFunc,
+    aBarbarianAttackerVsDefendersCapitalCity = posNumNilFunc,
+    aBarbarianAttackerVsDefenderWithGreatWall = posNumNilFunc,
+    aGreatWallVsBarbarianDefender = posNumNilFunc,
+    aFirepowerCaughtInPort = posNumNilFunc,
+    dVeteran = posNumNilFunc,
+    dScramblingFighterVsBomber = posNumNilFunc,
+    dScramblingFighterVsFighter = posNumNilFunc,
+    dHelicopter = posNumNilFunc,
+    dCityWalls = posNumNilFunc,
+    dFortress = posNumNilFunc,
+    dFortified = posNumNilFunc,
+    dPikemenFlag = posNumNilFunc,
+    dAegisFlagVsMissile = posNumNilFunc,
+    dAegisFlagVsOtherAir = posNumNilFunc,
+    dSdiDefenseVsMissile = posNumNilFunc,
+    dSamMissileBattery = posNumNilFunc,
+    dCoastalFortress = posNumNilFunc,
+    dBarbarianDefenderArchers = posNumNilFunc,
+    dBarbarianDefenderLegion = posNumNilFunc,
 
-    aMovesRemainingCheck = falseNil,
-    aFirepowerShoreBombardmentCheck = falseNil,
-    dBaseTerrainCheck = falseNil,
-    dFirepowerHelicopterCheck = falseNil,
-    dFirepowerShoreBombardmentCheck = falseNil,
-    dFirepowerCaughtInPortCheck = falseNil,
-    dFirepowerSubmarineFlagCheck = falseNil,
+    aMovesRemainingCheck = falseNilFunc,
+    aFirepowerShoreBombardmentCheck = falseNilFunc,
+    dBaseTerrainCheck = falseNilFunc,
+    dFirepowerHelicopterCheck = falseNilFunc,
+    dFirepowerShoreBombardmentCheck = falseNilFunc,
+    dFirepowerCaughtInPortCheck = falseNilFunc,
+    dFirepowerSubmarineFlagCheck = falseNilFunc,
 
-    dRiverAddition = numNil,
+    dRiverAddition = numNilFunc,
 }
 
 local function isTerrainOrBaseTerrain(item)
@@ -330,10 +333,10 @@ end
 
 
 local combatSpecGeneralKeys = {
-    [isTerrainIndex] = posNumNil,
-    [isAddKey] = numNil,
-    [isMultKey] = posNumNil,
-    [isModifierKey] = posNumNil,
+    [isTerrainIndex] = posNumNilFunc,
+    [isAddKey] = numNilFunc,
+    [isMultKey] = posNumNilFunc,
+    [isModifierKey] = posNumNilFunc,
 }
 
 local baseNewCombatSpec, isCombatSpec, combatSpecMetatable = gen.createDataType("combatSpec",combatSpecSpecificKeys,combatSpecGeneralKeys,{},{})
@@ -725,8 +728,14 @@ function combatMod.applyRegisteredRules(attacker,defender,combatModifierOverride
         anyDetailMatches(defender,modTable.defenderDetailItems,modTable.defenderDetailTraits) and
         customCheckTrue(modTable) then
             local cSpec = modTable.combatSpec
-            for key,value in pairs(cSpec) do
-                if directAddKeys[key] then
+            for key,recordedValue in pairs(cSpec) do
+                local value = recordedValue
+                if type(value) == "function" then
+                    value = value(attacker,defender)
+                end
+                if value == nil then
+                    -- just do nothing if the value ends up being nil
+                elseif directAddKeys[key] then
                     combatModifierOverrideTable[key] = (combatModifierOverrideTable[key] or 0) + value
                 elseif directMultKeys[key] then
                     combatModifierOverrideTable[key] = (combatModifierOverrideTable[key] or 1)*value

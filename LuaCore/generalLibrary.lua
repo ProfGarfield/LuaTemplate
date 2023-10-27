@@ -231,12 +231,12 @@ local checkBits = gen.checkBits
 -- gen.setBits(integer,string)-->integer
 -- Helper function (provided to this library as setBits and gen.setBits)
 
--- sets binary bits in an integer/bitmask to 1 or 0 based on
+-- Sets binary bits in an integer/bitmask to 1 or 0 based on
 -- the information provided by a string.  Characters that 
 -- are not 1 or 0 leave the corresponding bit unchanged
 -- Last character of the string corresponds to the 1's bit
 -- in the integer (string lines up to the least significant
--- part of the number)
+-- part of the number).
 --[[
 ```lua
 gen.setBits(0b00000000,"xx10xxxx")-->0b00100000
@@ -246,11 +246,10 @@ gen.setBits(0b10101011,"xx10xwqp")-->0b10101011
 gen.setBits(0b10101011,"xx11xwqp")-->0b10111011
 ```]]
 -- note: lua does not actually accept integers specified in binary (though it does for hexidecimal)
----comment
 ---@param bitmask integer|bitmask the bitmask to change
 ---@param bitString string specification of bits to set
 ---@return bitmask bitmask The integer/bitmask after the bits have been set
-local function setBits(bitmask,bitString)
+function gen.setBits(bitmask,bitString)
     local strlen = string.len(bitString)
     for i=1,strlen do
         local bitInt = 1<<(i-1)
@@ -263,7 +262,7 @@ local function setBits(bitmask,bitString)
     ---@cast bitmask bitmask
     return bitmask
 end
-gen.setBits = setBits
+local setBits = gen.setBits
 
 -- gen.printBits(integer,numOfBits or nil) --> string
 

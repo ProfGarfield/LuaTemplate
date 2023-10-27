@@ -1,6 +1,6 @@
 -- this file can be deleted if you are not shipping custom music
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -62,29 +62,38 @@ trackList[12] = "The Dome.mp3"
 
 
 
-
 -- Found this code on stackoverflow.com
--- https://stackoverflow.com/questions/5303174/how-to-get-list-of-directories-in-lua
-local function scandir(directory)
-    local i, t, popen = 0, {}, io.popen
-    local pfile = popen([[dir "]]..directory..[[" /b]])
-    for filename in pfile:lines() do
-        i = i + 1
-        t[i] = filename
-    end
-    pfile:close()
-    return t
-end
-local scenarioDirFiles = scandir(gen.getScenarioDirectory())
-local musicDirectoryExists = false
-for key,value in pairs(scenarioDirFiles) do
-    if string.lower(value) == "music" then
-        musicDirectoryExists = true
+-- https://stackoverflow.com/questions/4990990/check-if-a-file-exists-with-lua
+local function fileExists(fileName)
+    local f = io.open(fileName,"r")
+    if f~=nil then
+        io.close(f)
+        return true
+    else
+        return false
     end
 end
 
-local localMusicFiles = scandir(gen.getScenarioDirectory().."\\Music")
-local globalMusicFiles = scandir(civ.getToTDir().."\\Music")
+local function trackInScenarioMusic(trackName)
+    return fileExists(gen.getScenarioDirectory().."\\Music\\"..trackName)
+end
+local function trackInMainMusic(trackName)
+    return fileExists(civ.getToTDir().."\\Music\\"..trackName)
+end
+
+-- Returns true if the directory exists,
+-- returns false if the directory does not exist,
+-- even if there is a file with that name.
+local function directoryExists(directoryName)
+    local f,msg,errNumber = io.open(directoryName,"r")
+    if f~=nil then
+        -- file not directory
+        io.close(f)
+        return false
+    end
+    return errNumber == 13
+end
+
 
 -- these are the tracks that are guaranteed to be in
 -- <Test of Time>\Music in order to make DirectShow Music work
@@ -106,7 +115,7 @@ shippedTracks[12] = "The Dome.mp3"
 local missingTracks = ""
 local allTracksFound = true
 for i=0,#trackList do
-    if not gen.inTable(trackList[i],localMusicFiles) and not gen.inTable(trackList[i],globalMusicFiles) then
+    if not trackInScenarioMusic(trackList[i]) and not trackInMainMusic(trackList[i]) then
         print("Music: Could not find "..trackList[i])
         missingTracks = missingTracks..trackList[i]..", "
         allTracksFound = false
@@ -117,15 +126,10 @@ for i=0,#trackList do
         end
     end
 end
-local missingmusicExists = false
-for key,filename in pairs(localMusicFiles) do
-    if string.lower(filename) == "missingmusic.txt" then
-        missingmusicExists = true
-        break
-    end
-end
+local missingmusicExists = fileExists(gen.getScenarioDirectory().."\\Music\\missingmusic.txt")
 if not allTracksFound then
-    if musicDirectoryExists and not missingmusicExists then
+    if directoryExists(gen.getScenarioDirectory().."\\Music") and not
+        fileExists(gen.getScenarioDirectory().."\\Music\\missingmusic.txt") then
         -- show message
         local message = "Notice: The following music files were not found.  You can suppress this message by adding an (empty) file called missingmusic.txt to the Music directory of this scenario, or by removing (or renaming) the Music directory.  This list is also printed to the console.  "..missingTracks:sub(1,-3)..".  Replacements have been chosen from the default Civ II music."
         text.simple(message)

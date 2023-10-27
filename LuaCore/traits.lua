@@ -1,4 +1,4 @@
-local versionNumber = 3
+local versionNumber = 4
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -112,7 +112,22 @@ end
 
 -- returns a copy of all allowed traits in the form {["trait"]=true}
 function traits.allTraits()
+    if not allowedTraitsSpecified then
+        error("traits.allTraits: traits.allowedTraits must be called before traits.allTraits can be used.")
+    end
     return gen.copyTable(allowedTraits)
+end
+
+---Returns true if the string is an allowed trait
+---And False otherwise.
+---Throws an error if traits.allwedTraits has not been called
+---@param traitString string
+---@return boolean
+function traits.isTrait(traitString)
+    if not allowedTraitsSpecified then
+        error("traits.isTrait: traits.allowedTraits must be called before traits.isTrait can be used.")
+    end
+    return not not allowedTraits[traitString]
 end
 
 
@@ -383,7 +398,7 @@ end
 -- Second return value gives the number of traits
 -- in common
 
-function traits.listPosessedTraits(object,...)
+function traits.listPossessedTraits(object,...)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
     local objectTraits = traitTable[objectID]
@@ -399,6 +414,7 @@ function traits.listPosessedTraits(object,...)
     end
     return outputTable,outputCount
 end
+traits.listPosessedTraits = traits.listPossessedTraits
 
 -- returns a table
 

@@ -1,5 +1,5 @@
 --
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -41,6 +41,12 @@ if not hashModuleFound then
     }
 end
 
+local validatorModuleFound, legacyValidate = requireIfAvailable("legacyEventValidator")
+if not validatorModuleFound then
+    legacyValidate = {
+        action = function() end
+    }
+end
 
 
 
@@ -174,11 +180,6 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     actionOpen.flag=false
     actionOpen.negotiator=false
     
-    local function closeAllActions()
-        for index,value in pairs(actionOpen) do
-            actionOpen[index]=false
-        end
-    end
     
     local function getOpenAction()
         for action,isOpen in pairs(actionOpen) do
@@ -191,7 +192,19 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     
     local eventTable = {}
     local eventTableIndex=1
+    local lineNumber=0
 
+    local function closeAllActions()
+        if not eventTable[eventTableIndex]["THEN"] then
+            error("Legacy Event Builder: Event File Line Number: "..lineNumber..".  The @THEN line seems to be missing or in the wrong place.")
+        end
+        if getOpenAction() then
+            legacyValidate.action(eventTable[eventTableIndex]["THEN"][getOpenAction()],getOpenAction(),lineNumber)
+        end
+        for index,value in pairs(actionOpen) do
+            actionOpen[index]=false
+        end
+    end
 
     -- Old code to convert coordinates
     --[[
@@ -350,7 +363,7 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
     
     local totalEventString = ""
     for fileNumber,fileInfo in pairs(eventsToConvert) do
-        local lineNumber = 0
+        lineNumber = 0
         local batchInfo = fileInfo.bI
         
         -- this keeps track of the event inputs, so that they can be
@@ -380,6 +393,9 @@ local function buildLegacyEvents(writeTextFile,showEventParsed,eventTextFileName
                 -- legacy event engine global continuous flags override
                 eventTable["continuousFlagsPerTribe"]=true
             elseif line == "@if" then
+                if atIfOpen or atAndOpen or atThenOpen then
+                    error("Legacy Event Builder: File Number: "..fileNumber.." Line Number: "..lineNumber..".  The event just before this one seems to be missing the @ENDIF line.")
+                end
                 eventTable[eventTableIndex]={IF={}}
                 atIfOpen=true
                 eventTable[eventTableIndex]["BATCHINFO"]=batchInfo
