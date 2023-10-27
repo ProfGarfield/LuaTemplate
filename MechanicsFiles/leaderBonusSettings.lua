@@ -96,7 +96,10 @@ local object = require("object")
     --  see below for the specifications for a combatModifier table
     
     --      combatSpec = table{
-    --      Note: all keys can be nil, in which case there is no modification
+--      Note: All keys can have a nil value, in which case there is no modification
+--      All keys can also be assigned a function(attacker,defender) --> nil|number (or boolean for some modifiers)
+--         If a function is assigned, it will be called with the attacker and defender
+--          as arguments, and the return value will be used as the value for that key
     --
     --          aCustomAdd = number -- add this to attack before multipliers are applied (negative number to subtract)
     --          dCustomAdd = number-- add this to defense before multipliers are applied (negative number to subract)
