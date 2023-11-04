@@ -1,6 +1,6 @@
 
 
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -714,6 +714,12 @@ local function c2MakeRowTable(startIndex,endIndex)
     end
 end
 local function readMovement(ruleRow,destTable)
+    if tostring(ruleRow[1]) == "0" then
+        error("changeRules module: movement multiplier keys in @COSMIC2 must be enabled.  "..tostring(ruleRow[0]).." is disabled.")
+    end
+    if not tonumber(ruleRow[2]) then
+        error("changeRules module: movement multiplier keys in @COSMIC2 must have a number as the second column.  "..tostring(ruleRow[0]).." has "..tostring(ruleRow[2]).." instead.")
+    end
     destTable[string.lower(ruleRow[0])] = tonumber(ruleRow[2])
 end
 
@@ -766,11 +772,16 @@ local cosmic2Instructions = {
 local function initializeCosmic2()
     local outputTable = gen.copyTable(cosmic2Defaults)
     local cosmic2 = changeRules.currentlyAppliedRules["@COSMIC2"] or {}
+    local movementMultiplierKeysNotFound = {["roadmultiplier"] = true,["rivermultiplier"] = true,["alpinemultiplier"] = true, ["railroadmultiplier"] = true}
     for _,ruleRow in pairs(cosmic2) do
         local rR0 = ruleRow[0]
         if type(rR0) == "string" and cosmic2Instructions[string.lower(rR0)] then
             cosmic2Instructions[string.lower(rR0)](ruleRow,outputTable)
+            movementMultiplierKeysNotFound[string.lower(rR0)] = nil
         end
+    end
+    for key,_ in pairs(movementMultiplierKeysNotFound) do
+        error("changeRules module: movement multiplier keys in @COSMIC2 must be used and enabled.  "..tostring(key).." is missing.")
     end
     local mt = { 
         __index = function (t,k) 

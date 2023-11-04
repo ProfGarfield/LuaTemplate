@@ -1,5 +1,6 @@
 
 local object = require("object")
+local gen = require("generalLibrary")
 
 local consoleWarnings = false
 
@@ -14,8 +15,6 @@ local width,height,n_maps = civ.getAtlasDimensions()
 --    terrainTypesPerMap[i]=question:show()
 --end
 for i=0,n_maps-1 do
-    local question = civ.ui.createDialog()
-    question:addText("How many terrain types does map "..tostring(i).." have?")
     for j=16,11,-1 do
         local exists, ter = pcall(civ.getTerrain,i,j,0)
         if exists then
@@ -36,7 +35,7 @@ local function findObjectKey(compareStr,arg1,arg2,arg3)
     return false
 end
         
-local fileLocation = civ.getToTDir().."\\"..tostring(os.time()).."setTraits.lua"
+local fileLocation = gen.getScenarioDirectory().."\\LuaParameterFiles\\"..tostring(os.time()).."setTraits.lua"
 local file = io.open(fileLocation,"a")
 io.output(file)
 
