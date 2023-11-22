@@ -358,6 +358,7 @@ strat.isTarget = isTarget
 -- is captured
 
 local function createTarget(tile,targetType,city,class,improvement,customData,captureWithCity)
+    captureWithCity = captureWithCity or false
     if not civ.isTile(tile) then
       error(moduleName..".createTarget: first argument must be a tileObject.  Received: "..tostring(tile))
     elseif targetType and not civ.isUnitType(targetType) then
@@ -373,7 +374,6 @@ local function createTarget(tile,targetType,city,class,improvement,customData,ca
     elseif type(captureWithCity) ~= "boolean" then
       error(moduleName..".createTarget: seventh argument must be a boolean or nil.  Received: "..tostring(captureWithCity))
     end
-    captureWithCity = captureWithCity or false
     class = class or "default"
     local targetId = #targetData+1
     local targetDatum = {id = targetId}

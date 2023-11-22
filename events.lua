@@ -1,6 +1,6 @@
 -- Note: this isn't actually the versionNumber version of this file.  It is just the versionNumber version that
 -- I assigned a version number to.
-local versionNumber = 9
+local versionNumber = 10
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -256,7 +256,7 @@ end
 
 
 ---@module "generalLibrary"
-local gen = require("generalLibrary"):minVersion(1)
+local gen = require("generalLibrary"):minVersion(12)
 gen.registerEventsLuaVersion(versionNumber,fileModified,regressionNumber)
 
 -- noGlobal prevents new global variables from being created
@@ -472,6 +472,8 @@ eventsFiles.onBeforeProduction = attemptRequireWithKey(individualFileDirectory..
 eventsFiles.onCityFounded = attemptRequireWithKey(individualFileDirectory.."onCityFounded","onCityFounded",function() end)
 eventsFiles.onTribeTurnBegin = attemptRequireWithKey(individualFileDirectory.."onTribeTurnBegin","onTribeTurnBegin")
 eventsFiles.onCityProcessed = attemptRequireWithKey(individualFileDirectory.."onCityProcessed","onCityProcessed")
+eventsFiles.onJustBeforeCityProcessed = attemptRequireWithKey(individualFileDirectory.."onJustBeforeCityProcessed","onJustBeforeCityProcessed")
+eventsFiles.onJustAfterCityProcessed = attemptRequireWithKey(individualFileDirectory.."onJustAfterCityProcessed","onJustAfterCityProcessed")
 eventsFiles.onTribeTurnEnd = attemptRequireWithKey(individualFileDirectory.."onTribeTurnEnd","onTribeTurnEnd")
 eventsFiles.onCanFoundCity = attemptRequireWithKey(individualFileDirectory.."onCanFoundCity","onCanFoundCity",true)
 eventsFiles.onEnterTile = attemptRequireWithKey(individualFileDirectory.."onEnterTile","onEnterTile")
@@ -628,7 +630,7 @@ end)
 
 registeredInThisFile["onKeyPress"] = true
 
-civ.scen.onCityProduction(function(city,prod)
+local cityProductionFunction = function(city,prod)
     prod = promotionSettings.overrideProdVetStatus(city,prod)
     if civ.isUnit(prod) then
         -- since this is a newly produced unit, it should have no data
@@ -637,7 +639,9 @@ civ.scen.onCityProduction(function(city,prod)
     discreteEvents.performOnCityProduction(city,prod)
     consolidated.onCityProduction(city,prod)
     eventsFiles.onCityProduction(city,prod)
-end)
+end
+gen.registerCityProductionFunction(cityProductionFunction)
+civ.scen.onCityProduction(cityProductionFunction)
 registeredInThisFile["onCityProduction"] = true
 
 
@@ -759,6 +763,61 @@ civ.scen.onActivateUnit(function(unit,source,repeatMove)
     suppressActivateUnitBackstop = false
 end)
 
+
+local citiesToProcess = {}
+local nextCityIndex = -1
+local cityWindowClosedAtEndOfTurn = true
+
+---If the city should perform the onJustBeforeProcessed event, returns true
+---Otherwise, returns false
+---@param city cityObject
+---@return boolean
+local function doJustBeforeProcessedEvent(city)
+    if nextCityIndex == -1 or not citiesToProcess[nextCityIndex] then
+        return false
+    end
+    if city == nil then
+        return false
+    end
+    if civ.getOpenCity() and cityWindowClosedAtEndOfTurn then
+        return false
+    end
+    if city == citiesToProcess[nextCityIndex]  then
+        return true
+    end
+    if city.id < citiesToProcess[nextCityIndex].id then
+        for i=1,10000 do
+            if not civ.getCity(citiesToProcess[nextCityIndex].id) then
+                nextCityIndex = nextCityIndex + 1
+            else
+                break
+            end
+        end
+        return city == citiesToProcess[nextCityIndex]
+    end
+    return false
+end
+
+local function prepareCitiesToProcess()
+    citiesToProcess = {}
+    nextCityIndex = 1
+    for city in civ.iterateCities() do
+        if city.owner == civ.getCurrentTribe() then
+            citiesToProcess[#citiesToProcess+1] = city
+        end
+    end
+    table.sort(citiesToProcess,function(a,b) return a.id > b.id end)
+end
+
+---Resets the city processing code so that the next call to getNextCityToProcess
+---will return nil, and citiesToProcess will be empty until
+---the next tribe's turn
+local function cityProcessingFinished()
+    citiesToProcess = {}
+    nextCityIndex = -1
+end
+
+
 local function doAfterProduction(turn,tribe)
     text.displayAccumulatedMessages()
     if not simpleSettings.doNotDeleteAITextArchives then
@@ -772,6 +831,7 @@ local function doAfterProduction(turn,tribe)
     eventsFiles.onCityProcessingComplete(turn,tribe)
     delayedAction.doAfterProduction(turn,tribe)
     --eventTools.maintainUnitActivationTable()
+    cityProcessingFinished()
     suppressActivateUnitBackstop = false
 end
 civ.scen.onCityProcessingComplete(doAfterProduction)
@@ -1074,6 +1134,7 @@ civ.scen.onNegotiation(function(talker,listener)
 ---@diagnostic disable-next-line: return-type-mismatch
     local canNegotiate = discreteEventsResult and consolidatedEventsResult and individualEventsResult
     diplomacy.onNegotiation(talker,listener,canNegotiate)
+---@diagnostic disable-next-line: return-type-mismatch
     return canNegotiate
 end)
 registeredInThisFile["onNegotiation"] = true
@@ -1151,6 +1212,7 @@ civ.scen.onCityFounded(function(city)
 end)
 registeredInThisFile["onCityFounded"] = true
 
+
 local function doBeforeProduction(turn,tribe)
     suppressActivateUnitBackstop = true
     supplementalData.onTribeTurnBegin(turn,tribe)
@@ -1163,11 +1225,7 @@ local function doBeforeProduction(turn,tribe)
     eventsFiles.onTribeTurnBegin(turn,tribe)
     humanUnitActive = false
     humanPlayerActive = tribe.isHuman
-    for cityID,_ in pairs(state.processedCities) do
-        if civ.getCity(cityID).owner == tribe then
-            state.processedCities[cityID] = false
-        end
-    end
+    prepareCitiesToProcess()
 end
 console.beforeProduction = function () doBeforeProduction(civ.getTurn(),civ.getCurrentTribe()) end
 console.onTribeTurnBegin = console.beforeProduction
@@ -1175,12 +1233,6 @@ civ.scen.onTribeTurnBegin(doBeforeProduction)
 registeredInThisFile["onBeforeProduction"] = true
 registeredInThisFile["onTribeTurnBegin"] = true
 
-local function doOnCityProcessed(city)
-    consolidated.onCityProcessed(city)
-    discreteEvents.performOnCityProcessed(city)
-    eventsFiles.onCityProcessed(city)
-end
-registeredInThisFile["onCityProcessed"] = true
 
 local function doOnTribeTurnEnd(turn,tribe)
     activateUnitBackstop()
@@ -1197,10 +1249,44 @@ local function doOnTribeTurnEnd(turn,tribe)
     eventsFiles.onTribeTurnEnd(turn,tribe)
     supplementalData.onTribeTurnEnd(turn,tribe)
     humanPlayerActive = false
+    if tribe.isHuman and civ.getOpenCity() then
+        cityWindowClosedAtEndOfTurn = false
+    elseif tribe.isHuman then
+        cityWindowClosedAtEndOfTurn = true
+    end
 end
 civ.scen.onTribeTurnEnd(doOnTribeTurnEnd)
 registeredInThisFile["onTribeTurnEnd"] = true
 
+
+--local function doOnCityProcessed(city)
+--    consolidated.onCityProcessed(city)
+--    discreteEvents.performOnCityProcessed(city)
+--    eventsFiles.onCityProcessed(city)
+--end
+--registeredInThisFile["onCityProcessed"] = true
+
+local function doJustBeforeCityProcessed(city)
+    consolidated.onJustBeforeCityProcessed(city)
+    consolidated.onCityProcessed(city)
+    discreteEvents.performOnJustBeforeCityProcessed(city)
+    discreteEvents.performOnCityProcessed(city)
+    eventsFiles.onJustBeforeCityProcessed(city)
+    eventsFiles.onCityProcessed(city)
+end
+registeredInThisFile["onCityProcessed"] = true
+registeredInThisFile["onJustBeforeCityProcessed"] = true
+
+local function doJustAfterCityProcessed(city)
+    consolidated.onJustAfterCityProcessed(city)
+    discreteEvents.performOnJustAfterCityProcessed(city)
+    eventsFiles.onJustAfterCityProcessed(city)
+end
+registeredInThisFile["onJustAfterCityProcessed"] = true
+
+
+local performJustAfterCityProcessed = false
+local justProcessedCity = nil
 
 local baseProduction = gen.computeBaseProduction
 civ.scen.onCalculateCityYield( function(city,food,shields,trade)
@@ -1228,10 +1314,26 @@ civ.scen.onCalculateCityYield( function(city,food,shields,trade)
     --end
     --
     -- onCityProcessed execution point
-    if city.owner == civ.getCurrentTribe() and (not state.processedCities[city.id]) then
-        state.processedCities[city.id] = true
-        doOnCityProcessed(city)
+    --if city.owner == civ.getCurrentTribe() and (not state.processedCities[city.id]) then
+    --    state.processedCities[city.id] = true
+    --    doOnCityProcessed(city)
+    --end
+    -- The onCalculateCityYield event is called twice when a city is processed
+    -- once before the city is processed, and once after
+    -- the city is processed (It can be called more if the player looks at the city,
+    -- but that is not relevant for this event)
+    if performJustAfterCityProcessed and city == justProcessedCity then
+        performJustAfterCityProcessed = false
+        justProcessedCity = nil
+        doJustAfterCityProcessed(city)
     end
+    if doJustBeforeProcessedEvent(city)  then
+        nextCityIndex = nextCityIndex + 1
+        doJustBeforeCityProcessed(city)
+        performJustAfterCityProcessed = true
+        justProcessedCity = city
+    end
+
     
     customCosmic.changeEphemeralForTribe(city.owner)
     customCosmic.changeEphemeralForCity(city)

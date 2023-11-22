@@ -132,6 +132,11 @@ Added some new checks to catch more errors in legacyEvents.txt files.
 
 The civilopedia generator module now has a function to assign descriptions based on traits.
 
+Added gen.cityProduction which simulates a city producing an item when called.
+
+Changed onCityProcessed event to onJustBeforeCityProcessed (onCityProcessed is still valid code) and added onJustAfterCityProcessed.
+
+Updated documentation, and a small bugfix for the strategicTargets module.
 
 todo
 

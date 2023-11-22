@@ -1,4 +1,4 @@
-local versionNumber = 11
+local versionNumber = 12
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -175,7 +175,7 @@ function gen.registerAuthoritativeDefaultRules(aDRTable)
     authoritativeDefaultRules = aDRTable
 end
 
----@module customCosmic
+---@module "customCosmic"
 local customCosmic = {}
 
 --[[ This function is used to register the customCosmic functions,
@@ -270,7 +270,7 @@ local setBits = gen.setBits
 -- including the numOfBits least significant bits
 -- if numOfBits is nil, it defaults to 32
 ---@param bitmask bitmask the bits to print
----@param numOfBits integer the number of bits to show (default 32)
+---@param numOfBits? integer the number of bits to show (default 32)
 ---@return string binaryRepresentation
 function gen.bitmaskToString(bitmask,numOfBits)
     if not numOfBits then
@@ -3113,7 +3113,7 @@ function gen.rehomeUnitsInCapturedCity(city,defender)
 				end
 			end
 			unit.homeCity = bestCitySoFar
-			if unit.type.role <= 5 then
+			if unit.type.role <= 5 and bestCitySoFar ~= nil then
 				citySupportTable[bestCitySoFar.id]= (citySupportTable[bestCitySoFar.id] or 0)+1
 			end
 		end
@@ -3273,7 +3273,9 @@ function gen.selectNextActiveUnit(activeUnit,source,customWeightFn)
         for index,value in pairs(waitingUnits) do
             waitingUnits[index]=false
         end
-        gen.clearWaiting(bestWaitingUnit)
+        if bestWaitingUnit then
+            gen.clearWaiting(bestWaitingUnit)
+        end
     else
         gen.clearWaiting(bestNotWaitingUnit)
     end
@@ -4418,7 +4420,7 @@ maps = nil or integer in 0-3 or table of integers
 ---@param center tileAnalog If table, must be a table of coordinates.
 ---@param radius integer How far away from the center you wish to get units.
 ---@param maps? integer|table If integer, get units from that map. If table, values are the maps to get the tiles from.  Get from all maps by default (for backwards compatibility).
----@return iterator
+---@return fun():unitObject
 function gen.nearbyUnits(center,radius,maps)
     maps = maps or {0,1,2,3}
 ---@diagnostic disable-next-line: return-type-mismatch
@@ -4433,10 +4435,10 @@ end
 
 
 
-local defeatFunction = nil
-local deathFunction = nil 
-local deletionFunction = nil
-local deathOutsideCombat = nil
+local defeatFunction = function(a,b,c,d,e,f,g) error("defeatFunction not registered.  Call gen.setDeathFunctions during initialization.  (This is done for you in the Lua Scenario Template") end
+local deathFunction = function(a) error("defeatFunction not registered.  Call gen.setDeathFunctions during initialization.  (This is done for you in the Lua Scenario Template") end 
+local deletionFunction = function(a,b) error("defeatFunction not registered.  Call gen.setDeathFunctions during initialization.  (This is done for you in the Lua Scenario Template") end
+local deathOutsideCombat = function(a) error("defeatFunction not registered.  Call gen.setDeathFunctions during initialization.  (This is done for you in the Lua Scenario Template") end
 -- gen.setDeathFunctions(defeatFunction,deathFunction,deletionFunction) --> void
 -- Registers event functions for when units are killed/deleted.
 -- If you are using the Lua Scenario Template, this is already
@@ -4757,7 +4759,7 @@ function gen.createUnit(unitType,tribe,locations,options)
     local capitals = {}
     if options.inCapital then
         for city in civ.iterateCities() do
-            if city.owner == tribe and city:hasImprovement(civ.getImprovement(1)) then
+            if city.owner == tribe and city:hasImprovement(civ.getImprovement(1)--[[@as improvementObject]]) then
                 capitals[city.id] = city.location
             end
         end
@@ -8634,7 +8636,7 @@ function gen.isInteger(item)
 end
 
 ---Returns an iterator for all unitType objects.
----@return iterator
+---@return fun():unitTypeObject
 function gen.iterateUnitTypes()
 ---@diagnostic disable-next-line: return-type-mismatch
     return coroutine.wrap(function()
@@ -8645,7 +8647,7 @@ function gen.iterateUnitTypes()
 end
 
 ---Returns an iterator for all improvement objects.
----@return iterator
+---@return fun():improvementObject
 function gen.iterateImprovements()
 ---@diagnostic disable-next-line: return-type-mismatch
     return coroutine.wrap(function()
@@ -8656,7 +8658,7 @@ function gen.iterateImprovements()
 end
 
 ---Returns an iterator for all wonder objects.
----@return iterator
+---@return fun():wonderObject
 function gen.iterateWonders()
 ---@diagnostic disable-next-line: return-type-mismatch
     return coroutine.wrap(function()
@@ -8668,7 +8670,7 @@ end
 
 ---Returns an iterator for all baseTerrain objects (for maps that are
 --in the game).
----@return iterator
+---@return fun():baseTerrainObject
 function gen.iterateBaseTerrain()
     local _,_,maps = civ.getAtlasDimensions()
 ---@diagnostic disable-next-line: return-type-mismatch
@@ -8683,7 +8685,7 @@ end
 
 ---Returns an iterator for all terrain objects (for maps that
 --are in the game).
----@return iterator
+---@return fun():terrainObject
 function gen.iterateTerrain()
     local _,_,maps = civ.getAtlasDimensions()
     local noResource = gen.constants.resourceNone
@@ -8705,6 +8707,7 @@ function gen.iterateTerrain()
 end
 
 ---Returns an iterator for all tech objects.
+---@return fun():techObject
 function gen.iterateTechs()
     return coroutine.wrap(function()
         for id = 0,gen.constants.maxTechID do
@@ -9068,7 +9071,7 @@ end
 -- `gen.iterateBaseTerrain()`
 -- `gen.iterateTerrain()`
 ---@param list table<any,any>
----@param itemIterator iterator|table<any,any>
+---@param itemIterator fun():any|table<any,any>
 ---@return table<integer,any>
 function gen.complementList(list,itemIterator)
     local complement = {}
@@ -9202,6 +9205,50 @@ function gen.transferTileContents(tile,newOwner)
         changeUnitValidationInfo(unit)
     end
     tile.owner = newOwner
+end
+
+local registeredCityProductionFunction = function(city,item)
+    error("The function that is called during the onCityProduction event has not been registered with generalLibrary.lua.  You must register it in order to call gen.cityProduction.  Use the function gen.registerCityProductionFunction(cityProdFn).  This is done for you in the Lua Scenario Template.")
+end
+
+---Registers the function that is called when a city produces something
+---@param cityProductionFunction fun(city:cityObject,prod:improvementObject|unitObject|wonderObject)
+function gen.registerCityProductionFunction(cityProductionFunction)
+    registeredCityProductionFunction = cityProductionFunction
+end
+
+--[[
+Makes the `city` immediately produce the `item`.
+That is, the city is given the supplied city improvement or wonder,
+or a unit with the type specified.  The function registered to civ.scen.onCityProduction is also called.   
+
+No check is made if the production order is legal.  An item without
+appropriate pre-requisites can be created, or a wonder can be moved.
+]]
+---@param city cityObject
+---@param item unitTypeObject|improvementObject|wonderObject
+function gen.cityProduction(city,item)
+    ---@type improvementObject|unitObject|wonderObject
+---@diagnostic disable-next-line: assign-type-mismatch
+    local prod = item
+    if civ.isUnitType(item) then
+        prod = civ.createUnit(item--[[@as unitTypeObject]],city.owner,city.location)
+        if item.domain == gen.c.domainLand and city:hasImprovement(gen.original.iBarracks) then
+            prod.veteran = true
+        elseif item.domain == gen.c.domainSea and city:hasImprovement(gen.original.iPortFacility) then
+            prod.veteran = true
+        elseif item.domain == gen.c.domainAir and city:hasImprovement(gen.original.iAirport) then
+            prod.veteran = true
+        end
+    end
+    if civ.isImprovement(prod) then
+---@diagnostic disable-next-line: param-type-mismatch
+        city:addImprovement(prod)
+    end
+    if civ.isWonder(item) then
+        prod.city = city
+    end
+    registeredCityProductionFunction(city,prod)
 end
 
 

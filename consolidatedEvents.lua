@@ -139,13 +139,27 @@ function events.onCityFounded(city)
     return cityCancelled
 end
 ---&endAutoDoc
----&autoDoc onCityProcessed
+---&autoDoc onJustBeforeCityProcessed
 -- On City Processed
-function events.onCityProcessed(city)
-    --civ.ui.text(city.name.." processed")
+function events.onJustBeforeCityProcessed(city)
+    if _global.eventTesting then
+        civ.ui.text("consolidated.onJustBeforeCityProcessed for "..city.name)
+    end
 
 end
 ---&endAutoDoc
+
+
+---&autoDoc onJustAfterCityProcessed
+-- On City Processed
+function events.onJustAfterCityProcessed(city)
+    if _global.eventTesting then
+        civ.ui.text("consolidated.onJustAfterCityProcessed for "..city.name)
+    end
+
+end
+---&endAutoDoc
+
 ---&autoDoc onCityProduction
 -- On city production (when a city produces a unit/improvement/wonder)
 function events.onCityProduction(city,prod)

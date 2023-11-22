@@ -1,5 +1,5 @@
 --
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -110,12 +110,26 @@ discreteEvents.onCityFounded(function(city)
     return cityCancelled
 end)
 ---&endAutoDoc
----&autoDoc onCityProcessed
-discreteEvents.onCityProcessed(function(city) 
-    --civ.ui.text("City processed discrete event test for city "..city.name)
 
+
+---&autoDoc onJustBeforeCityProcessed
+discreteEvents.onJustBeforeCityProcessed(function(city) 
+    if _global.eventTesting then
+        civ.ui.text("Just before city processed discrete event test for city "..city.name)
+    end
 end)
 ---&endAutoDoc
+
+---&autoDoc onJustAfterCityProcessed
+discreteEvents.onJustAfterCityProcessed(function(city) 
+    if _global.eventTesting then
+        civ.ui.text("Just after city processed discrete event test for city "..city.name)
+    end
+end)
+---&endAutoDoc
+
+
+
 ---&autoDoc onCityProduction
 discreteEvents.onCityProduction(function(city,item) 
     --civ.ui.text("City production discrete event test")

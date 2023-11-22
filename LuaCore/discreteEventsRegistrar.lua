@@ -1,4 +1,4 @@
-local versionNumber = 5
+local versionNumber = 6
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -90,7 +90,7 @@ local function minEventsLuaVersion(minVersion,regNum)
         error(message)
     end
 end
-minEventsLuaVersion(4,1)
+minEventsLuaVersion(10,1)
 
 
 eventsTable.onActivateUnit = {}
@@ -155,6 +155,26 @@ function discreteEvents.performOnCityProcessed(city)
         eventsTable.onCityProcessed[i](city)
     end
 end
+
+
+eventsTable.onJustBeforeCityProcessed = {}
+eventsTable.onJustBeforeCityProcessedIndex = 1
+function discreteEvents.performOnJustBeforeCityProcessed(city)
+    for i = 1,eventsTable.onJustBeforeCityProcessedIndex-1 do
+        eventsTable.onJustBeforeCityProcessed[i](city)
+    end
+end
+
+
+eventsTable.onJustAfterCityProcessed = {}
+eventsTable.onJustAfterCityProcessedIndex = 1
+function discreteEvents.performOnJustAfterCityProcessed(city)
+    for i = 1,eventsTable.onJustAfterCityProcessedIndex-1 do
+        eventsTable.onJustAfterCityProcessed[i](city)
+    end
+end
+
+
 
 eventsTable.onCityProduction = {}
 eventsTable.onCityProductionIndex = 1
@@ -453,6 +473,8 @@ discreteEvents.onUnitDeleted
 discreteEvents.onAfterProduction 
 discreteEvents.onBeforeProduction 
 discreteEvents.onCityProcessed
+discreteEvents.onJustBeforeCityProcessed
+discreteEvents.onJustAfterCityProcessed
 discreteEvents.linkStateToModules
 discreteEvents.onCentauriArrival
 discreteEvents.onNegotiation
@@ -496,6 +518,8 @@ discreteEvents.performOnUnitDeleted
 discreteEvents.performOnAfterProduction 
 discreteEvents.performOnBeforeProduction 
 discreteEvents.performOnCityProcessed 
+discreteEvents.performOnJustBeforeCityProcessed
+discreteEvents.performOnJustAfterCityProcessed
 discreteEvents.performLinkStateToModules
 discreteEvents.performOnCentauriArrival
 discreteEvents.performOnNegotiation
@@ -770,13 +794,35 @@ function discreteEvents.onUnitDeleted(code)
 end
 
 --[[
+Deprecated.  Use onJustBeforeCityProcessed instead.  (It is an equivalent event, but with a better name.)
+
 Registers a function that is called immediately before each city is processed (which happens at the start of a tribe's turn).  (This is achieved through use of civ.scen.onCalculateCityYield.)
 ]]
 ---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@deprecated
 ---@param code fun(city: cityObject)
 function discreteEvents.onCityProcessed(code)
     newIndexFn(nil,"onCityProcessed",code)
 end
+
+
+--[[
+Registers a function that is called immediately before each city is processed (which happens at the start of a tribe's turn).  (This is achieved through use of civ.scen.onCalculateCityYield.)
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(city: cityObject)
+function discreteEvents.onJustBeforeCityProcessed(code)
+    newIndexFn(nil,"onJustBeforeCityProcessed",code)
+end
+--[[
+Registers a function that is called just after a city is processed for the turn (which happens at the start of a tribe's turn).  (This is achieved through use of civ.scen.onCalculateCityYield.)
+]]
+---As a Discrete Event, this function can be called multiple times, and all code will be registered to the event.
+---@param code fun(city: cityObject)
+function discreteEvents.onJustAfterCityProcessed(code)
+    newIndexFn(nil,"onJustAfterCityProcessed",code)
+end
+
 
 --[[Registers a function that will be called during civ.scen.onLoad, with which you can link state tables from inside individual modules.  `stateTable` is the table which is added to the saved game, `stateTableKeys` is a record of keys already used in the stateTable, and by adding keys, you can avoid accidental collision. Example:
 ```lua

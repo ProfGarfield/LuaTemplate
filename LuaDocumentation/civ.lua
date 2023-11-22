@@ -193,7 +193,7 @@ function cityObject:removeTradeRoute(id) end
 ---@field river boolean (get/set) Returns `true` if the tile has a river, `false` otherwise.
 ---@field terrain terrainObject (get/set) Returns the terrain object associated with the tile.
 ---@field terrainType integer (get/set) Returns an integer representing the terrain type of the tile, as well as whether the tile has a river, whether there is an special resource being animated, and whether an ocean resource is suppressed for being too far from land. It is recommended to use the baseTerrain property to check and change terrain types instead of this. If checking a terrain type with this property, use % 16 to only get the terrain index.
----@field units iterator (get) Returns an iterator yielding all units at the tile's location.
+---@field units fun():unitObject (get) Returns an iterator yielding all units at the tile's location.
 ---@field visibility bitmask (get/set) Returns the tile's visibility for each tribe (bitmask).
 ---@field visibleImprovements bitmask (get/set) Returns the tile's improvements as known by the given tribe (bitmask).
 ---@field x integer (get) Returns the `x` coordinate of the tile.
@@ -220,6 +220,7 @@ local tileObject = {}
 ---@field owner tribeObject (get/set) Returns the unit's owner.
 ---@field type unitTypeObject (get) Returns the unit's type.
 ---@field veteran boolean (get/set) Returns the veteran status of the unit.
+---@field visibility bitmask (get/set) Returns the visibility of the unit for each tribe (bitmask).
 local unitObject = {}
 
 ---Activates a unit, clearing its orders, and, if it has a human owner and movement points left, selects it on the map.
@@ -809,11 +810,11 @@ function civ.isUnitType(object) end
 function civ.isWonder(object) end
 
 ---Returns an iterator yielding all cities in the game.
----@return iterator #
+---@return fun():cityObject #
 function civ.iterateCities() end
 
 ---Returns an iterator yielding all units in the game.
----@return iterator #
+---@return fun():unitObject #
 function civ.iterateUnits() end
 
 ---Removes tribe `tribe` from the game. All its cities and units are removed.
