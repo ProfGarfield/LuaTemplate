@@ -195,7 +195,6 @@ primaryAttackTable[gen.original.uBomber.id] = {
 
 
 
-
 -- This is the secondary attack specification table
 local secondaryAttackTable = {}
 --[[
@@ -204,7 +203,6 @@ secondaryAttackTable[gen.original.uBomber.id] = {
     moveCost = 4,
 }
 --]]
-
 
 local function primaryAttack(generatingUnit)
     return munitions.spawnUnit(generatingUnit,primaryAttackTable,gen.getActivationFunction())

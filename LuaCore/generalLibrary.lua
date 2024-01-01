@@ -476,12 +476,8 @@ one of the following forms: {[1]=x,[2]=y,[3]=z}, {[1]=x,[2]=y}
 (and assumes z=0), {x=x,y=y,z=z}, or {x=x, y=y} (and assumes z=0).
 The x,y,z values (but not keys) correspond to tile coordinates.
 ]]
----@alias tileAnalog 
----| tileObject
----| table {x=xCoord,y=yCoord,z=zCoord} or {xCoord,yCoord,zCoord} if zCoord nil, use map 0
---[[
-# Can be:<br><br>tileObject<br><br>{[1]=xCoord,[2]=yCoord,[3]=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]=xCoord,[2]=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x=xCoord,y=yCoord,z=zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x=xCoord,y=yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
-]]
+---@alias tileAnalog tileObject|{[1]:integer,[2]:integer,[3]:integer}|{[1]:integer,[2]:integer}|{x:integer,y:integer,z:integer}|{x:integer,y:integer} # Can be:<br><br>tileObject<br><br>{[1]:xCoord,[2]:yCoord,[3]:zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{[1]:xCoord,[2]:yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)<br><br>{x:xCoord,y:yCoord,z:zCoord}<br>Converted to civ.getTile(xCoord,yCoord,zCoord) <br><br>{x:xCoord,y:yCoord}<br>Converted to civ.getTile(xCoord,yCoord,0)
+
 
 -- toTile(tile or table)-->tile
 -- gen.toTile(tile or table)-->tile
@@ -3770,17 +3766,17 @@ end
 -- returned.
 ---@param table any
 ---@return any
-local function copyTable(table)
+function gen.copyTable(table)
     if type(table) ~= "table" then
         return table
     end
     local newTable = {}
     for key,value in pairs(table) do
-        newTable[key] = copyTable(value)
+        newTable[key] = gen.copyTable(value)
     end
     return newTable
 end
-gen.copyTable = copyTable
+local copyTable = gen.copyTable
 
 -- Constructs (and returns) a new table with the same keys as the input, 
 -- as well as the same metatables. (The metatable is not copied, so that
@@ -4827,6 +4823,13 @@ function gen.createUnit(unitType,tribe,locations,options)
     end
     return returnUnits
 end
+
+gen.createUnit(civ.getUnitType(0),civ.getTribe(0),
+    {
+        {0,0},
+        {2,2},
+    },{})
+
 
 -- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
 -- Returns the tile production values, presuming that the city

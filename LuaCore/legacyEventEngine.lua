@@ -1153,7 +1153,7 @@ end
 local function turnConditionMet(ANDIFTable,turn,spareArg)
     -- note: The turn parameter overwrites the turn triggertype in the parser
     -- this doesn't matter since no other trigger type has a turn= parameter
-    return ANDIFTable["turn"] and (ANDIFTable["turn"]==turn or ANDIFTable["turn"]==-1)
+    return ANDIFTable["turn"] and (ANDIFTable["turn"]==turn or ANDIFTable["turn"]==-1 or ANDIFTable["turn"]=="every")
 end
 
 local function doTurnEvents(turn)
