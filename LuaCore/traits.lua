@@ -76,6 +76,8 @@ for i=0,7 do
 end
 
 
+---An object that can have traits assigned to it
+---@alias traitEligibleObject unitTypeObject|improvementObject|wonderObject|techObject|baseTerrainObject|terrainObject|tribeObject
 
 local allowedTraits = {}
 local allowedTraitsSpecified = false
@@ -89,12 +91,14 @@ end
 -- specify all the allowed traits,
 -- arguments can be either strings or 
 -- tables of strings
+---@param ... string
 function traits.allowedTraits(...)
     if allowedTraitsSpecified then
         error("traits.allowedTraits: you can only run this function once during script initialization.")
     end
     local argList = {...}
     for __,arg in pairs(argList) do
+        ---@type string|table
         local argTable = arg
         if type(argTable) ~= "table" then
             argTable = {argTable}
@@ -111,6 +115,7 @@ function traits.allowedTraits(...)
 end
 
 -- returns a copy of all allowed traits in the form {["trait"]=true}
+---@return {[string]:true} # A table of all allowed traits
 function traits.allTraits()
     if not allowedTraitsSpecified then
         error("traits.allTraits: traits.allowedTraits must be called before traits.allTraits can be used.")
@@ -223,6 +228,7 @@ end
 
 -- returns an error if any of the supplied traits have
 -- not been registered
+---@param ... string 
 function traits.validateTraits(...)
     allowedTraitsRun("traits.validTraits")
     local list = {...}
@@ -238,6 +244,8 @@ end
 -- traits(object,trait1,trait2,trait3)
 --      each trait can be either a string
 --      or a table of strings
+---@param object traitEligibleObject|table # The object (or table of objects) to assign traits to
+---@param ... string # The traits to assign
 function traits.assign(object,...)
     allowedTraitsRun("traits.assign")
     if type(object) == "table" then
@@ -257,10 +265,12 @@ function traits.assign(object,...)
     end
 end
 
--- unassigns an arbitrary number of traits
+-- Unassigns an arbitrary number of traits
 -- at once.  This might be useful if a bunch
 -- of items all need the same traits, except one
 -- or two don't need them all
+---@param object traitEligibleObject|table # The object (or table of objects) to remove traits from
+---@param ... string # The traits to unassign
 function traits.unassign(object,...)
     allowedTraitsRun("traits.unassign")
     if type(object) == "table" then
@@ -281,7 +291,9 @@ end
 -- have a trait.  This function stores a function()-->boolean
 -- in the traitTable, and the function will be used to determine
 -- if the object currently has the trait
-
+---@param object traitEligibleObject # The object (or table of objects) to assign a trait to conditionally
+---@param traitString string # The trait that `object` should sometimes have
+---@param func fun():boolean # A function that returns true if the object should have the trait, and false otherwise
 function traits.conditionalTrait(object,traitString,func)
     allowedTraitsRun("traits.conditionalTrait")
     local traitTable = selectTraitTable(object)
@@ -298,8 +310,11 @@ function traits.conditionalTrait(object,traitString,func)
 end
 
 
--- checks if the object has the trait associated
--- with traitString (at the current time)
+-- Checks if the object has the trait associated
+-- with traitString (at the current time).
+---@param object traitEligibleObject # The object to check for the trait
+---@param traitString string # The trait to check for
+---@return boolean # True if the object has the trait, false otherwise
 function traits.hasTrait(object,traitString)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -318,9 +333,11 @@ end
 
 
 
--- returns a table of all the traits the object has
--- (in no particular order), as a table indexed by integers
--- for conditional traits, returns the current value of them
+-- Returns a table of all the traits the object has
+-- (in no particular order), as a table indexed by integers.
+-- For conditional traits, returns the current value of them.
+---@param object traitEligibleObject # The object to list the traits of
+---@return string[] # A table of all the traits the object has
 function traits.traitList(object)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -337,10 +354,12 @@ function traits.traitList(object)
     return tList
 end
 
--- returns a table of the object's current traits,
+-- Returns a table of the object's current traits,
 -- (i.e. after resolving conditional traits) in
 -- the form table[traitString]= true
--- for traits that exist
+-- for traits that exist.
+---@param object traitEligibleObject # The object to list the traits of
+---@return {[string]:true} # A table of all the traits the object has
 function traits.traitTable(object)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -357,9 +376,11 @@ end
 
 
 
--- returns true if the object has all the listed traits
--- and false otherwise
-
+-- Returns true if the object has all the listed traits
+-- and false otherwise.
+---@param object traitEligibleObject # The object to check for the traits
+---@param ... string # The traits to check for
+---@return boolean hasAllTraits # True if the object has all the traits, false otherwise
 function traits.hasAllTraits(object,...)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -374,9 +395,11 @@ function traits.hasAllTraits(object,...)
     return true
 end
 
--- returns true if the object has any of the listed traits
--- (at the current time) and false otherwise
-
+-- Returns true if the object has any of the listed traits
+-- (at the current time) and false otherwise.
+---@param object traitEligibleObject # The object to check for the traits
+---@param ... string # The traits to check for
+---@return boolean hasAnyTrait # True if the object has any of the traits, false otherwise
 function traits.hasAnyTrait(object,...)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -392,12 +415,15 @@ function traits.hasAnyTrait(object,...)
 end
 
         
--- returns a list of traits (table indexed by integers)
--- that is posessed by the object and is also in the
+-- Returns a list of traits (table indexed by integers)
+-- that is possessed by the object and is also in the
 -- argument list
 -- Second return value gives the number of traits
--- in common
-
+-- in common.
+---@param object traitEligibleObject # The object to check for the traits
+---@param ... string
+---@return string[] traitList # A table of all the traits the object has that are in the argument list
+---@return integer count # The number of traits in the argument list that the object has
 function traits.listPossessedTraits(object,...)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -419,18 +445,20 @@ traits.listPosessedTraits = traits.listPossessedTraits
 -- returns a table
 
 
--- returns a table of the combined traits of all
+-- Returns a table of the combined traits of all
 -- technologies owned by the tribe
 -- (after resolving conditional traits) in
 -- the form table[traitString]= true
--- for the traits that exist
+-- for the traits that exist.
+---@param tribe tribeObject # The tribe to check for the traits
+---@return {[string]:true} techTraits # A table of all the technology related traits the tribe has
 function traits.ownedTechTraitsTable(tribe)
     if not civ.isTribe(tribe) then
         error("traits.ownedTechTraitsTable: argument must be a tribeObject")
     end
     local outputTable = {}
     for techID,traitTable in pairs(techTraits) do
-        if tribe:hasTech(civ.getTech(techID)) then
+        if tribe:hasTech(civ.getTech(techID)--[[@as techObject]]) then
             for trait,boolOrFn in pairs(traitTable) do
                 if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
                     outputTable[trait] = true
@@ -441,19 +469,20 @@ function traits.ownedTechTraitsTable(tribe)
     return outputTable
 end
 
--- returns a table of the combined traits of all
+-- Returns a table of the combined traits of all
 -- wonders owned by the tribe
 -- (after resolving conditional traits) in the
 -- form table[traitString]=true
 -- for the traits that are possessed.
-
+---@param tribe tribeObject # The tribe to check for the traits
+---@return {[string]:true} wonderTraits # A table of all the wonder related traits the tribe has
 function traits.ownedWonderTraitsTable(tribe)
     if not civ.isTribe(tribe) then
         error("traits.ownedWonderTraitsTable: argument must be a tribeObject")
     end
     local outputTable = {}
     for wonderID, traitTable in pairs(wonderTraits) do
-        local wdr = civ.getWonder(wonderID)
+        local wdr = civ.getWonder(wonderID) --[[@as wonderObject]]
         if wdr.city and wdr.city.owner == tribe then
             for trait,boolOrFn in pairs(traitTable) do
                 if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
@@ -465,13 +494,6 @@ function traits.ownedWonderTraitsTable(tribe)
     return outputTable
 end
 
--- returns a table of the combined traits of all
--- improvements constructed within the city
--- (after resolving conditional traits) in
--- the form of table[traitString]=true
--- for the traits that are found
--- if ignoreWonderEquivalent is true, city improvements from owned
--- wonders are excluded
 
 local improvementEquivalentWonders = {
     [gen.original.wPyramids]= gen.original.iGranary               ,
@@ -482,14 +504,23 @@ local improvementEquivalentWonders = {
     [gen.original.wSETIProgram]= gen.original.iResearchLab            ,
 }
     
-
+-- Returns a table of the combined traits of all
+-- improvements constructed within the city
+-- (after resolving conditional traits) in
+-- the form of table[traitString]=true
+-- for the traits that are found.
+-- If ignoreWonderEquivalent is true, implied city improvements 
+-- from owned wonders are excluded.
+---@param city cityObject # The city to check for the traits
+---@param ignoreWonderEquivalent? boolean # If true, implied city improvements from owned wonders are excluded
+---@return {[string]:true} cityImprovementTraits # A table of all the improvement related traits the city has
 function traits.cityImprovementTraitsTable(city,ignoreWonderEquivalent)
     if not civ.isCity(city) then
         error("traits.cityImprovementTraitsTable: argument must be a cityObject")
     end
     local outputTable = {}
     for improvementId, traitTable in pairs(improvementTraits) do
-        if city:hasImprovement(civ.getImprovement(improvementId)) then
+        if city:hasImprovement(civ.getImprovement(improvementId) --[[@as improvementObject]]) then
             for trait,boolOrFn in pairs(traitTable) do
                 if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
                     outputTable[trait] = true
@@ -511,18 +542,20 @@ function traits.cityImprovementTraitsTable(city,ignoreWonderEquivalent)
     return outputTable
 end
 
--- returns a table of the combined traits of all
+-- Returns a table of the combined traits of all
 -- wonders within the city
 -- (after resolving conditional traits) in
 -- the form of table[traitString]=true
--- for the traits that are found
+-- for the traits that are found.
+---@param city cityObject # The city to check for the traits
+---@return {[string]:true} cityWonderTraits # A table of all the wonder related traits the city has
 function traits.cityWonderTraitsTable(city)
     if not civ.isCity(city) then
         error("traits.cityImprovementTraitsTable: argument must be a cityObject")
     end
     local outputTable = {}
     for wonderId, traitTable in pairs(wonderTraits) do
-        local wdr = civ.getWonder(wonderId)
+        local wdr = civ.getWonder(wonderId) --[[@as wonderObject]]
         if wdr.city == city  then
             for trait,boolOrFn in pairs(traitTable) do
                 if (type(boolOrFn) == "function" and boolOrFn()) or boolOrFn == true then
@@ -544,7 +577,9 @@ end
 --  or any wonder the tribe owns has a trait,
 --  return true
 --  return false if none are associated
-
+---@param tribeObject tribeObject # The tribe to check for the traits
+---@param ... string # The traits to check for
+---@return boolean hasAnyTrait # True if the tribe has any of the traits, false otherwise
 function traits.anyAssociatedWithTribe(tribeObject,...)
     if not civ.isTribe(tribeObject) then
         error("traits.anyAssociatedWithTribe: first argument must be a tribe object.  Received: "..tostring(tribeObject))
@@ -560,13 +595,15 @@ function traits.anyAssociatedWithTribe(tribeObject,...)
     return false
 end
 
--- considers the list of traits,
+-- Considers the list of traits,
 -- if the tile's terrain or baseTerrain has any trait in the list,
 -- or any improvement or wonder in the city on that tile has any trait in the list
 -- (if there is a city)
 -- return true
 -- return false if none of the traits are associated
-
+---@param tile tileObject # The tile to check for associated traits
+---@param ... string # The traits to check for
+---@return boolean hasAssociatedTrait # True if the tile has any of the traits, false otherwise
 function traits.anyAssociatedWithTile(tile,...)
     if not civ.isTile(tile) then
         error("traits.anyAssociatedWithTile: first argument must be a tile object.  Received: "..tostring(tile))
@@ -583,10 +620,12 @@ function traits.anyAssociatedWithTile(tile,...)
     return false
 end
 
---  returns a table of the object's traits
+--  Returns a table of the object's traits
 --  which are permanent (i.e. they are always
 --  true, not just true sometimes) in the form
 --  table[traitString] = true
+---@param object traitEligibleObject # The object to list the permanent traits of
+---@return {[string]: true} # A table of all the traits the object has
 function traits.permanentTraitTable(object)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -601,11 +640,13 @@ function traits.permanentTraitTable(object)
     return tTable
 end
 
--- returns a table of the object's traits
+-- Returns a table of the object's traits
 -- which are conditional (i.e. they are only true
 -- sometimes, set by traits.conditionalTrait)
 -- in the form
 -- table[traitString] = conditionFn
+---@param object traitEligibleObject # The object to list the conditional traits of
+---@return {[string]: fun():boolean} # A table of all the conditional traits the object has, along with their condition functions
 function traits.conditionalTraitTable(object)
     local traitTable = selectTraitTable(object)
     local objectID = getTraitID(object)
@@ -621,15 +662,22 @@ function traits.conditionalTraitTable(object)
 end
 
 
-
--- builds functions to associate strings with item types,
---  checkAssociation(item,string) --> bool
---      returns true if the string is associated with the item, or any of the item's traits
---      false otherwise
---
---  addAssociation(itemOrTrait,string)
---      associates the string with either an item, or a trait
---      if itemOrTrait is true, associate with all items
+--[[
+builds functions to associate strings with item types,
+checkAssociation(item,string) --> bool
+    returns true if the string is associated with the item, or any of the item's traits
+    false otherwise
+addAssociation(itemOrTrait,string)
+    associates the string with either an item, or a trait
+    if itemOrTrait is true, associate with all items
+]]
+---@generic item
+---@param isItemTypeFn fun(any):boolean # A function that returns true if the argument is of the item type
+---@param getItemID fun(item):integer # A function that returns the item's ID
+---@param itemTypeName string # The name of the item type
+---@param getItemIterator fun():item # A function that returns an iterator for all items of the type
+---@return fun(item,string):boolean # Returns true if the string is associated with the item, or any of the item's traits, false otherwise
+---@return fun(itemOrTrait:string|item,string) # Adds an association between the item or trait and the string
 function traits.makeItemTraitQuickStringAssociation(isItemTypeFn,getItemID,itemTypeName,getItemIterator)
     local storageTable = {}
     local conditionalMemoTable = {}
@@ -705,14 +753,21 @@ function traits.makeItemTraitQuickStringAssociation(isItemTypeFn,getItemID,itemT
 end
 
 
--- builds functions to associate values with item types
---  getAssociatedList(item) -> {[value]=true}
---      returns a table of values as keys that have been associated with the item
---          or any of its traits
---
---  addAssociation(itemOrTrait,value)
---      associates a value with an item or trait
-
+--[[
+builds functions to associate values with item types
+    getAssociatedList(item) -> {[associatedValue]=true}
+        returns a table of values as keys that have been associated with the item
+        or any of its traits
+    addAssociation(itemOrTrait,value)
+        associates a value with an item or trait
+]]
+---@generic itemObject
+---@param isItemTypeFn fun(any):boolean # A function that returns true if the argument is an item of the appropriate type
+---@param getItemID fun(itemObject):integer # A function that returns the ID of the item
+---@param itemTypeName string # A string describing the type of item
+---@param getItemIterator fun():itemObject # A function that returns an iterator over all items of the appropriate type
+---@return fun(itemObject):{[any]:true} getAssociatedList # Returns a table of values as keys that have been associated with the item or any of its traits
+---@return fun(itemOrTrait:string|itemObject,valueToAssociate:any) addAssociation # Associates a value with an item or trait
 function traits.makeItemTraitListAssociation(isItemTypeFn, getItemID, itemTypeName, getItemIterator)
     local storageTable = {}
     local conditionalMemoTable = {}
@@ -775,27 +830,34 @@ function traits.makeItemTraitListAssociation(isItemTypeFn, getItemID, itemTypeNa
     return getAssociatedList,addAssociation
 end
 
+--[[
+builds functions to associate values with item types
 
--- builds functions to associate values with item types
---  getComputation(item) -> result
---      
---      take a table of values as would be generated by makeItemTraitListAssociation
---      valTable = {[value]=true}
---      returns the final result of valueSoFar for the computation
---      valueSoFar = nil
---      for value,_ in pairs(valTable) do
---          valueSoFar = computeFunction(value,valueSoFar)
---      end
---      (the computeFunction should be a computation that returns the same value regardless
---      of the order of computation)
---      computeFunction(nil,nil) should return the initial valueSoFar, which is also the value
---      to return if no association is provided
---
---
---  addComputationValue(itemOrTrait,value)
---      associates a value with an item or trait
---
+getComputation(item) -> result
+     
+    take a table of values as would be generated by traits.makeItemTraitListAssociation
+    valTable = {[associatedValue]=true}
+    returns the final result of valueSoFar for the computation
+    resultSoFar = nil
+    for associatedValue,_ in pairs(valTable) do
+        valueSoFar = computeFunction(associatedValue,resultSoFar)
+    end
+    (the computeFunction should be a computation that returns the same value regardless
+    of the order of computation)
+    computeFunction(nil,nil) should return the initial resultSoFar, which is also the value
+    to return if no association is provided
 
+    addAssociation(itemOrTrait,value)
+        associates a value with an item or trait
+]]
+---@generic itemObject
+---@param isItemTypeFn fun(any):boolean # A function that returns true if the argument is an item of the appropriate type
+---@param getItemID fun(itemObject):integer # A function that returns the ID of the item
+---@param itemTypeName string # A string describing the type of item
+---@param getItemIterator fun():itemObject # A function that returns an iterator over all items of the appropriate type
+---@param computeFunction fun(associatedValue:any,resultSoFar:any):any # A function that takes the current value and the result so far, and returns the new resultSoFar
+---@return fun(itemObject):any getComputation # Returns the final result of valueSoFar for the computation
+---@return fun(itemOrTrait:string|itemObject,valueToAssociate:any) addAssociation # Associates a value with an item or trait, for use in future computations
 function traits.makeItemTraitComputation(isItemTypeFn, getItemID, itemTypeName, getItemIterator,computeFunction)
     local storageTable = {}
     local conditionalMemoTable = {}

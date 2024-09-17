@@ -528,16 +528,27 @@ local techAbbreviationToID = {
 ["XFA"] = 250,
 ["XFB"] = 251,
 ["XFC"] = 252,
-["no"] = false,
+--["no"] = false,
 }
 -- makes a function that reads the col entry of ruleRow
 -- interprets the string as the short form of a tech,
 -- then returns the tech
--- "no" is returned as false instead of nil
 local function toTech(col)
     return function(ruleRow) return techAbbreviationToID[ruleRow[col]] and civ.getTech(techAbbreviationToID[ruleRow[col]]) end
 end
 
+-- makes a function that reads the col entry of ruleRow
+-- interprets the string as the short form of a tech,
+-- then returns the tech
+-- "no" is returned as false instead of nil
+local function toPrereqTech(col)
+    return function(ruleRow) 
+        if ruleRow[col] == "no" then
+            return false
+        end
+        return techAbbreviationToID[ruleRow[col]] and civ.getTech(techAbbreviationToID[ruleRow[col]])
+    end
+end
 
 -- applyRuleRow(object,rowToKeyTable,ruleRow)
 -- rowToKeyTable = {[key]=convertFn(ruleRow)}
@@ -832,7 +843,7 @@ local baseNewDefaultUnit, isDefaultUnit, metatableDefaultUnit =
     
 local unitTypeRowToKeyAUnits = {attack = toNum(5), cost = toNum(9), defense = toNum(6), domain = toNum(2), 
         expires = toTech(1), firepower = toNum(8), flags = flagStrToNum(13), hitpoints = toNum(7),
-        move = toNum(3),  prereq = toTech(12), range = toNum(4), role = toNum(11), errorGen = constructErrorGenerator(civ.getUnitType,"@UNITS")}
+        move = toNum(3),  prereq = toPrereqTech(12), range = toNum(4), role = toNum(11), errorGen = constructErrorGenerator(civ.getUnitType,"@UNITS")}
 
 local unitTypeRowToKeyAUnits_Advanced = {advancedFlags = flagStrToNum(6), 
         buildTransport = flagStrToNum(3), minimumBribe = toNum(2),
@@ -877,7 +888,7 @@ local baseNewDefaultImprovement, isDefaultImprovement, metatableDefaultImproveme
 
 local improvementRowToKey = {cantSell = function(ruleRow) return (string.sub(ruleRow[4] or "00000000",-1,-1) == "1") end,
     cost = toNum(1), onCapture = function(ruleRow) return flagStringToNumber(string.sub(ruleRow[4] or "00000000",-3,-2)) end,
-    prereq = toTech(3), upkeep = toNum(2), errorGen = constructErrorGenerator(civ.getImprovement,"@IMPROVE")}
+    prereq = toPrereqTech(3), upkeep = toNum(2), errorGen = constructErrorGenerator(civ.getImprovement,"@IMPROVE")}
 
 local function newDefaultImprovement(id)
     if not civ.getImprovement(id) then
@@ -913,7 +924,7 @@ local function newDefaultWonder(id)
     local defaultWonder = {["id"]=id}
     applyRuleRow(defaultWonder,wonderRowToKeyImprove,improvementSection[id+40])
     --  remove prereq=toTech(3) when wonder.prereq is fixed to be set and not just get
-    applyRuleRow(defaultWonder,{name = getStr(0),prereq = toTech(3),errorGen=constructErrorGenerator(civ.getWonder,"@IMPROVE")},improvementSection[id+40])
+    applyRuleRow(defaultWonder,{name = getStr(0),prereq = toPrereqTech(3),errorGen=constructErrorGenerator(civ.getWonder,"@IMPROVE")},improvementSection[id+40])
     applyRuleRow(defaultWonder,wonderRowToKeyEndWonder,endWonderSection[id])
     return baseNewDefaultWonder(defaultWonder)
 end
@@ -924,7 +935,7 @@ local baseNewDefaultTech, isDefaultTech, metatableDefaultTech =
     prereq2 = prereqVDI},{},{},{id=true,name=true})
 
 local techRowToKeyCivilize = {aiValue=toNum(1), category = toNum(6), epoch = toNum(5),
-    modifier=toNum(2), prereq1 = toTech(3), prereq2 = toTech(4), errorGen = constructErrorGenerator(civ.getTech,"@CIVILIZE")}
+    modifier=toNum(2), prereq1 = toPrereqTech(3), prereq2 = toPrereqTech(4), errorGen = constructErrorGenerator(civ.getTech,"@CIVILIZE")}
 
 local techRowToKeyCivilize2 = {group = toNum(0), errorGen = constructErrorGenerator(civ.getTech,"@CIVILIZE2")}
 

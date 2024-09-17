@@ -138,6 +138,10 @@ Changed onCityProcessed event to onJustBeforeCityProcessed (onCityProcessed is s
 
 Updated documentation, and a small bugfix for the strategicTargets module.
 
+Bug fix for Legacy Event Engine (turn=every didn't work)
+
+changeRules can accept "no" as tech triggering expiry
+
 todo
 
 
