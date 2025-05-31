@@ -31,8 +31,9 @@ function discreteEvents.onKeyPress(keyID)
     menuTable[4] = "Generate setTraits.lua"
     menuTable[5] = "Start the Polygon Script"
     menuTable[6] = "Build describe.txt"
-    menuTable[7] = "Build the sample dscribe.txt from samplePedia.lua"
-    menuTable[8] = "Run update helper."
+    menuTable[7] = "Build the sample describe.txt from samplePedia.lua"
+    menuTable[8] = "Run update helper"
+    menuTable[9] = "Run the Hex Editing Script"
     local menuText = "Choose a script to run."
     local menuTitle = "Scripts"
     local choice = text.menu(menuTable,menuText,menuTitle,true)
@@ -100,6 +101,14 @@ function discreteEvents.onKeyPress(keyID)
 
         else
             text.simple("updateInfo.lua not found.  No update help.")
+        end
+        return
+    elseif choice == 9 then
+        local found, _ = dofileIfAvailable("Scripts\\hexEditScript")
+        if found then
+
+        else
+            text.simple("hexEditScript.lua not found.")
         end
         return
     else

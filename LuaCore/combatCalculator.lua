@@ -290,6 +290,14 @@ end
 --                          subtract, but min firepower will be 1)
 --      dTerrainDefenseValue -- overrides the terrain defense bonus (normally calculated by baseTerrain.defense/2) 
 --
+--
+-- May 2025, Prof. Garfield: I have re-arranged the code so that
+-- one of attacker or defender can be nil, and the function will
+-- still return the values for the other unit.
+-- This will allow the calculator to be used to generate
+-- combat values for a unit that is not currently in combat,
+-- to be used in help text, for example.
+-- strength and firepower will be returned as -1 if the unit is nil,
 local function getCombatValues (attacker, defender, isSneakAttack,combatModifierOverride) --> 4 integers, followed by 4 (informational-only) strings:
 		-- attackerStrength, attackerFirepower, defenderStrength, defenderFirepower,
 		-- attackerStrengthModifiersApplied, attackerFirepowerModifiersApplied, defenderStrengthModifiersApplied, defenderFirepowerModifiersApplied
@@ -315,298 +323,371 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 	local defenderStrengthModifiersApplied = ""
 	local defenderFirepowerModifiersApplied = ""
 
-	local attackerStrength = attacker.type.attack
-    -- custom addition to attack strength
-    if combatModifierOverride.aCustomAdd then
-        attackerStrength = attackerStrength + combatModifierOverride.aCustomAdd
-        attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."attackerCustomAdd "..tostring(combatModifierOverride.aCustomAdd).." to get "..tostring(attackerStrength)..", "
-        if attackerStrength < 1 then
-            attackerStrength = 1
-            attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."applyMinAttackStrength = 1, "
-        end
-    end
-    attackerStrength = attackerStrength * combatModifier.aConstant
-	local attackerFirepower = attacker.type.firepower
+	local attackerStrength = -1
+	local attackerFirepower = -1
+	if attacker then
+		attackerStrength = attacker.type.attack
+    	-- custom addition to attack strength
+    	if combatModifierOverride.aCustomAdd then
+    	    attackerStrength = attackerStrength + combatModifierOverride.aCustomAdd
+    	    attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."attackerCustomAdd "..tostring(combatModifierOverride.aCustomAdd).." to get "..tostring(attackerStrength)..", "
+    	    if attackerStrength < 1 then
+    	        attackerStrength = 1
+    	        attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."applyMinAttackStrength = 1, "
+    	    end
+    	end
+    	attackerStrength = attackerStrength * combatModifier.aConstant
+		attackerFirepower = attacker.type.firepower
 
-    -- custom addition to attacker's firepower
-    if combatModifierOverride.aAddFirepower then
-        attackerFirepower = math.floor(attackerFirepower + combatModifierOverride.aAddFirepower)
-        attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied.."attackerAddFirepower "..tostring(combatModifierOverride.aAddFirepower).." to get "..tostring(attackerFirepower)..", "
-        if attackerFirepower < 1 then
-            attackerFirepower = 1
-            attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied.."applyMinFirepower = 1, "
-        end
-    end
+    	-- custom addition to attacker's firepower
+    	if combatModifierOverride.aAddFirepower then
+    	    attackerFirepower = math.floor(attackerFirepower + combatModifierOverride.aAddFirepower)
+    	    attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied.."attackerAddFirepower "..tostring(combatModifierOverride.aAddFirepower).." to get "..tostring(attackerFirepower)..", "
+    	    if attackerFirepower < 1 then
+    	        attackerFirepower = 1
+    	        attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied.."applyMinFirepower = 1, "
+    	    end
+    	end
+	end
 
-	local defenderStrength = defender.type.defense 
+	local defenderStrength = -1
+	local defenderFirepower = -1
+	if defender then
+		defenderStrength = defender.type.defense 
+    	-- custom addition to defense strength
+    	if combatModifierOverride.dCustomAdd then
+    	    defenderStrength = defenderStrength + combatModifierOverride.dCustomAdd
+    	    defenderStrengthModifiersApplied = defenderStrengthModifiersApplied.."defenderCustomAdd "..tostring(combatModifierOverride.dCustomAdd).." to get "..tostring(defenderStrength)..", "
+    	    if defenderStrength < 0 then
+    	        defenderStrength = 0
+    	        defenderStrengthModifiersApplied = defenderStrengthModifiersApplied.."applyMinDefenseStrength = 0, "
+    	    end
+    	end
+		defenderStrength = defenderStrength * combatModifier.dConstant
+		defenderFirepower = defender.type.firepower
 
-    -- custom addition to defense strength
-    if combatModifierOverride.dCustomAdd then
-        defenderStrength = defenderStrength + combatModifierOverride.dCustomAdd
-        defenderStrengthModifiersApplied = defenderStrengthModifiersApplied.."defenderCustomAdd "..tostring(combatModifierOverride.dCustomAdd).." to get "..tostring(defenderStrength)..", "
-        if defenderStrength < 0 then
-            defenderStrength = 0
-            defenderStrengthModifiersApplied = defenderStrengthModifiersApplied.."applyMinDefenseStrength = 0, "
-        end
-    end
-	defenderStrength = defenderStrength * combatModifier.dConstant
-	local defenderFirepower = defender.type.firepower
-
-    -- custom addition to defender firepower
-    if combatModifierOverride.dAddFirepower then
-        defenderFirepower = math.floor(defenderFirepower + combatModifierOverride.dAddFirepower)
-        defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied.."defenderAddFirepower "..tostring(combatModifierOverride.dAddFirepower).." to get "..tostring(defenderFirepower)..", "
-        if defenderFirepower < 1 then
-            defenderFirepower = 1
-            defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied.."applyMinFirepower = 1, "
-        end
-    end
+    	-- custom addition to defender firepower
+    	if combatModifierOverride.dAddFirepower then
+    	    defenderFirepower = math.floor(defenderFirepower + combatModifierOverride.dAddFirepower)
+    	    defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied.."defenderAddFirepower "..tostring(combatModifierOverride.dAddFirepower).." to get "..tostring(defenderFirepower)..", "
+    	    if defenderFirepower < 1 then
+    	        defenderFirepower = 1
+    	        defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied.."applyMinFirepower = 1, "
+    	    end
+    	end
+	end
 	
 
 -- ATTACKING UNIT STRENGTH MODIFIERS:
 
+		
 	-- 1. Insufficient moves remaining:
-	if combatModifier.aMovesRemainingCheck then
-		local attackerMovesRemainingPriorToAttack = (gen.moveRemaining(attacker) + totpp.movementMultipliers.aggregate) / totpp.movementMultipliers.aggregate
-		if attackerMovesRemainingPriorToAttack < 1 then
-			-- Tiny fraction in the next formula is to prevent rounding errors, since movement may use a denominator which does not divide evenly:
-			attackerStrength = (attackerStrength * attackerMovesRemainingPriorToAttack) + 0.00000001
-			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "insufficientMovesRemaining x" .. tostring(attackerMovesRemainingPriorToAttack) .. ", "
+	if attacker then
+		if combatModifier.aMovesRemainingCheck then
+			local attackerMovesRemainingPriorToAttack = (gen.moveRemaining(attacker) + totpp.movementMultipliers.aggregate) / totpp.movementMultipliers.aggregate
+			if attackerMovesRemainingPriorToAttack < 1 then
+				-- Tiny fraction in the next formula is to prevent rounding errors, since movement may use a denominator which does not divide evenly:
+				attackerStrength = (attackerStrength * attackerMovesRemainingPriorToAttack) + 0.00000001
+				attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "insufficientMovesRemaining x" .. tostring(attackerMovesRemainingPriorToAttack) .. ", "
+			end
 		end
 	end
+		
 	-- 2. Veteran:
-	if attacker.veteran then
-		attackerStrength = attackerStrength * combatModifier.aVeteran
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "veteran x" .. combatModifier.aVeteran .. ", "
+	if attacker then
+		if attacker.veteran then
+			attackerStrength = attackerStrength * combatModifier.aVeteran
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "veteran x" .. combatModifier.aVeteran .. ", "
+		end
 	end
 	-- 3. Partisans:
-	if attacker.type == gen.original.uPartisans and defender.type.attack == 0 then
-		attackerStrength = attackerStrength * combatModifier.aPartisans
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "partisans x" .. combatModifier.aPartisans .. ", "
+	if attacker and defender then
+		if attacker.type == gen.original.uPartisans and defender.type.attack == 0 then
+			attackerStrength = attackerStrength * combatModifier.aPartisans
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "partisans x" .. combatModifier.aPartisans .. ", "
+		end
 	end
+		
 	-- 4. Paradrop:
-	if gen.isParadropped(attacker) then
-		attackerStrength = attackerStrength * combatModifier.aParadrop
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "paradrop x" .. combatModifier.aParadrop .. ", "
+	if attacker then
+		if gen.isParadropped(attacker) then
+			attackerStrength = attackerStrength * combatModifier.aParadrop
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "paradrop x" .. combatModifier.aParadrop .. ", "
+		end
 	end
 	-- 5. Sneak attack:
 	-- Note: This must be passed in as a parameter because it's too late to analyze the treaty statuses once onInitiateCombat() begins;
 	--		 a cease fire or peace treaty that did exist will already show as canceled at that point.
-	if defender.owner.isHuman and isSneakAttack then
-		attackerStrength = attackerStrength * combatModifier.aSneakAttack
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "sneakAttack x" .. combatModifier.aSneakAttack .. ", "
+	if attacker and defender then
+		if defender.owner.isHuman and isSneakAttack then
+			attackerStrength = attackerStrength * combatModifier.aSneakAttack
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "sneakAttack x" .. combatModifier.aSneakAttack .. ", "
+		end
 	end
+		
 	-- 6. Easiest level, human attacker:
-	if attacker.owner.isHuman and civ.game.difficulty == 0 then
-		attackerStrength = attackerStrength * combatModifier.aEasiestLevelHumanAttacker
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "easiestLevelHumanAttacker x" .. combatModifier.aEasiestLevelHumanAttacker .. ", "
+	if attacker then
+		if attacker.owner.isHuman and civ.game.difficulty == 0 then
+			attackerStrength = attackerStrength * combatModifier.aEasiestLevelHumanAttacker
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "easiestLevelHumanAttacker x" .. combatModifier.aEasiestLevelHumanAttacker .. ", "
+		end
 	end
 	-- 7. Easy levels, human defender:
-	if defender.owner.isHuman and civ.game.difficulty <= 1 then
-		attackerStrength = attackerStrength * combatModifier.aEasyLevelsHumanDefender
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "easyLevelsHumanDefender x" .. combatModifier.aEasyLevelsHumanDefender .. ", "
+	if attacker and defender then
+		if defender.owner.isHuman and civ.game.difficulty <= 1 then
+			attackerStrength = attackerStrength * combatModifier.aEasyLevelsHumanDefender
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "easyLevelsHumanDefender x" .. combatModifier.aEasyLevelsHumanDefender .. ", "
+		end
 	end
 	-- 8. Barbarian attacker vs.:
-	if attacker.owner.id == 0 then
-		-- 8a. Human defender:
-		if defender.owner.isHuman then
-			attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsHumanDefender
-			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsHumanDefender x" .. combatModifier.aBarbarianAttackerVsHumanDefender .. ", "
+	if attacker and defender then
+		if attacker.owner.id == 0 then
+			-- 8a. Human defender:
+			if defender.owner.isHuman then
+				attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsHumanDefender
+				attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsHumanDefender x" .. combatModifier.aBarbarianAttackerVsHumanDefender .. ", "
+			end
+			-- 8b. AI defender:
+			if defender.owner.isHuman == false then
+				attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsAiDefender
+				attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsAiDefender x" .. combatModifier.aBarbarianAttackerVsAiDefender .. ", "
+			end
+			-- 8c. Defender's only city:
+			if defender.location.city ~= nil and defender.owner.numCities == 1 then
+				attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsDefendersOnlyCity
+				attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsDefendersOnlyCity x" .. combatModifier.aBarbarianAttackerVsDefendersOnlyCity .. ", "
+			end
+			-- 8d. Defender's capital city:
+			if defender.location.city ~= nil and defender.owner.numCities > 1 and civ.hasImprovement(defender.location.city, gen.original.iPalace) then
+				attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsDefendersCapitalCity
+				attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsDefendersCapitalCity x" .. combatModifier.aBarbarianAttackerVsDefendersCapitalCity .. ", "
+			end
+			-- 8e. Defender with Great Wall:
+			if gen.isWonderActiveForTribe(gen.original.wGreatWall, defender.owner) then
+				attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsDefenderWithGreatWall
+				attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsDefenderWithGreatWall x" .. combatModifier.aBarbarianAttackerVsDefenderWithGreatWall .. ", "
+			end
 		end
-		-- 8b. AI defender:
-		if defender.owner.isHuman == false then
-			attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsAiDefender
-			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsAiDefender x" .. combatModifier.aBarbarianAttackerVsAiDefender .. ", "
+		-- 9. Great Wall vs. barbarian defender:
+		if gen.isWonderActiveForTribe(gen.original.wGreatWall, attacker.owner) and defender.owner.id == 0 then
+			attackerStrength = attackerStrength * combatModifier.aGreatWallVsBarbarianDefender
+			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "greatWallVsBarbarianDefender x" .. combatModifier.aGreatWallVsBarbarianDefender .. ", "
 		end
-		-- 8c. Defender's only city:
-		if defender.location.city ~= nil and defender.owner.numCities == 1 then
-			attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsDefendersOnlyCity
-			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsDefendersOnlyCity x" .. combatModifier.aBarbarianAttackerVsDefendersOnlyCity .. ", "
-		end
-		-- 8d. Defender's capital city:
-		if defender.location.city ~= nil and defender.owner.numCities > 1 and civ.hasImprovement(defender.location.city, gen.original.iPalace) then
-			attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsDefendersCapitalCity
-			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsDefendersCapitalCity x" .. combatModifier.aBarbarianAttackerVsDefendersCapitalCity .. ", "
-		end
-		-- 8e. Defender with Great Wall:
-		if gen.isWonderActiveForTribe(gen.original.wGreatWall, defender.owner) then
-			attackerStrength = attackerStrength * combatModifier.aBarbarianAttackerVsDefenderWithGreatWall
-			attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "barbarianAttackerVsDefenderWithGreatWall x" .. combatModifier.aBarbarianAttackerVsDefenderWithGreatWall .. ", "
-		end
-	end
-	-- 9. Great Wall vs. barbarian defender:
-	if gen.isWonderActiveForTribe(gen.original.wGreatWall, attacker.owner) and defender.owner.id == 0 then
-		attackerStrength = attackerStrength * combatModifier.aGreatWallVsBarbarianDefender
-		attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "greatWallVsBarbarianDefender x" .. combatModifier.aGreatWallVsBarbarianDefender .. ", "
 	end
 
-    -- attacker custom multiplier
-    if combatModifierOverride.aCustomMult then
-        attackerStrength = attackerStrength * combatModifierOverride.aCustomMult
-        attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "attackerCustomMultiplier x" ..tostring(combatModifierOverride.aCustomMult) .. ", "
-    end
+ 	   	
+	-- attacker custom multiplier
+	if attacker then
+ 	   	if combatModifierOverride.aCustomMult then
+ 	       attackerStrength = attackerStrength * combatModifierOverride.aCustomMult
+ 	       attackerStrengthModifiersApplied = attackerStrengthModifiersApplied .. "attackerCustomMultiplier x" ..tostring(combatModifierOverride.aCustomMult) .. ", "
+ 	   	end
+	end
 	attackerStrength = math.floor(attackerStrength)
 	
--- ATTACKING UNIT FIREPOWER MODIFIERS:
+	-- ATTACKING UNIT FIREPOWER MODIFIERS:
 	
 	-- 1. Shore bombardment:
-	if combatModifier.aFirepowerShoreBombardmentCheck then
-		if attacker.type.domain == domain.sea and defender.type.domain == domain.ground then
-			attackerFirepower = 1
-			attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied .. "shoreBombardment =1, "
+	if attacker and defender then
+		if combatModifier.aFirepowerShoreBombardmentCheck then
+			if attacker.type.domain == domain.sea and defender.type.domain == domain.ground then
+				attackerFirepower = 1
+				attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied .. "shoreBombardment =1, "
+			end
 		end
 	end
 	-- 2. Caught in port:
-	if (attacker.type.domain == domain.ground or attacker.type.domain == domain.air) and defender.type.domain == domain.sea and defender.location.baseTerrain.type ~= 10 then
-		attackerFirepower = attackerFirepower * combatModifier.aFirepowerCaughtInPort
-		attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied .. "shipCaughtInPort x" .. combatModifier.aFirepowerCaughtInPort .. ", "
+	if attacker and defender then
+		if (attacker.type.domain == domain.ground or attacker.type.domain == domain.air) and defender.type.domain == domain.sea and defender.location.baseTerrain.type ~= 10 then
+			attackerFirepower = attackerFirepower * combatModifier.aFirepowerCaughtInPort
+			attackerFirepowerModifiersApplied = attackerFirepowerModifiersApplied .. "shipCaughtInPort x" .. combatModifier.aFirepowerCaughtInPort .. ", "
+		end
 	end
 	attackerFirepower = math.floor(attackerFirepower)
 
--- DEFENDING UNIT STRENGTH MODIFIERS:
+	-- DEFENDING UNIT STRENGTH MODIFIERS:
 
+		
 	-- 1. Veteran:
-	if defender.veteran then
-		defenderStrength = defenderStrength * combatModifier.dVeteran
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "veteran x" .. combatModifier.dVeteran .. ", "
+	if defender then
+		if defender.veteran then
+			defenderStrength = defenderStrength * combatModifier.dVeteran
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "veteran x" .. combatModifier.dVeteran .. ", "
+		end
 	end
 	-- 2. Scrambling fighter vs bomber:
-	if attacker.type.domain == domain.air and attacker.type.range ~= 1 and defender.type.domain == domain.air and defender.location.city ~= nil and gen.isAttackAir(defender.type) then
-		defenderStrength = defenderStrength * combatModifier.dScramblingFighterVsBomber
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "scramblingFighterVsBomber x" .. combatModifier.dScramblingFighterVsBomber .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.air and attacker.type.range ~= 1 and defender.type.domain == domain.air and defender.location.city ~= nil and gen.isAttackAir(defender.type) then
+			defenderStrength = defenderStrength * combatModifier.dScramblingFighterVsBomber
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "scramblingFighterVsBomber x" .. combatModifier.dScramblingFighterVsBomber .. ", "
+		end
 	end
 	-- 3. Scrambling fighter vs fighter:
-	if gen.isAttackAir(attacker.type) and defender.type.domain == domain.air and defender.location.city ~= nil and gen.isAttackAir(defender.type) then
-		defenderStrength = defenderStrength * combatModifier.dScramblingFighterVsFighter
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "scramblingFighterVsFighter x" .. combatModifier.dScramblingFighterVsFighter .. ", "
+	if attacker and defender then
+		if gen.isAttackAir(attacker.type) and defender.type.domain == domain.air and defender.location.city ~= nil and gen.isAttackAir(defender.type) then
+			defenderStrength = defenderStrength * combatModifier.dScramblingFighterVsFighter
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "scramblingFighterVsFighter x" .. combatModifier.dScramblingFighterVsFighter .. ", "
+		end
 	end
 	-- 4. Helicopter:
-	if attacker.type.role == 3 and defender.type.domain == domain.air and defender.type.range == 0 then
-		defenderStrength = defenderStrength * combatModifier.dHelicopter
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "helicopter x" .. combatModifier.dHelicopter .. ", "
+	if attacker and defender then
+		if attacker.type.role == 3 and defender.type.domain == domain.air and defender.type.range == 0 then
+			defenderStrength = defenderStrength * combatModifier.dHelicopter
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "helicopter x" .. combatModifier.dHelicopter .. ", "
+		end
 	end
-	-- 5. These next 3 bonuses do not stack; only the first match applies:
-	-- 5a. City Walls:
-	if attacker.type.domain == domain.ground and gen.isIgnoreWalls(attacker.type) == false and defender.type.domain == domain.ground and defender.location.city ~= nil and (civ.hasImprovement(defender.location.city, gen.original.iCityWalls) or gen.isWonderActiveForTribe(gen.original.wGreatWall, defender.owner)) then
-		defenderStrength = defenderStrength * combatModifier.dCityWalls
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "cityWalls x" .. combatModifier.dCityWalls .. ", "
-	-- 5b. Fortress:
-	elseif attacker.type.domain ~= domain.air and gen.isIgnoreWalls(attacker.type) == false and defender.type.domain == domain.ground and defender.location.improvements & 0x42 == 0x40 then
-		defenderStrength = defenderStrength * combatModifier.dFortress
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "fortress x" .. combatModifier.dFortress .. ", "
-	-- 5c. Fortified:
-	elseif defender.type.domain == domain.ground and defender.order & 0xFF == 0x02 then
-		defenderStrength = defenderStrength * combatModifier.dFortified
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "fortified x" .. combatModifier.dFortified .. ", "
+	if attacker and defender then
+		-- 5. These next 3 bonuses do not stack; only the first match applies:
+		-- 5a. City Walls:
+		if attacker.type.domain == domain.ground and gen.isIgnoreWalls(attacker.type) == false and defender.type.domain == domain.ground and defender.location.city ~= nil and (civ.hasImprovement(defender.location.city, gen.original.iCityWalls) or gen.isWonderActiveForTribe(gen.original.wGreatWall, defender.owner)) then
+			defenderStrength = defenderStrength * combatModifier.dCityWalls
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "cityWalls x" .. combatModifier.dCityWalls .. ", "
+		-- 5b. Fortress:
+		elseif attacker.type.domain ~= domain.air and gen.isIgnoreWalls(attacker.type) == false and defender.type.domain == domain.ground and defender.location.improvements & 0x42 == 0x40 then
+			defenderStrength = defenderStrength * combatModifier.dFortress
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "fortress x" .. combatModifier.dFortress .. ", "
+		-- 5c. Fortified:
+		elseif defender.type.domain == domain.ground and defender.order & 0xFF == 0x02 then
+			defenderStrength = defenderStrength * combatModifier.dFortified
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "fortified x" .. combatModifier.dFortified .. ", "
+		end
 	end
 	-- 6. Pikemen flag: (assumes user is running TOTPP v0.17 or higher and has the "Pikemen flag" patch enabled)
-	if attacker.type.domain == domain.ground and attacker.type.move / totpp.movementMultipliers.aggregate == 2 and attacker.type.hitpoints == 10 and gen.isBonusAgainstHorse(defender.type) then
-		defenderStrength = defenderStrength * combatModifier.dPikemenFlag
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "pikemenFlag x" .. combatModifier.dPikemenFlag .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.ground and attacker.type.move / totpp.movementMultipliers.aggregate == 2 and attacker.type.hitpoints == 10 and gen.isBonusAgainstHorse(defender.type) then
+			defenderStrength = defenderStrength * combatModifier.dPikemenFlag
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "pikemenFlag x" .. combatModifier.dPikemenFlag .. ", "
+		end
 	end
 	-- 7. AEGIS flag vs. missile:
-	if attacker.type.domain == domain.air and gen.isDestroyedAfterAttacking(attacker.type) and gen.isBonusAgainstAir(defender.type) then
-		defenderStrength = defenderStrength * combatModifier.dAegisFlagVsMissile
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "aegisFlagVsMissile x" .. combatModifier.dAegisFlagVsMissile .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.air and gen.isDestroyedAfterAttacking(attacker.type) and gen.isBonusAgainstAir(defender.type) then
+			defenderStrength = defenderStrength * combatModifier.dAegisFlagVsMissile
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "aegisFlagVsMissile x" .. combatModifier.dAegisFlagVsMissile .. ", "
+		end
 	end
 	-- 8. AEGIS flag vs. other air:
-	if attacker.type.domain == domain.air and gen.isDestroyedAfterAttacking(attacker.type) == false and gen.isBonusAgainstAir(defender.type) then
-		defenderStrength = defenderStrength * combatModifier.dAegisFlagVsOtherAir
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "aegisFlagVsOtherAir x" .. combatModifier.dAegisFlagVsOtherAir .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.air and gen.isDestroyedAfterAttacking(attacker.type) == false and gen.isBonusAgainstAir(defender.type) then
+			defenderStrength = defenderStrength * combatModifier.dAegisFlagVsOtherAir
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "aegisFlagVsOtherAir x" .. combatModifier.dAegisFlagVsOtherAir .. ", "
+		end
 	end
 	-- 9. SDI Defense vs. missile:
-	if attacker.type.domain == domain.air and gen.isDestroyedAfterAttacking(attacker.type) and defender.location.city ~= nil and civ.hasImprovement(defender.location.city, gen.original.iSDIDefense) then
-		defenderStrength = defenderStrength * combatModifier.dSdiDefenseVsMissile
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "sdiDefenseVsMissile x" .. combatModifier.dSdiDefenseVsMissile .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.air and gen.isDestroyedAfterAttacking(attacker.type) and defender.location.city ~= nil and civ.hasImprovement(defender.location.city, gen.original.iSDIDefense) then
+			defenderStrength = defenderStrength * combatModifier.dSdiDefenseVsMissile
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "sdiDefenseVsMissile x" .. combatModifier.dSdiDefenseVsMissile .. ", "
+		end
 	end
 	-- 10. SAM Missile Battery:
-	if attacker.type.domain == domain.air and defender.location.city ~= nil and (gen.isDestroyedAfterAttacking(attacker.type) or gen.isAttackAir(defender.type) == false) and civ.hasImprovement(defender.location.city, gen.original.iSAMMissileBattery) then
-		defenderStrength = defenderStrength * combatModifier.dSamMissileBattery
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "samBattery x" .. combatModifier.dSamMissileBattery .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.air and defender.location.city ~= nil and (gen.isDestroyedAfterAttacking(attacker.type) or gen.isAttackAir(defender.type) == false) and civ.hasImprovement(defender.location.city, gen.original.iSAMMissileBattery) then
+			defenderStrength = defenderStrength * combatModifier.dSamMissileBattery
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "samBattery x" .. combatModifier.dSamMissileBattery .. ", "
+		end
 	end
 	-- 11. Coastal Fortress:
-	if attacker.type.domain == domain.sea and defender.type.domain ~= domain.sea and defender.location.city ~= nil and civ.hasImprovement(defender.location.city, gen.original.iCoastalFortress) then
-		defenderStrength = defenderStrength * combatModifier.dCoastalFortress
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "coastalFortress x" .. combatModifier.dCoastalFortress .. ", "
+	if attacker and defender then
+		if attacker.type.domain == domain.sea and defender.type.domain ~= domain.sea and defender.location.city ~= nil and civ.hasImprovement(defender.location.city, gen.original.iCoastalFortress) then
+			defenderStrength = defenderStrength * combatModifier.dCoastalFortress
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "coastalFortress x" .. combatModifier.dCoastalFortress .. ", "
+		end
 	end
 	-- 12. Terrain:
-	if defender.type.domain == domain.ground or
-	   --(defender.type.domain == domain.air and cosmic2.TerrainDefenseForAir ~= 0) or
-	   --(defender.type.domain == domain.sea and cosmic2.TerrainDefenseForSea ~= 0) then
-       --   added dTerrainDefenseForAir/Sea to combatModifer so it could be more easily modified by changeRules.lua
-	   (defender.type.domain == domain.air and combatModifier.dTerrainDefenseForAir) or
-	   (defender.type.domain == domain.sea and combatModifier.dTerrainDefenseForSea) then
-		local terrainFactor = 1
-		-- 12a. Base Terrain Type:
-		if combatModifier.dBaseTerrainCheck then
-            if combatModifier.dTerrainDefenseValue then
-                terrainFactor = combatModifier.dTerrainDefenseValue
-                -- added this to make it easy to override regular terrain defense values (prof. garfield)
-            else
-			    terrainFactor = defender.location.baseTerrain.defense / 2
-            end
+	if defender then
+		print(defender.type.name  .. defenderStrength,combatModifier.dTerrainDefenseValue)
+		if defender.type.domain == domain.ground or
+		   --(defender.type.domain == domain.air and cosmic2.TerrainDefenseForAir ~= 0) or
+		   --(defender.type.domain == domain.sea and cosmic2.TerrainDefenseForSea ~= 0) then
+ 	      --   added dTerrainDefenseForAir/Sea to combatModifer so it could be more easily modified by changeRules.lua
+		   (defender.type.domain == domain.air and combatModifier.dTerrainDefenseForAir) or
+		   (defender.type.domain == domain.sea and combatModifier.dTerrainDefenseForSea) then
+			local terrainFactor = 1
+			-- 12a. Base Terrain Type:
+			if combatModifier.dBaseTerrainCheck then
+ 	           if combatModifier.dTerrainDefenseValue then
+ 	               terrainFactor = combatModifier.dTerrainDefenseValue
+ 	               -- added this to make it easy to override regular terrain defense values (prof. garfield)
+ 	           else
+				    terrainFactor = defender.location.baseTerrain.defense / 2
+ 	           end
+			end
+			-- 12b. River:
+			if defender.location.river then
+				terrainFactor = terrainFactor + combatModifier.dRiverAddition
+			end
+			defenderStrength = defenderStrength * terrainFactor
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "baseTerrainType"
+			if defender.location.river then
+				defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "+river"
+			end
+			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. " x" .. terrainFactor .. ", "
 		end
-		-- 12b. River:
-		if defender.location.river then
-			terrainFactor = terrainFactor + combatModifier.dRiverAddition
-		end
-		defenderStrength = defenderStrength * terrainFactor
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "baseTerrainType"
-		if defender.location.river then
-			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "+river"
-		end
-		defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. " x" .. terrainFactor .. ", "
+		print("defenderStrength: " .. defenderStrength)
 	end
 	-- 13. Barbarian defender:
-	if defender.owner.id == 0 then
-		-- These modifiers are not allowed to reduce the strength of the defender below 1, but due to the order in which they're actually applied
-		--		that's almost impossible to happen unless the unit type already has 0 defense.
-		-- 13a. Archers:
-		if defender.type == gen.original.uArchers then
-			defenderStrength = defenderStrength * combatModifier.dBarbarianDefenderArchers
-			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "barbarianDefenderArchers x" .. combatModifier.dBarbarianDefenderArchers .. ", "
-		end
-		-- 13b. Legion:
-		if defender.type == gen.original.uLegion and knownByAnyHuman(gen.original.aIronWorking) == false then
-			defenderStrength = defenderStrength * combatModifier.dBarbarianDefenderLegion
-			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "barbarianDefenderLegion x" .. combatModifier.dBarbarianDefenderLegion .. ", "
+	if defender then
+		if defender.owner.id == 0 then
+			-- These modifiers are not allowed to reduce the strength of the defender below 1, but due to the order in which they're actually applied
+			--		that's almost impossible to happen unless the unit type already has 0 defense.
+			-- 13a. Archers:
+			if defender.type == gen.original.uArchers then
+				defenderStrength = defenderStrength * combatModifier.dBarbarianDefenderArchers
+				defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "barbarianDefenderArchers x" .. combatModifier.dBarbarianDefenderArchers .. ", "
+			end
+			-- 13b. Legion:
+			if defender.type == gen.original.uLegion and knownByAnyHuman(gen.original.aIronWorking) == false then
+				defenderStrength = defenderStrength * combatModifier.dBarbarianDefenderLegion
+				defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "barbarianDefenderLegion x" .. combatModifier.dBarbarianDefenderLegion .. ", "
+			end
 		end
 	end
-    -- defender custom multiplier
-    if combatModifierOverride.dCustomMult then
-        defenderStrength = defenderStrength * combatModifierOverride.dCustomMult
-        defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "defenderCustomMultiplier x" ..tostring(combatModifierOverride.dCustomMult) .. ", "
-    end
+ 	-- defender custom multiplier
+	if defender then
+ 	   	if combatModifierOverride.dCustomMult then
+ 	       defenderStrength = defenderStrength * combatModifierOverride.dCustomMult
+ 	       defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. "defenderCustomMultiplier x" ..tostring(combatModifierOverride.dCustomMult) .. ", "
+ 	   	end
+	end
 	defenderStrength = math.floor(defenderStrength)
 	
--- DEFENDING UNIT FIREPOWER MODIFIERS:
+	-- DEFENDING UNIT FIREPOWER MODIFIERS:
 	
 	-- 1. Helicopter:
-	if combatModifier.dFirepowerHelicopterCheck then
-		if attacker.type.role == 3 and defender.type.domain == domain.air and defender.type.range == 0 then
-			defenderFirepower = 1
-			defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "helicopter =1, "
+	if attacker and defender then
+		if combatModifier.dFirepowerHelicopterCheck then
+			if attacker.type.role == 3 and defender.type.domain == domain.air and defender.type.range == 0 then
+				defenderFirepower = 1
+				defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "helicopter =1, "
+			end
 		end
 	end
 	-- 2. Shore bombardment:
-	if combatModifier.dFirepowerShoreBombardmentCheck then
-		if attacker.type.domain == domain.sea and defender.type.domain == domain.ground then
-			defenderFirepower = 1
-			defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "shoreBombardment =1, "
+	if attacker and defender then
+		if combatModifier.dFirepowerShoreBombardmentCheck then
+			if attacker.type.domain == domain.sea and defender.type.domain == domain.ground then
+				defenderFirepower = 1
+				defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "shoreBombardment =1, "
+			end
 		end
 	end
 	-- 3. Caught in port:
-	if combatModifier.dFirepowerCaughtInPortCheck then
-		if (attacker.type.domain == domain.ground or attacker.type.domain == domain.air) and defender.type.domain == domain.sea and defender.location.baseTerrain.type ~= 10 then
-			defenderFirepower = 1
-			defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "caughtInPort =1, "
+	if attacker and defender then
+		if combatModifier.dFirepowerCaughtInPortCheck then
+			if (attacker.type.domain == domain.ground or attacker.type.domain == domain.air) and defender.type.domain == domain.sea and defender.location.baseTerrain.type ~= 10 then
+				defenderFirepower = 1
+				defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "caughtInPort =1, "
+			end
 		end
 	end
 	-- 4. Submarine flag:
-	if combatModifier.dFirepowerSubmarineFlagCheck then
-		if gen.isSubmarine(defender.type) then
-			defenderFirepower = 1
-			defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "submarineFlag =1, "
+	if defender then
+		if combatModifier.dFirepowerSubmarineFlagCheck then
+			if gen.isSubmarine(defender.type) then
+				defenderFirepower = 1
+				defenderFirepowerModifiersApplied = defenderFirepowerModifiersApplied .. "submarineFlag =1, "
+			end
 		end
 	end
 	defenderFirepower = math.floor(defenderFirepower)

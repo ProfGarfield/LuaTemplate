@@ -833,6 +833,7 @@ local function menu(menuTable,menuText,menuTitle,arg4, arg5,arg6,arg7)
     -- find the number of options possible per window
     -- the 2 is the forward and backward 
     local optionsPerPage = linesPerWindow - menuTextLines - 2
+    optionsPerPage = math.max(optionsPerPage,3)
     if canCancel then
         optionsPerPage = optionsPerPage -1
     end
@@ -3402,7 +3403,6 @@ function console.hireMercTest()
     civ.ui.text(gen.tableToString(example.hireMercMenu(civ.getCurrentTribe())))
 end
     
-
 
 
 return text

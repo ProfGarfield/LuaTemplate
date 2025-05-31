@@ -277,11 +277,12 @@ traits.assign({gen.original.wCopernicusObservatory, gen.original.wIsaacNewtonsCo
 --
 --
 -- air units get an attack bonus against ancient units
---[[
 combatMod.registerCombatModificationRule({
     attacker = {gen.original.uFighter, gen.original.uStlthBmbr, gen.original.uStlthFtr, gen.original.uBomber, gen.original.uHelicopter},
     defender = {gen.original.uWarriors, gen.original.uPhalanx, gen.original.uArchers, gen.original.uLegion},
     aCustomAdd = 3,
+    attackerHelp = "RECEIVES +3 versus ancient units.",
+    attackerHelpActive = "RECEIVING +3 versus ancient units.",
 })
 
 -- special bonus for defending on Furs or Game (x4 instead of regular)
@@ -290,6 +291,8 @@ combatMod.registerCombatModificationRule({
     -- defender can be anyone
     defenderDetail = {gen.original.tFurs, gen.original.tGame},
     dModifier_tundraSpecial = 4,
+    defenderHelpActive = "RECEIVING x4 defence bonus on Furs or Game.",
+    defenderHelp = "Receives x4 defence bonus on Furs or Game.",
 })
 
 -- Alpine Troops negate tundra special defense bonus,
@@ -309,6 +312,8 @@ combatMod.registerCombatModificationRule({
     defenderDetail = "religiousBuilding",
     --combatSpec = {dCustomAdd = 4 },
     dCustomAdd = 4,
+    defenderHelpActive = "RECEIVING +4 for defending a city with a religious building.",
+    defenderHelp = "Receives +4 for defending a city with a religious building.",
 })
 
 
@@ -326,6 +331,8 @@ combatMod.registerCombatModificationRule({
     [gen.original.bJungle] = 1,
     [gen.original.bSwamp] = 0.75,
     [gen.original.bGlacier] = 0.5,
+    defenderHelp = "Receives defense bonuses on flat terrain, and penalties on rough terrain.",
+    defenderHelpActive = "Receiving defense bonuses on flat terrain, and penalties on rough terrain.",
 })
 
 -- 'siege engines' (catapult, cannon, artillery) reduce
@@ -335,6 +342,8 @@ combatMod.registerCombatModificationRule({
     dCityWalls = 2,
     dFortress = 1.5,
     dFortified = 1.25,
+    attackerHelp = "Reduces the effectiveness of enemy fortifications.",
+    attackerHelpActive = "Reduced the effectiveness of enemy fortifications.",
 })
 -- fanatics and siege engines are particularly good at defending fortified positions
 combatMod.registerCombatModificationRule({
@@ -344,6 +353,7 @@ combatMod.registerCombatModificationRule({
         dFortress = 3,
         dFortified = 2,
     },
+    defenderHelp = "Receives x4.5 defense bonus for defending a city with walls, x3 for fortress, and x2 for fortified.",
 })
 
 -- siege engines defend with their attack value against other siege engines

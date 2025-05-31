@@ -18,8 +18,7 @@ local fileModified = false -- set this to true if you change this file for your 
 --          Lua Scenario Template Files
 
 
--- All necessary file require calls were moved to events.lua
--- during the last update of that file.
+require("helpSettings")
 
 
 

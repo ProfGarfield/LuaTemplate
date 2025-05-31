@@ -10,9 +10,10 @@
 --  in each file.
 local traits = require("traits")
 local object = require("object")
+---@module "generalLibrary"
 local gen = require("generalLibrary")
 
-traits.allowedTraits({})
+--traits.allowedTraits({})
 
 --[[
 traits.allowedTraits("fighter","bomber","warship")
@@ -21,7 +22,6 @@ traits.assign({gen.original.uBomber, gen.original.uStlthBmbr},"bomber")
 traits.assign({gen.original.uDestroyer, gen.original.uCruiser, gen.original.uAEGISCruiser, 
         gen.original.uBattleship, gen.original.uCarrier},"warship")
         --]]
---[[
 traits.allowedTraits("religiousBuilding","mounted","siege engine","science wonder")
 
 traits.assign(gen.original.iCathedral,"religiousBuilding")

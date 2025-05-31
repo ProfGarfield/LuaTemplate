@@ -142,6 +142,8 @@ Bug fix for Legacy Event Engine (turn=every didn't work)
 
 changeRules can accept "no" as tech triggering expiry
 
+text.menu: menu pages now always produce at least 3 options, even if line counting would suggest less.
+
 todo
 
 

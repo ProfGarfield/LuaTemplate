@@ -1,0 +1,640 @@
+;
+;   CIVILIZATION CIVILOPEDIA TEXT
+;   Copyright (c) 1995 by MicroProse Software
+;
+;   Altering the contents of this file may cause the
+;   game to malfunction.
+;
+
+@PEDIAPICKCIV
+@width=540
+@columns=3
+@listbox
+@title=Civilopedia: Civilization Advances
+
+@PEDIACIV
+@width=480
+@title=Civilization Advance
+^^%STRING0
+^
+
+
+@PEDIACIVFACTS
+^Allows government form of same name.
+^Allows settlers to build fortresses.
+^Allows settlers to build airbases.
+^Allows settlers to build railroads.
+^Allows settlers to improve farmland.
+^Increases the effect of temples.
+^Increases the effect of colosseums.
+^Worth bonus points in Civilization score.
+^Increases ship movement rates by one.
+^Improves Spaceship thrust by 25%.
+^Free civ. advance for first civ. to discover.
+^Decreases the effect of Cathedrals.
+^Cancels the effect of
+
+
+@PEDIAPICKUNIT
+@width=540
+@columns=3
+@listbox
+@title=Civilopedia: Unit Types
+
+@PEDIAUNIT
+@width=480
+@title=Unit Type
+^^%STRING0
+^
+
+@PEDIAUNITFACTS
+^Can see units two spaces away.
+^Ignores enemy Zones of Control.
+^Can make amphibious landings.
+^Invisible to most enemy ships.
+^Can attack aircraft in flight.
+^May be lost out of sight of land.
+^Ignores City Walls.
+^Can carry friendly air units.
+^Can make paradrops.
+^Treats all squares as road squares.
+^Defense +50% versus units with a movement factor of 2.
+^Only Fundamentalist governments can build.
+^Destroyed after attacking.
+^Defense +100% versus air and missile units.
+^Can spot enemy submarines in adjacent squares.
+
+
+@PEDIAPICKGOVT
+@width=480
+@listbox
+@title=Civilopedia: Governments
+
+
+@PEDIAPICKIMPROVE
+@width=540
+@columns=3
+@listbox
+@title=Civilopedia: City Improvements
+
+@PEDIAIMPROVE
+@width=480
+@title=City Improvement
+^^%STRING0
+^
+
+@;Palace
+@PEDIAIMPROVE1
+Eliminates corruption and waste in the city,
+and decreases it in all nearby cities.
+
+@;Barracks
+@PEDIAIMPROVE2
+City produces Veteran ground units. Ground units can
+be completely repaired in a single turn.
+
+@;Granary
+@PEDIAIMPROVE3
+Only half of city's food store is depleted when
+city increases in size.
+
+@;Temple
+@PEDIAIMPROVE4
+Up to two discontented citizens are made content.
+
+@;Marketplace
+@PEDIAIMPROVE5
+Increases tax and luxury output by 50%.
+
+@;Library
+@PEDIAIMPROVE6
+Increases science output by 50%.
+
+@;Courthouse
+@PEDIAIMPROVE7
+Decreases corruption by 50%. Makes city more resistant
+to bribery by enemy diplomats and spies. Under Democracy,
+one content citizen becomes happy.
+
+@;City Walls
+@PEDIAIMPROVE8
+Units in city are tripled on defense versus ground attacks.
+
+@;Aqueduct
+@PEDIAIMPROVE9
+Allows city to increase beyond size 8.
+
+@;Bank
+@PEDIAIMPROVE10
+Increases tax and luxury output by an
+additional 50% (cumulative w/ Marketplace).
+
+@;Cathedral
+@PEDIAIMPROVE11
+Makes four unhappy citizens content (Three after Communism).
+
+@;University
+@PEDIAIMPROVE12
+Increases science output by an additional
+50% (cumulative w/ Library).
+
+@;Mass Transit
+@PEDIAIMPROVE13
+Eliminates pollution caused by population.
+
+@;Colosseum
+@PEDIAIMPROVE14
+Three unhappy citizens are made content
+(four w/ Electronics).
+
+@;Factory
+@PEDIAIMPROVE15
+Increases resource production in city by 50%.
+
+@;Mfg. Plant
+@PEDIAIMPROVE16
+Increases resource production by an additional 50%
+(cumulative w/ Factory).
+
+@;SDI Defense
+@PEDIAIMPROVE17
+Protects everything within three spaces of
+the city from nuclear attack.
+
+@;Recycling Center
+@PEDIAIMPROVE18
+Decreases the pollution caused by factories.
+
+@;Power Plant
+@PEDIAIMPROVE19
+Increases factory output by 50%.
+
+@;Hydro Plant
+@PEDIAIMPROVE20
+Increases factory output by 50%.  Cleaner
+than Power Plant, and generally safer than
+Nuclear Plant.
+
+@;Nuclear Plant
+@PEDIAIMPROVE21
+Increases factory output by 50%.  Cleaner
+than Power Plant (same as Hydro Plant), but
+there is a risk of Nuclear Meltdown unless
+civilization has discovered Fusion.
+
+@;Stock Exchange
+@PEDIAIMPROVE22
+Increases tax and luxuries output by an additional
+50% (cumulative with Marketplace and Bank for a grand
+total of 150%).
+
+@;Sewer System
+@PEDIAIMPROVE23
+Allows city to grow beyond size 12.
+
+@;Supermarket
+@PEDIAIMPROVE24
+Allows squares in the city's radius with
+the "farmland" improvement (irrigated twice)
+to produce 50% more food.
+
+@;Superhighways
+@PEDIAIMPROVE25
+All squares in the city's radius with roads
+(or railroads) produce 50% more trade.
+
+@;Research Lab
+@PEDIAIMPROVE26
+Increases science output by an additional 50%
+(cumulative with Library and University for a
+grand total of 150%).
+
+@;SAM Missile Battery
+@PEDIAIMPROVE27
+Units in city are doubled on defense against
+air units and non-nuclear missile units.
+
+@;Coastal Fortress
+@PEDIAIMPROVE28
+Units in city are doubled on defense against
+shore bombardment by enemy ships.
+
+@;Solar Plant
+@PEDIAIMPROVE29
+Increases factory output by 50%.  Cleaner
+than all other forms of power.
+
+@;Harbor
+@PEDIAIMPROVE30
+All ocean squares in the city's radius
+produce one extra unit of food.
+
+@;Offshore Platform
+@PEDIAIMPROVE31
+All ocean squares in the city's radius
+produce one shield.
+
+@;Airport
+@PEDIAIMPROVE32
+City produces veteran air units.
+Any air unit spending its entire turn in the city
+is completely repaired.
+
+@;Police Station
+@PEDIAIMPROVE33
+Decreases unhappiness caused by troops away from city by 1.
+
+@;Port Facility
+@PEDIAIMPROVE34
+City produces veteran naval units.
+Any ship spending its entire turn in the city is
+completely repaired.
+
+@;SS Structural
+@PEDIAIMPROVE35
+
+@;SS Component
+@PEDIAIMPROVE36
+
+@;SS Module
+@PEDIAIMPROVE37
+
+@;Capitalization
+@PEDIAIMPROVE38
+Converts production into trade.
+
+@;Pyramids
+@PEDIAIMPROVE39
+Counts as a Granary in every one of your cities.
+
+@;Hanging Gardens
+@PEDIAIMPROVE40
+One extra happy citizen in every city.
+
+@;Colossus
+@PEDIAIMPROVE41
+City produces one extra trade arrow in each square that
+already produces one.
+
+@;Lighthouse
+@PEDIAIMPROVE42
+Triremes can move across oceans w/o danger, and all other
+types of ship have their movement rate increased by one.
+Also, all new ships you produce receive veteran status.
+
+@;Great Library
+@PEDIAIMPROVE43
+Civilization receives any civilization advance
+already discovered by two other civilizations.
+
+@;Oracle
+@PEDIAIMPROVE44
+Doubles the effect of all of your temples.
+
+@;Great Wall
+@PEDIAIMPROVE45
+Enemy civilizations must offer cease-fire/peace
+in negotiations.  Combat strength doubled against
+barbarians.
+
+@;Sun Tzu's War Academy
+@PEDIAIMPROVE46
+All new ground units produced gain Veteran status.
+Any unit which wins a combat gains Veteran status.
+
+@;King Richard's Crusade
+@PEDIAIMPROVE47
+Every square in the city's radius produces an extra
+resource "shield".
+
+@;Marco Polo's Embassy
+@PEDIAIMPROVE48
+You receive a free embassy with every rival Civilization (so
+your intelligence report will always be complete and you will
+receive updates when other civilizations discover technologies).
+
+@;Michelangelo's Chapel
+@PEDIAIMPROVE49
+Counts as a Cathedral in each of your cities.
+
+@;Copernicus' Observatory
+@PEDIAIMPROVE50
+Doubles science output of city.
+
+@;Magellan's Expedition
+@PEDIAIMPROVE51
+Movement rate of all ships is increased by two.
+
+@:Shakespeare's Theatre
+@PEDIAIMPROVE52
+All unhappy citizens in city are content.
+
+@;Da Vinci's Workshop
+@PEDIAIMPROVE53
+Whenever one of your units becomes obsolete because of a new
+technology you have discovered, it is immediately replaced
+by an equivalent modern unit.
+
+@;J.S. Bach's Cathedral
+@PEDIAIMPROVE54
+Decreases unhappy citizens on same continent by 2 per city.
+
+@;Isaac Newton's College
+@PEDIAIMPROVE55
+Increases science output of improvements in the city by 50%.
+
+@;Adam Smith's Trading Co.
+@PEDIAIMPROVE56
+Pays the maintenance for all city improvements which
+ordinarily cost 1 gold per turn.  City improvements
+requiring more than 1 gold per turn maintenance are not
+affected.
+
+@;Darwin's Voyage
+@PEDIAIMPROVE57
+Two free civilization advances.
+
+@;The Statue of Liberty
+@PEDIAIMPROVE58
+Eliminates the period of unrest between governments.
+Also allows any form of government to be chosen, even if
+the proper advance has not been discovered.
+
+@;The Eiffel Tower
+@PEDIAIMPROVE59
+When you first obtain control of the Eiffel Tower,
+Every civilization's attitude toward you is immediately shifted 25 points
+in your favor (on a hundred point scale).  Attitudes continue to improve
+gradually over time.  Other civilizations are also quicker to forget your
+past transgressions.
+
+@;Hoover Dam
+@PEDIAIMPROVE61
+Provides Hydro power to every city on every continent.
+
+@;Women's Suffrage
+@PEDIAIMPROVE60
+Counts as a Police Station in every one of your cities.
+(Decreases unhappiness caused by troops away from city by 1).
+
+@;Manhattan Project
+@PEDIAIMPROVE62
+Allows nuclear weapons to be built.
+
+@;United Nations
+@PEDIAIMPROVE63
+^* Free embassy with every other civilization.
+^* Enemy civ's cannot refuse your peace treaties.
+^* As a democracy, you can declare war 50% of the time
+^  (peacekeeping missions).
+
+@;Apollo Program
+@PEDIAIMPROVE64
+Allows construction of spaceship improvements.
+
+@;SETI Program
+@PEDIAIMPROVE65
+Counts as a research lab in every one of your cities; effectively
+doubles your science output.
+
+@;Cure for Cancer
+@PEDIAIMPROVE66
+One extra happy citizen in each city.
+
+@PEDIAGOVT
+@width=600
+@title=Civilization: Governments
+The form of government you choose for your civilization will
+affect the way resources are distributed in your cities, the
+rate at which your citizens can produce and sustain new units
+and city improvements, and the extent to which your citizens
+have a say in the way you govern them.
+^
+Some forms of government, such as Despotism, Monarchy, and
+later Communism and Fundamentalism, allow you to expand
+rapidly, to produce and sustain large numbers of military
+units, and to control your affairs completely.
+^
+Democracy and the Republic, on the other hand, give your
+citizens the freedom to produce vast amounts of trade, which
+increases your wealth and knowledge rapidly. On the other
+hand, your citizens may grow unhappy when you send military
+units out of your cities; also, your Senate may try to
+interfere in your conduct of foreign affairs.
+^
+To change your civilization's government, you must have a
+Revolution--select "Revolution" from the Kingdom Menu.  This
+will entail a brief period of Anarchy.
+
+@PEDIAGOVT0
+@width=600
+@title=Civilization Government: Anarchy
+Anarchy represents not so much a government type as the
+lack of any stable government. Anarchy occurs when your
+civilization's government falls, or when you decide to
+have a Revolution. After a few turns of Anarchy, you will
+be able to reconstitute your government.
+^
+Anarchy is similar to Despotism, except that the corruption
+rate is VERY HIGH (see entry for Despotism).  However, no
+taxes are collected during a period of Anarchy, and no
+scientific research is conducted.
+
+@PEDIAGOVT1
+@width=600
+@title=Civilization Government: Despotism
+^UNIT SUPPORT
+Each unit above the city size costs one shield per turn.
+Settlers eat one food per turn.
+^
+^HAPPINESS
+Up to three military units in each city will institute
+"martial law", converting an unhappy citizen into a content
+citizen.
+^
+^CORRUPTION AND WASTE
+Despotism has a HIGH rate of corruption and waste.  The
+level of corruption in a particular city is based on its
+distance from your capital.
+^
+^SPECIAL
+Under a Despotism, none of the science/tax/luxury rates may
+be set higher than 60%.  ALSO, ANY SQUARE WHICH WOULD ORDINARILY
+PRODUCE THREE OR MORE OF A RESOURCE (FOOD, SHIELDS, TRADE) PRODUCES
+ONE LESS.
+^
+^HINTS
+Because of Despotism's high rate of corruption, it is almost
+always an inferior form of government.  Try to switch to a
+Monarchy as soon as possible.
+
+
+@PEDIAGOVT2
+@width=600
+@title=Civilization Government: Monarchy
+^UNIT SUPPORT
+Each unit beyond the third costs one shield per turn.
+Settlers eat one food per turn.
+^
+^HAPPINESS
+Up to three military units in each city will institute
+"martial law", converting an unhappy citizen into a content
+citizen.
+^
+^CORRUPTION AND WASTE
+Monarchy has a MODERATE rate of corruption and waste.  The
+level of corruption in a particular city is based on its
+distance from your capital.
+^
+^SPECIAL
+Under a Monarchy, none of the science/tax/luxury rates may
+be set higher than 70%.
+^
+^HINTS
+Monarchy is an excellent form of government for a young
+civilization.
+
+
+@PEDIAGOVT3
+@width=600
+@title=Civilization Government: Communism
+^UNIT SUPPORT
+Each unit beyond the third costs one shield per turn.
+Settlers eat one food per turn.
+^
+^HAPPINESS
+Up to three military units in each city will institute
+"martial law", converting *TWO* unhappy citizens into
+content citizens (so a total of SIX unhappy citizens can
+be suppressed).
+^
+^CORRUPTION AND WASTE
+Under Communism, state control of the economy eliminates
+organized crime.  Your cities, therefore, experience no
+corruption.
+^
+^SPECIAL
+All SPY units produced under Communist governments are
+given VETERAN status.  Under Communism, none of the
+science/tax/luxury rates may be set higher than 80%.
+^
+^HINTS
+Communism is best for large, far-flung empires which need
+to maintain a large military.  Use your powerful spies to
+steal technology from the capitalist pigs.
+
+@PEDIAGOVT4
+@width=600
+@title=Civilization Government: Fundamentalism
+^UNIT SUPPORT
+Can support up to EIGHT units for free; additional
+units cost one shield each.  Settlers eat TWO
+food per turn.  ONLY Fundamentalisms may produce
+FANATIC units.
+^
+^HAPPINESS
+Under Fundamentalism, NO CITIZEN IS EVER UNHAPPY!
+^
+^CORRUPTION AND WASTE
+Fundamentalism has a LOW rate of corruption.
+However, Fundamentalism has the special disadvantage that
+all SCIENCE is HALVED.
+^
+^SPECIAL
+Improvements which convert unhappy citizens to
+content citizens (Temples, etc.)
+produce "tithes" equal to the number of citizens they would
+otherwise convert.  They also require no maintenance.
+The diplomatic penalties for "terrorist acts" committed by
+your Diplomats and Spies are reduced.
+Under Fundamentalism, none of the science/tax/luxury rates may
+be set higher than 80%.
+^
+^HINTS
+Fundamentalism eliminates all happiness problems and provides
+an excellent revenue.  Scientific research tends to languish.
+
+
+@PEDIAGOVT5
+@width=600
+@title=Civilization Government: Republic
+^UNIT SUPPORT
+Each unit costs one shield per turn.  Settlers eat TWO
+food per turn.
+^
+^HAPPINESS
+Each military unit AFTER THE FIRST which is not in a friendly
+city (or a fortress within 3 spaces of a friendly city)
+causes one citizen in its home city to become unhappy.
+^
+^CORRUPTION AND WASTE
+The Republic has a LOW rate of corruption and waste.  The
+level of corruption in a particular city is based on its
+distance from your capital.
+^
+^SPECIAL
+Under a Republic, each square which ordinarily produces at
+least one unit of trade produces an extra unit.
+None of the science/tax/luxury rates may be set higher
+than 80%.
+^
+^HINTS
+Switching to a Republic can give an astounding boost to your
+science and tax revenues, although you'll probably have to
+divert some of your trade to luxuries.  It becomes more
+difficult (and expensive) to keep an army in the field, but
+building the Womens Suffrage wonder can help with this
+problem.
+
+@PEDIAGOVT6
+@width=600
+@title=Civilization Government: Democracy
+^UNIT SUPPORT
+Each unit costs one shield per turn.  Settlers eat TWO
+food per turn.
+^
+^HAPPINESS
+Each unit which is not in a friendly
+city (or a fortress within 3 spaces of a friendly city)
+causes TWO citizens in its home city to become unhappy.
+^
+^CORRUPTION AND WASTE
+Democracies experience NO corruption or waste.
+^
+^SPECIAL
+Under a Democracy, each square which ordinarily produces at
+least one unit of trade produces an extra unit.
+The units and cities of a Democracy are immune to BRIBERY
+of all forms.
+The science/tax/luxury rates may be set to any level
+desired.
+^
+^HINTS
+Democracies can produce spectacular amounts of revenue and
+scientific research.  However, because of the severe
+happiness restrictions on military units, this form of
+government tends to be viable only for large, advanced
+civilizations.  Increasing your luxuries rate and building
+Wonders can help alleviate this problem.
+
+@;This line must remain at the end of this file!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

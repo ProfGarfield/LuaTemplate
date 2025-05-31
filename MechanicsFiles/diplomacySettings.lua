@@ -27,7 +27,7 @@ gen.versionFunctions(diplomacySettings,versionNumber,fileModified,"MechanicsFile
 -- treaties through negotiation.  However, if you want the default
 -- position to be that tribes can't change their treaties through
 -- negotiation, you can call the following function
--- diplomacy.disableEndogenousTreatyChangeByDefault(tribe1,tribe2)
+-- diplomacy.disableEndogenousTreatyChangesByDefault(tribe1,tribe2)
 -- You will have to call this function for each pair of tribes
 -- that you want to have this default position.
 -- p.s. The word endogenous means "from within" or "internal"
@@ -40,7 +40,7 @@ gen.versionFunctions(diplomacySettings,versionNumber,fileModified,"MechanicsFile
 --[[
 for tribe1ID=1,gen.c.maxTribeID do
     for tribe2ID = tribe1ID+1,gen.c.maxTribeID do
-        diplomacy.disableEndogenousTreatyChangeByDefault(tribe1ID,tribe2ID)
+        diplomacy.disableEndogenousTreatyChangesByDefault(tribe1ID,tribe2ID)
     end
 end
 --]]

@@ -38,6 +38,7 @@ local text = require("text")
 local simpleSettings = require("simpleSettings"):recommendedVersion(1)
 local combatModifiers = require("combatModifiers"):minVersion(1)
 local leaderBonus = require("leaderBonus"):minVersion(1)
+local configuration = require("configuration")
 
 
 
@@ -269,6 +270,9 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
         end
     end
     -- %Report Combat Strength%
+    if configuration.getSettingValue("displayCombatPower") and attacker.owner == civ.getCurrentTribe() then
+        text.simple("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.."\n^\n^Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
+    end
     --civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
             
     return coroutine.create(function()
