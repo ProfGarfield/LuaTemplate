@@ -1,5 +1,5 @@
 
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -10,7 +10,8 @@ local fileModified = false -- set this to true if you change this file for your 
 
 
 
-
+---@module "generalLibrary"
+---@diagnostic disable-next-line: undefined-field
 local gen = require("generalLibrary"):minVersion(1)
 local function optionalRequire(fileName)
     local fileFound,prefix = gen.requireIfAvailable(fileName)
@@ -26,7 +27,6 @@ local function optionalRequire(fileName)
 end
 local object = require("object")
 local keyboard = require("keyboard")
-local helpKeySettingsFound, helpKeySettings = gen.requireIfAvailable("helpKeySettings")
 --local helpKeySettings = optionalRequire("helpKeySettings")
 local munitionsSettingsFound, munitionsSettings = gen.requireIfAvailable("munitionsSettings")
 --local munitionsSettings = optionalRequire("munitionsSettings")
@@ -39,6 +39,8 @@ local textFound, text = gen.requireIfAvailable("text")
 --local text = optionalRequire("text")
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local configuration = require("configuration")
+local help = require("help")
+require("helpSettings")
 
 
 -- key press events can be registered here using the discreteEvents
@@ -48,54 +50,50 @@ local configuration = require("configuration")
 
 
 if textFound then
-    function discreteEvents.onKeyPress(keyCode)
+    discreteEvents.onKeyPress(function(keyCode)
         if keyCode == keyboard.one then
             text.openArchive()
         end
-    end
+    end)
 else
     print("WARNING: text.lua not found.  Archived messages not available with keypress 1")
 end
 
 if diplomacySettingsFound then
-    function discreteEvents.onKeyPress(keyCode)
+    discreteEvents.onKeyPress(function(keyCode)
         if keyCode == keyboard.two then
             diplomacySettings.diplomacyMenu()
         end
-    end
+    end)
 else
     print("WARNING: diplomacySettings.lua not found.  Gifting options not available with keypress 2")
 end
 
 if munitionsSettingsFound then
-    function discreteEvents.onKeyPress(keyCode)
+    discreteEvents.onKeyPress(function(keyCode)
         if keyCode == keyboard.k and civ.getActiveUnit() then
             munitionsSettings.primaryAttack(civ.getActiveUnit())
         end
-    end
-    function discreteEvents.onKeyPress(keyCode)
+    end)
+    discreteEvents.onKeyPress(function(keyCode)
         if keyCode == keyboard.u and civ.getActiveUnit() then
             munitionsSettings.secondaryAttack(civ.getActiveUnit())
         end
-    end
-    function discreteEvents.onKeyPress(keyCode)
+    end)
+    discreteEvents.onKeyPress(function(keyCode)
         if keyCode == keyboard.h and civ.getActiveUnit() then
             munitionsSettings.keyPressPayloadRestrictionCheck(civ.getActiveUnit())
         end
-    end
+    end)
 else
     print("WARNING: munitionsSettings.lua not found.  Keys k and u will not generate munitions")
 end
 
-if helpKeySettingsFound then
-    function discreteEvents.onKeyPress(keyCode)
-        if keyCode == keyboard.tab then
-            helpKeySettings.doHelpKey() 
-        end
+discreteEvents.onKeyPress(function (keyCode)
+    if keyCode == keyboard.tab then
+        help.onHelpKeyPress()
     end
-else
-    print("WARNING: helpKeySettings.lua not found.  Tab will not display help messages.")
-end
+end)
 
 if logSettingsFound then
     function discreteEvents.onKeyPress(keyCode)

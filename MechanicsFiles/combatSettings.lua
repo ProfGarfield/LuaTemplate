@@ -1,5 +1,5 @@
 --
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -30,6 +30,7 @@ local fileModified = false -- set this to true if you change this file for your 
 local register = {}
 local gen = require("generalLibrary"):minVersion(1)
 local landAirCargo = require("landAirCargo")
+local help         = require("help")
 gen.versionFunctions(register,versionNumber,fileModified,"MechanicsFiles".."\\".."combatSettings.lua")
 --
 local combatCalculator = require("combatCalculator"):recommendedVersion(2)
@@ -127,14 +128,15 @@ local function computeCombatStatistics(attacker, defender, isSneakAttack)
     
     local combatModifierOverride = {aCustomMult=1,dCustomMult=1}
     -- Modifier from rules files:
-    local aMult, dMult = rules.combatGroupCustomModifiers(attacker,defender)
+    --local aMult, dMult = rules.combatGroupCustomModifiers(attacker,defender)
+    local aMult, dMult = 1,1
     combatModifierOverride.aCustomMult = combatModifierOverride.aCustomMult*aMult
     combatModifierOverride.dCustomMult = combatModifierOverride.dCustomMult*dMult
     combatModifiers.applyRegisteredRules(attacker,defender,combatModifierOverride)
     dMult = landAirCargo.getDefenseModifier(defender)
     combatModifierOverride.dCustomMult = combatModifierOverride.dCustomMult*dMult
 
-
+ 
 
 	local attackerStrength, attackerFirepower, defenderStrength, defenderFirepower,
 		   attackerStrengthModifiersApplied, attackerFirepowerModifiersApplied, 
@@ -154,6 +156,7 @@ local function computeCombatStatistics(attacker, defender, isSneakAttack)
     return attackerStrength, attackerFirepower, defenderStrength, defenderFirepower
 end
 
+help.registerComputeCombatStatisticsFunction(computeCombatStatistics)
 
 -- this is useful for defenderValueModifier
 local function tileHasCarrierUnit(tile)
@@ -268,9 +271,8 @@ function register.onInitiateCombatMakeCoroutine(attacker,defender,attackerDie,at
         if attacker.owner.isHuman then
             text.simple("Our "..attacker.type.name.." unit can't fight the defending "..defender.type.name..".  The attack has been cancelled.","Defense Minister")
         end
-    end
     -- %Report Combat Strength%
-    if configuration.getSettingValue("displayCombatPower") and attacker.owner == civ.getCurrentTribe() then
+    elseif configuration.getSettingValue("displayCombatPower") and attacker.owner == civ.getPlayerTribe() then
         text.simple("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.."\n^\n^Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)
     end
     --civ.ui.text("Attacker: "..tostring(calculatedAttackerStrength/8).." FP:"..calculatedAttackerFirepower.." Defender: "..tostring(calculatedDefenderStrength/8).." FP:"..calculatedDefenderFirepower)

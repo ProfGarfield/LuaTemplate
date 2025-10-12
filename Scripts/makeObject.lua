@@ -327,6 +327,12 @@ fileOutput =
 --
 text.setImageTable(object,"object")-- The string "object" provides a name of the table for error messages.
 
+-- Uncomment the following line to register the units image.
+-- You can then use the function
+-- text.unitTypeImage(unitTypeOrID) --> imageObject | nil
+-- to get the image for a specific unit type.
+-- text.registerUnitsImage("units.bmp")
+
 
 -- Flag, Counter and Phrase Definitions
 -- Flags, counters, and phrases have to be defined somewhere,

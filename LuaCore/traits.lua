@@ -1,4 +1,4 @@
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -82,6 +82,31 @@ end
 local allowedTraits = {}
 local allowedTraitsSpecified = false
 
+--[[Traits created for use with the rules module
+and rules_lst.txt in particular.  These traits are
+automatically added to the list of allowed traits.]]
+traits.rulesLST = {}
+
+traits.rulesLST.combatGroups = {
+    [0] = "rulesCombatGroup0",
+    [1] = "rulesCombatGroup1",
+    [2] = "rulesCombatGroup2",
+    [3] = "rulesCombatGroup3",
+    [4] = "rulesCombatGroup4",
+    [5] = "rulesCombatGroup5",
+    [6] = "rulesCombatGroup6",
+    [7] = "rulesCombatGroup7",
+    [8] = "rulesCombatGroup8",
+    [9] = "rulesCombatGroup9",
+    [10] = "rulesCombatGroup10",
+    [11] = "rulesCombatGroup11",
+    [12] = "rulesCombatGroup12",
+    [13] = "rulesCombatGroup13",
+    [14] = "rulesCombatGroup14",
+    [15] = "rulesCombatGroup15",
+}
+
+
 local function allowedTraitsRun(functionName)
     if not allowedTraitsSpecified then
         error(functionName..": the function traits.allowedTraits must be executed before you can use this function.  If traits.allowedTraits isn't in this file, add a require line to this file for the file that traits.allowedTraits is executed in.  In the standard template, this should be\nrequire(\"setTraits\")")
@@ -97,6 +122,8 @@ function traits.allowedTraits(...)
         error("traits.allowedTraits: you can only run this function once during script initialization.")
     end
     local argList = {...}
+---@diagnostic disable-next-line: assign-type-mismatch
+    argList[#argList+1] = traits.rulesLST.combatGroups
     for __,arg in pairs(argList) do
         ---@type string|table
         local argTable = arg

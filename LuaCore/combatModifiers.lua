@@ -1,6 +1,6 @@
 local civilopedia = require "civilopedia"
 
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -198,6 +198,8 @@ local fileModified = false -- set this to true if you change this file for your 
 --  customCheck = nil or function(attacker,defender) --> boolean
 --      if nil, modifier applies if above specifications are valid
 --      if function, modifier applies if the function returns true, and false if it does not
+--      if attackerHelpActive is specified, customCheck(unit,nil) will be called, and the help text will be displayed if it returns true
+--      if defenderHelpActive is specified, customCheck(nil,unit) will be called, and the help text will be displayed if it returns true
 --
 --  combatSpec = combatSpec or nil
 --      the combatSpec to apply to combat if all the checks are true
@@ -839,7 +841,7 @@ helpLists)
     local function trackExtremeValues(key,val)
         -- no reason to track terrain values, if the defender isn't on that kind of terrain
         -- or if help a help message is being generated for the attacker
-        if type(key) == 'number' and (defender == nil) or (getTerrainIndex(defender.location.terrain) ~= key) then
+        if type(key) == 'number' and ((defender == nil) or (getTerrainIndex(defender.location.terrain) ~= key)) then
             return
         end
         if largestValue[key] == nil then
@@ -888,7 +890,9 @@ helpLists)
             -- if the defender is nil, then this is checking registered rules for a help message for the attacker
             -- since attackerHelpActive is nil, we don't need to calculate
             -- attacker bonuses for this combat modifier
-
+            if attackerValid(modTable,attacker) and modTable.attackerHelp then
+                attackerHelpList[#attackerHelpList+1] = modTable.attackerHelp
+            end
             return
         end
         local atkValid = attackerValid(modTable,attacker)
@@ -1021,124 +1025,5 @@ helpLists)
     end
 end
 
---[=[
-local function attackerCustomCheckTrue(unit,modTable)
-    if modTable.attackerHelpCustomCheck then
-        return modTable.attackerHelpCustomCheck(unit)
-    end
-    return true
-end
-local function defenderCustomCheckTrue(unit,modTable)
-    if modTable.defenderHelpCustomCheck then
-        return modTable.defenderHelpCustomCheck(unit)
-    end
-    return true
-end
-
-local function modifyHelpInfoTableAttacker(modTable,unit,helpInfoTable)
-    if not attackerValid(modTable,unit) then
-        -- in this situation, the modTable doesn't apply to the unit
-        -- (at least as an attacker)
-        return
-    end
-    if not anyDetailMatches(unit,modTable.attackerDetailItems,modTable.attackerDetailTraits) then
-        -- if modTable.attackerHelpInactive is nil, we don't need to add anything, but that is automatic
-        helpInfoTable.inactiveBonusMessages[#helpInfoTable.inactiveBonusMessages+1] = modTable.attackerHelpInactive
-        return
-    end
-    if not attackerCustomCheckTrue(unit,modTable) then
-        -- if modTable.attackerHelpInactive is nil, we don't need to add anything, but that is automatic
-        helpInfoTable.inactiveBonusMessages[#helpInfoTable.inactiveBonusMessages+1] = modTable.attackerHelpInactive
-        return
-    end
-
-    -- if we get here, the bonus is active (at least as far as the attacker is concerned)
-    if modTable.attackerHelpActive then
-        helpInfoTable.activeBonusMessages[#helpInfoTable.activeBonusMessages+1] = modTable.attackerHelpActive
-    end
-    if modTable.includeInStatEstimate then
-        if type(modTable.combatSpec.aCustomAdd) == "number" then
-            helpInfoTable.aCustomAddSum = helpInfoTable.aCustomAddSum + modTable.combatSpec.aCustomAdd
-        end
-        if type(modTable.combatSpec.aCustomMult) == "number" then
-            helpInfoTable.aCustomMultProduct = helpInfoTable.aCustomMultProduct * modTable.combatSpec.aCustomMult
-        end
-        if type(modTable.combatSpec.aAddFirepower) == "number" then
-            helpInfoTable.aAddFirepowerSum = helpInfoTable.aAddFirepowerSum + modTable.combatSpec.aAddFirepower
-        end
-    end
-    return
-end
-
-local function modifyHelpInfoTableDefender(modTable,unit,helpInfoTable)
-    print(unit.type.name,"open",modTable.defenderHelpActive,modTable.defenderHelpInactive)
-    if not defenderValid(modTable,unit) then
-        -- in this situation, the modTable doesn't apply to the unit
-        -- (at least as a defender)
-        return
-    end
-    if not anyDetailMatches(unit,modTable.defenderDetailItems,modTable.defenderDetailTraits) then
-        -- if modTable.defenderHelpInactive is nil, we don't need to add anything, but that is automatic
-        --print(unit.type.name,"not anyDetailMatches",modTable.defenderHelpActive,modTable.defenderHelpInactive)
-        helpInfoTable.inactiveBonusMessages[#helpInfoTable.inactiveBonusMessages+1] = modTable.defenderHelpInactive
-        return
-    end
-    if not defenderCustomCheckTrue(unit,modTable) then
-        -- if modTable.defenderHelpInactive is nil, we don't need to add anything, but that is automatic
-        --print(unit.type.name,"not defenderCustomCheckTrue")
-        helpInfoTable.inactiveBonusMessages[#helpInfoTable.inactiveBonusMessages+1] = modTable.defenderHelpInactive
-        return
-    end
-    -- if we get here, the bonus is active (at least as far as the defender is concerned)
-    if modTable.defenderHelpActive then
-        helpInfoTable.activeBonusMessages[#helpInfoTable.activeBonusMessages+1] = modTable.defenderHelpActive
-    end
-    if modTable.includeInStatEstimate then
-        if type(modTable.combatSpec.dCustomAdd) == "number" then
-            helpInfoTable.dCustomAddSum = helpInfoTable.dCustomAddSum + modTable.combatSpec.dCustomAdd
-        end
-        if type(modTable.combatSpec.dCustomMult) == "number" then
-            helpInfoTable.dCustomMultProduct = helpInfoTable.dCustomMultProduct * modTable.combatSpec.dCustomMult
-        end
-        if type(modTable.combatSpec.dAddFirepower) == "number" then
-            helpInfoTable.dAddFirepowerSum = helpInfoTable.dAddFirepowerSum + modTable.combatSpec.dAddFirepower
-        end
-        if type(modTable.combatSpec[getTerrainIndex(unit.location.terrain)]) == "number" then
-            helpInfoTable.lowTerrainMult = helpInfoTable.lowTerrainMult or 10000
-            helpInfoTable.highTerrainMult = helpInfoTable.highTerrainMult or -1
-            helpInfoTable.lowTerrainMult = math.min(helpInfoTable.lowTerrainMult,modTable.combatSpec[getTerrainIndex(unit.location.terrain)])
-            helpInfoTable.highTerrainMult = math.max(helpInfoTable.highTerrainMult,modTable.combatSpec[getTerrainIndex(unit.location.terrain)])
-        end
-    end
-    return
-end
-
-
---[[
-Determines which of the combat specifications apply to the
-unit, and returns descriptions of the bonuses that apply
-and whether they are active or inactive.
-Also computes modified combat statistics based on some of the
-bonuses.
-]]
----@param unit unitObject
----@return table helpInfoTable # a table with the following keys: activeBonusMessages, inactiveBonusMessages, aCustomAddSum, dCustomAddSum, aCustomMultProduct, dCustomMultProduct, aAddFirepowerSum, dAddFirepowerSum
-function combatMod.bonusHelp(unit)
-    local helpInfoTable = {}
-    helpInfoTable.activeBonusMessages = {}
-    helpInfoTable.inactiveBonusMessages = {}
-    helpInfoTable.aCustomAddSum = 0
-    helpInfoTable.dCustomAddSum = 0
-    helpInfoTable.aCustomMultProduct = 1
-    helpInfoTable.dCustomMultProduct = 1
-    helpInfoTable.aAddFirepowerSum = 0
-    helpInfoTable.dAddFirepowerSum = 0
-    for _,modTable in pairs(combatModifierTable) do
-        modifyHelpInfoTableAttacker(modTable,unit,helpInfoTable)
-        modifyHelpInfoTableDefender(modTable,unit,helpInfoTable)
-    end
-    return helpInfoTable
-end
---]=]
 
 return combatMod

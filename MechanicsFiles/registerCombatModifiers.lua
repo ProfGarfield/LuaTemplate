@@ -45,7 +45,7 @@ local gen = require("generalLibrary"):minVersion(1)
 --      if traitString, the modifier applies if the attacker has the trait
 --      if unitType, the modifier applies if the attacker is of that unitType
 --      if table, any trait or unitType is allowed
---  attackerDetail = nil or traitString or baseTerrain, or terrain, or cityImprovement, or tribe, or wonder, or unitType or table of these
+--  attackerDetail = nil or traitString or baseTerrain, or terrain, or cityImprovement, or tribe, or wonder, or table of these
 --      if nil, modifier applies to all attackers
 --      if terrain/baseTerrain, modifier applies if the attacker is on that kind of tile
 --      if cityImprovement, modifier applies if the attacker is on a city tile, and the city has that improvement
@@ -54,7 +54,7 @@ local gen = require("generalLibrary"):minVersion(1)
 --      if tech, modifier applies if the attacker has that tech
 --      if wonder, modifier applies if the wonder is owned by the tribe as long as it is not expired
 --      if unitType, modifier applies if the tile is shared with a unit of this type
---      if traitString, the modifer applies if the terrain, baseTerrain, tribe, owned Tech, owned wonder, any city improvement, or any unit (other than the defender) on tile has that trait
+--      if traitString, the modifer applies if the terrain, baseTerrain, tribe, owned Tech, owned wonder, any city improvement, or any unit on tile has that trait
 --          NOTE: if the trait is for a wonder, it applies even if the wonder is expired
 --          (You can use a conditional trait to get around that.)
 --      if table, any entry is valid
@@ -63,33 +63,73 @@ local gen = require("generalLibrary"):minVersion(1)
 --      if traitString, the modifier applies if the defender has the trait
 --      if unitType, the modifier applies if the defender is of that unitType
 --      if table, any trait or unitType is allowed
---  defenderDetail = nil or traitString or baseTerrain, or terrain, tribe, or cityImprovement, or unitType or table of these
+--  defenderDetail = nil or traitString or baseTerrain, or terrain, tribe, or cityImprovement or table of these
 --      if nil, modifier applies to all defenders
 --      if terrain/baseTerrain, modifier applies if the defender is on that kind of tile
 --      if cityImprovement, modifier applies if the defender is on a city tile, and the city has that improvement
 --          (or, has a non-expired wonder providing that improvement)
 --      if tribe, modifier applies if the defender is of that particular tribe
 --      if tech, modifier applies if the defender has that tech
+--      if wonder, modifier applies if the tribe owns that wonder as long as it is not expired
 --      if unitType, modifier applies if the tile is shared with a unit of this type
---      if wonder, modifier applies if the wonder is owned by the tribe and is not expired
---      if traitString, the modifer applies if the terrain, baseTerrain, tribe, owned Tech, owned wonder, any city improvement, or any unit (other than the defender) on tile has that trait
+--      if traitString, the modifer applies if the terrain, baseTerrain, tribe, owned Tech, owned wonder, any city improvement, or any unit on tile has that trait
 --          NOTE: if the trait is for a wonder, it applies even if the wonder is expired
 --          (You can use a conditional trait to get around that.)
 --      if table, any entry is valid
 --  customCheck = nil or function(attacker,defender) --> boolean
 --      if nil, modifier applies if above specifications are valid
 --      if function, modifier applies if the function returns true, and false if it does not
+--      if attackerHelpActive is specified, customCheck(unit,nil) will be called, and the help text will be displayed if it returns true
+--      if defenderHelpActive is specified, customCheck(nil,unit) will be called, and the help text will be displayed if it returns true
 --
---  combatSpec = combatSpec or nil (defined below)
+--  combatSpec = combatSpec or nil
 --      the combatSpec to apply to combat if all the checks are true
 --      if nil, it counts as an empty table
---      Note: if a regular table is provided here, the function combatMod.newCombatModifier will 
---      automatically convert it to a combatSpec (assuming it meets the requirements)
 --      
---  combatSpecKey = combatSpecValue or nil (combatSpec valid keys defined below)
+--  combatSpecKey = combatSpecValue
 --      adds combatSpeck key and value specified to the combatSpec provided, overriding
 --      the value for the key if applicable
+--  attackerPedia = string or nil
+--      if string, add this text to the attacker unit type(s)
+--      describe.txt entry created by civilopedia.lua
+--  defenderPedia = string or nil
+--      if string, add this text to the defender unit type(s)
+--      describe.txt entry created by civilopedia.lua
+--  attackerHelp = string or nil
+--      if string, add this text to the attacker unit type(s)
+--      help entry created by help.lua
+--  attackerHelpActive = string or nil
+--      if string, help.lua will attempt to check if this combat
+--      modifier is active, and if so, add this text to the unit's
+--      help entry generated by help.lua, instead of the text
+--      provided by the attackerHelp field.
+--      However, all functions of the form function(attacker,defender)
+--      supplied in this combatModifier must be callable with the
+--      nil as the argument for the 'defender' parameter.
+--      Code will check if the attackerDetail is satisfied, and check
+--      if customCheck(unit,nil) is true to see if this message should be 
+--      displayed.  
+--      Any functions provided as values for a combatSpec key 
+--      will be called with the attacker as the first argument, and nil
+--      as the second argument.
 
+--  defenderHelp = string or nil
+--      if string, add this text to the defender unit type(s)
+--      Help entry created by help.lua
+--  defenderHelpActive = string or nil
+--      if string, help.lua will attempt to check if this combat
+--      modifier is active, and if so, add this text to the unit's
+--      help entry generated by help.lua, instead of the text
+--      provided by the defenderHelp field.
+--      However, all functions of the form function(attacker,defender)
+--      supplied in this combatModifier must be callable with
+--      nil as the argument for the 'attacker' parameter.
+--      Code will check if the defenderDetail is satisfied, and check
+--      if customCheck(nil,unit) is true to see if this message should be
+--      displayed.
+--      Any functions provided as values for a combatSpec key
+--      will be called with nil as the first argument, and the defender
+--      as the second argument.
 
 
 
@@ -276,6 +316,7 @@ traits.assign({gen.original.wCopernicusObservatory, gen.original.wIsaacNewtonsCo
 --
 --
 --
+--[=[
 -- air units get an attack bonus against ancient units
 combatMod.registerCombatModificationRule({
     attacker = {gen.original.uFighter, gen.original.uStlthBmbr, gen.original.uStlthFtr, gen.original.uBomber, gen.original.uHelicopter},
@@ -338,16 +379,16 @@ combatMod.registerCombatModificationRule({
 -- 'siege engines' (catapult, cannon, artillery) reduce
 -- the effectiveness of fortifications when attacking
 combatMod.registerCombatModificationRule({
-    attacker = "siege engine",
+    attacker = "siegeEngine",
     dCityWalls = 2,
     dFortress = 1.5,
     dFortified = 1.25,
     attackerHelp = "Reduces the effectiveness of enemy fortifications.",
-    attackerHelpActive = "Reduced the effectiveness of enemy fortifications.",
+    attackerHelpActive = "Reduces the effectiveness of enemy fortifications.",
 })
 -- fanatics and siege engines are particularly good at defending fortified positions
 combatMod.registerCombatModificationRule({
-    defender = {"siege engine", gen.original.uFanatics},
+    defender = {"siegeEngine", gen.original.uFanatics},
     combatSpec = {
         dCityWalls = 4.5,
         dFortress = 3,
@@ -358,8 +399,8 @@ combatMod.registerCombatModificationRule({
 
 -- siege engines defend with their attack value against other siege engines
 combatMod.registerCombatModificationRule({
-    attacker = "siege engine",
-    defender = "siege engine",
+    attacker = "siegeEngine",
+    defender = "siegeEngine",
     combatSpec = {
         dCustomAdd = function(attacker,defender) return defender.type.attack - defender.type.defense end,
     },
@@ -396,9 +437,9 @@ combatMod.registerCombatModificationRule({
 -- tanks get a bonus when the defender is not veteran
 combatMod.registerCombatModificationRule({
     attacker = gen.original.uArmor,
-    customCheck = function(attacker,defender)
-        return not defender.veteran
-    end,
+    --customCheck = function(attacker,defender)
+    --    return not defender.veteran
+    --end,
     aCustomMult = 1.25,
 })
 
@@ -406,11 +447,11 @@ combatMod.registerCombatModificationRule({
 -- (Note: this will apply regardless of whether the wonder is expired,
 -- unless the trait is conditional on the wonder not being expired)
 combatMod.registerCombatModificationRule({
-    attackerDetail = "science wonder",
+    attackerDetail = "scienceWonder",
     aCustomMult = 1.1,
 })
 combatMod.registerCombatModificationRule({
-    defenderDetail = "science wonder",
+    defenderDetail = "scienceWonder",
     dCustomMult = 1.1,
 })
 -- tribes with an unexpired happiness wonder get 20% combat bonus
@@ -425,7 +466,7 @@ combatMod.registerCombatModificationRule({
 })
 
 
---]]
+--]=]
 
 
 

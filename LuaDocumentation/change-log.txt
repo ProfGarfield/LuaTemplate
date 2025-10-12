@@ -144,6 +144,14 @@ changeRules can accept "no" as tech triggering expiry
 
 text.menu: menu pages now always produce at least 3 options, even if line counting would suggest less.
 
+
+created new help module, replacing helpKey.lua
+
+fixed bug in gen.moveUnitAdjacent, where land units could be placed at sea
+with the default placement function
+
+last update
+
 todo
 
 

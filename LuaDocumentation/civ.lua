@@ -206,6 +206,7 @@ local tileObject = {}
 ---A unit object is a data type provided by the Test of Time Patch Project Lua Interpreter. It represents a unit in the game, and provides a means of interacting with it. This should not be confused with the unit type object.
 ---[Lua Function Reference](https://forums.civfanatics.com/threads/totpp-lua-function-reference.557527/#unit)
 ---@class unitObject
+---@field attackSpent integer (get/set) Returns the number of attacks spent by the unit (from the 'Attacks per turn' patch).
 ---@field attributes bitmask (get/set) Returns the attributes of the unit (bitmask).
 ---@field carriedBy unitObject|nil (get/set) Returns the carrying unit if this unit is currently on board, `nil` otherwise.
 ---@field damage integer (get/set) Returns the damage taken by the unit in hitpoints.
@@ -237,6 +238,7 @@ function unitObject:teleport(tile) end
 ---@class unitTypeObject
 ---@field advancedFlags bitmask (get/set - ephemeral) Returns the 'advanced flags' settings of the unit type (bitmask).
 ---@field attack integer (get/set - ephemeral) Returns the attack factor of the unit type.
+---@field attacksPerTurn integer (get/set - ephemeral) Returns the number of attacks available per turn of the unit type (from the 'Attacks per turn' patch).
 ---@field buildTransport bitmask (get/set) Returns the 'build transport site' settings of the unit type (bitmask).
 ---@field cost integer (get/set - ephemeral) Returns the cost of the unit type.
 ---@field defense integer (get/set - ephemeral) Returns the defense factor of the unit type.

@@ -1,6 +1,6 @@
 
 
-local versionNumber = 4
+local versionNumber = 5
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -327,13 +327,16 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 	local attackerFirepower = -1
 	if attacker then
 		attackerStrength = attacker.type.attack
+		local zeroAttack = attackerStrength == 0
     	-- custom addition to attack strength
     	if combatModifierOverride.aCustomAdd then
     	    attackerStrength = attackerStrength + combatModifierOverride.aCustomAdd
     	    attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."attackerCustomAdd "..tostring(combatModifierOverride.aCustomAdd).." to get "..tostring(attackerStrength)..", "
     	    if attackerStrength < 1 then
-    	        attackerStrength = 1
-    	        attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."applyMinAttackStrength = 1, "
+				if not zeroAttack then
+    	        	attackerStrength = 1
+    	        	attackerStrengthModifiersApplied = attackerStrengthModifiersApplied.."applyMinAttackStrength = 1, "
+    	        end
     	    end
     	end
     	attackerStrength = attackerStrength * combatModifier.aConstant
@@ -596,7 +599,6 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 	end
 	-- 12. Terrain:
 	if defender then
-		print(defender.type.name  .. defenderStrength,combatModifier.dTerrainDefenseValue)
 		if defender.type.domain == domain.ground or
 		   --(defender.type.domain == domain.air and cosmic2.TerrainDefenseForAir ~= 0) or
 		   --(defender.type.domain == domain.sea and cosmic2.TerrainDefenseForSea ~= 0) then
@@ -624,7 +626,6 @@ local function getCombatValues (attacker, defender, isSneakAttack,combatModifier
 			end
 			defenderStrengthModifiersApplied = defenderStrengthModifiersApplied .. " x" .. terrainFactor .. ", "
 		end
-		print("defenderStrength: " .. defenderStrength)
 	end
 	-- 13. Barbarian defender:
 	if defender then

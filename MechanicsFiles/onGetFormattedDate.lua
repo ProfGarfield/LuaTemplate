@@ -43,7 +43,12 @@ function register.onGetFormattedDate(turn,defaultDateString)
         return "Testing Turn "..turn
     end
     if civ.getCurrentTribe().isHuman and civ.getActiveUnit() and configuration.getSettingValue("useDateTooltip") and not civ.getOpenCity() then
-        return help.dateTooltip(civ.getActiveUnit())
+        -- Second argument is what to show if the tooltip fails
+        -- e.g. if events delete the active unit.  Here I prepend * before
+        -- the defaultDateString so it is obvious that the tooltip failed
+        -- (Although in in the case of deleted unit, a new date will be 
+        -- requested before the tooltip can be read by a human)
+        return help.dateTooltip(civ.getActiveUnit(),"*"..defaultDateString)
     else
         return defaultDateString
     end
