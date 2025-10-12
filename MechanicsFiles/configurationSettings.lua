@@ -1,4 +1,4 @@
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -48,7 +48,6 @@ configuration.defineSetting({
 })
 -- Note that valueNames is omitted in this example.  The default valueNames are the values converted to strings.
 
--- Another Example:
 configuration.defineSetting({
     name = "displayCombatPower",
     nameInMenu = "Display Combat Power",
@@ -57,7 +56,17 @@ configuration.defineSetting({
     valueNames = {"On","Off"},
     defaultIndex = 2,
 })
---]]
+
+configuration.defineSetting({
+    name = "useDateTooltip",
+    nameInMenu = "Replace Date With Tooltip",
+    placement = 1,
+    values = {false,"baseStats","adjustedStats","bothStats"},
+    valueNames = {"Off","Base Combat Statistics","Adjusted Combat Statistics","Both Base and Adjusted Combat Statistics"},
+    defaultIndex = 1,
+})
+
+
 
 -- The Scenario Designer can access the values of the settings by calling
 -- configuration.getSettingValue(settingName,tribeID)

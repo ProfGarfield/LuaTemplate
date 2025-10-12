@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -803,11 +803,139 @@ local function makeIsFlag(capitalisedFlagName)
     return isThisFlag
 end
 
+--These functions correspond to the values in the table unitTypeFlagListAliases
+
+---Returns true if the unit is given the Can Cross Impassable Terrain
+---flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isCanCrossImpassableTerrain(unit,customisation) end
+
+customCosmic.isCanCrossImpassableTerrain = makeIsFlag("CanCrossImpassableTerrain")
+
+---Returns true if the unit can found cities when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isCanFoundCities(unit,customisation) end
+
+customCosmic.isCanFoundCities = makeIsFlag("CanFoundCities")
+
+---Returns true if the unit can improve tiles when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isCanImproveTiles(unit,customisation) end
+
+customCosmic.isCanImproveTiles = makeIsFlag("CanImproveTiles")
+
+---Returns true if the unit is given the See Two Spaces flag
+---when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isSeeTwoSpaces(unit,customisation) end
+
+customCosmic.isSeeTwoSpaces = makeIsFlag("SeeTwoSpaces")
+
+---Returns true if the unit is given the ignore ZOC flag when
+---active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isIgnoreZOC(unit,customisation) end
+
+customCosmic.isIgnoreZOC = makeIsFlag("IgnoreZOC")
+
+---Returns true if the unit is given the Amphibious flag when
+---active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isAmphibious(unit,customisation) end
+
+customCosmic.isAmphibious = makeIsFlag("Amphibious")
+
+---Returns true if the unit is given the Coastal flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isCoastal(unit,customisation) end
+
+customCosmic.isCoastal = makeIsFlag("Coastal")
+
+---Returns true if the unit is given the Ignore City Walls flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isIgnoreWalls(unit,customisation) end
+
+customCosmic.isIgnoreWalls = makeIsFlag("IgnoreWalls")
+
+---Returns true if the unit is given the can carry air flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isCarryAir(unit,customisation) end
+
+customCosmic.isCarryAir = makeIsFlag("CarryAir")
+
+---Returns true if the unit is given the Paradrop flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isParadrop(unit,customisation) end
+
+customCosmic.isParadrop = makeIsFlag("Paradrop")
+
+---Returns true if the unit is given the alpine flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isAlpine(unit,customisation) end
+
+customCosmic.isAlpine = makeIsFlag("Alpine")
+
+---Returns true if the unit is given the Destroyed After Attacking flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isDestroyedAfterAttacking(unit,customisation) end
+
+customCosmic.isDestroyedAfterAttacking = makeIsFlag("DestroyedAfterAttacking")
+
+---Returns true if the unit is given the Spot Submarines flag when active, and false otherwise.
+---@param unit unitObject
+---@param customisation? table If provided, the function doesn't look up customCosmic.getUnitTypeCustomisation(unit) 
+---@return boolean
+---@diagnostic disable-next-line: duplicate-set-field, missing-return
+function customCosmic.isSpotSubmarines(unit,customisation) end
+
+customCosmic.isSpotSubmarines = makeIsFlag("SpotSubmarines")
+
+
+
+
+
 local unitFlagCheckList = {}
 local unitFlagGiveList = {}
 local unitFlagRemoveList = {}
 for _,capitalisedFlagName in pairs(unitTypeFlagListAliases) do
-    customCosmic["is"..capitalisedFlagName] = makeIsFlag(capitalisedFlagName)
+    -- done above outside loop for documentation
+    --customCosmic["is"..capitalisedFlagName] = makeIsFlag(capitalisedFlagName)
     unitFlagCheckList[capitalisedFlagName] = customCosmic["is"..capitalisedFlagName] 
     unitFlagGiveList[capitalisedFlagName] = gen["give"..capitalisedFlagName]
     unitFlagRemoveList[capitalisedFlagName] = gen["remove"..capitalisedFlagName]
@@ -1086,8 +1214,19 @@ function customCosmic.changeEphemeralForUnit(unit)
     unit.type.move = customCosmic.computeMovementAllowance(unit, customisation)
 end
 
-
-
+--[[Returns true if the unit has the see two spaces flag under the
+current conditions, and false otherwise.]]
+---@param unit unitObject
+---@param customisation? table # If not defined, customCosmic.getUnitTypeCustomisation is called to retrieve it.
+---@param defaultTypeRules? table # If not defined, changeRules.authoritativeDefaultRules[unit.type] is used.
+---@return boolean
+function customCosmic.isSeeTwoSpaces(unit,customisation)
+    if customCosmicDisabled then
+        return gen.isSeeTwoSpaces(unit.type)
+    end
+    customisation = customisation or customCosmic.getUnitTypeCustomisation(unit)
+    return customisation and customisation.seeTwoSpaces or changeRules.authriatativeDefaultRules[unit.type]
+end
 
 
 
@@ -2424,6 +2563,56 @@ function customCosmic.getCustomisedTerrainInfo(tile,city)
     terrainEquiv.shields = math.max(0,(s(c.shields) or default.shields)+(s(c.shieldsModifier) or 0))
     terrainEquiv.trade = math.max(0,(s(c.trade) or default.trade)+(s(c.tradeModifier) or 0))
     return baseTerrainEquiv, terrainEquiv, totppRoadTradeEquiv
+end
+
+--[[Returns true if the unit does not require support under fundamentalism, and false otherwise.]]
+---@param unit unitObject
+---@return boolean
+function customCosmic.isFreeSupportUnderFundamentalism(unit)
+    if customCosmicDisabled then
+        return gen.isFreeSupportUnderFundamentalism(unit.type)
+    end
+    local tribe = unit.owner
+    local customisation = getTribeCustomisation(tribe)
+    local c = customisation[unit.type] or {}
+    local supVal = c.freeSupportUnderFundamentalism
+    if type(supVal) == "boolean" then
+        return supVal
+    elseif type(supVal) == "function" then
+        local val = supVal(tribe)
+        if type(val) == "boolean" then
+            return val
+        else
+            error("customCosmic.isFreeSupportUnderFundamentalism: the freeSupportUnderFundamentalism key for unit type "..tostring(unit.type).." in the customisation for tribe "..tostring(tribe).." returned a non-boolean value.  Received: "..tostring(val))
+        end
+    else
+        return gen.isFreeSupportUnderFundamentalism(changeRules.authoritativeDefaultRules[unit.type])
+    end
+end
+
+--[[Returns true if the unit requires food support, and false otherwise.]]
+---@param unit unitObject
+---@return boolean
+function customCosmic.isRequiresFoodSupport(unit)
+    if customCosmicDisabled then
+        return gen.isRequiresFoodSupport(unit.type)
+    end
+    local tribe = unit.owner
+    local customisation = getTribeCustomisation(tribe)
+    local c = customisation[unit.type] or {}
+    local foodVal = c.requiresFoodSupport
+    if type(foodVal) == "boolean" then
+        return foodVal
+    elseif type(foodVal) == "function" then
+        local val = foodVal(tribe)
+        if type(val) == "boolean" then
+            return val
+        else
+            error("customCosmic.requiresFoodSupport: the requiresFoodSupport key for unit type "..tostring(unit.type).." in the customisation for tribe "..tostring(tribe).." returned a non-boolean value.  Received: "..tostring(val))
+        end
+    else
+        return gen.isRequiresFoodSupport(changeRules.authoritativeDefaultRules[unit.type])
+    end
 end
 
 --rawset(_G,"cc",customCosmic)

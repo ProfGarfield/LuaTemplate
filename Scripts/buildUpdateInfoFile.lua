@@ -34,8 +34,8 @@ local files = {
     ["discreteEventsRegistrar"] = false,
     ["flag"] = false,
     ["functions"] = true,
-    ["generalLibrary"] = 10,
-    ["helpkey"] = false,
+    ["generalLibrary"] = 14,
+    --["helpkey"] = false,
     ["legacyEventBuilder"] = false,
     ["legacyEventEngine"] = false,
     ["log"] = false,
@@ -57,7 +57,7 @@ local files = {
     ["canBuildSettings"] = false,
     ["combatSettings"] = 2,
     ["diplomacySettings"] = false,
-    ["helpKeySettings"] = false,
+    --["helpKeySettings"] = false,
     ["keyPressSettings"] = false,
     ["logSettings"] = false,
     ["munitionsSettings"] = false,
@@ -93,7 +93,10 @@ local files = {
     ["baseTerrainData"] = false,
     ["techData"] = false,
     ["tribeData"] = false,
+    ["help"] = false,
+    ["helpSettings"] = false,
 }
+
 
 local outputString = [==[
 

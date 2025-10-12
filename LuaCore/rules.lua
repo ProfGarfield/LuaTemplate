@@ -1,5 +1,5 @@
 --
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -16,12 +16,16 @@ local text = require("text")
 local civilopedia = require("civilopedia"):minVersion(1)
 local discreteEvents = require("discreteEventsRegistrar"):minVersion(1)
 local keyboard = require("keyboard")
+---@module "traits"
+local traits   = require("traits"):minVersion(5)
 
 local readFromFile = "rules_lst.txt"
 local rulesTable = readRules.readRules(gen.getScenarioDirectory().."\\"..readFromFile,true)
 local rules = {}
 gen.versionFunctions(rules,versionNumber,fileModified,"LuaCore".."\\".."rules.lua")
 local originalRules = readRules.loadedRules
+---@module "combatModifiers"
+local combatMod = require("combatModifiers"):minVersion(3)
 
 local function paddString(str,characters)
     while string.len(str) < characters do
@@ -29,6 +33,8 @@ local function paddString(str,characters)
     end
     return str
 end
+
+local numberOfGroups = 16
 
 
 
@@ -122,8 +128,68 @@ for i=0,numberOfCombatGroups-1 do
     registeredCombatGroupNames[i] = (rulesTable[luaCombatGroupNamesSection] and rulesTable[luaCombatGroupNamesSection][i][0]) or ("Combat Group "..i)
 end
 
+local function assignTraits(unitType,maskString,traitList,numberOfGroups)
+    for i=0,numberOfGroups-1 do
+        if string.sub(maskString,-(i+1),-(i+1)) == "1" then
+            traits.assign(unitType,traitList[i])
+        elseif string.sub(maskString,-(i+1),-(i+1)) ~= "0" then
+            error("rules: "..luaCombatGroupsSection.." column B should have "..numberOfGroups.." 1s and 0s.  "..unitType.name.." row doesn't match that specification.  Received: "..maskString)
+        end
+    end
+end
 
+if rulesTable[luaCombatGroupsSection] then
+    checkNames(luaCombatGroupsSection)
+    for unitTypeID=0,civ.cosmic.numberOfUnitTypes-1 do
+        local membershipMask = rulesTable[luaCombatGroupsSection][unitTypeID][1]
+        local unitType = civ.getUnitType(unitTypeID) --[[@as unitTypeObject]]
+        assignTraits(unitType,membershipMask,traits.rulesLST.combatGroups,numberOfGroups)
+        local increment = tonumber(rulesTable[luaCombatGroupsSection][unitTypeID][2])
+        increment = increment/100 -- the received increment is a % value
+        -- go through 16 possible attack modifiers
+        local attackModifierMask = rulesTable[luaCombatGroupsSection][unitTypeID][3]
+        for groupNumber=0,numberOfCombatGroups-1 do
+            local attackModifier = string.sub(attackModifierMask,-(groupNumber+1),-(groupNumber+1))
+            if attackModifier == "*" then
+                -- no change
+            elseif type(tonumber(attackModifier)) == "number" then
+                local modifierValue = increment*tonumber(attackModifier)
+                local combatModRule = {
+                    attacker = unitType,
+                    defender = traits.rulesLST.combatGroups[groupNumber],
+                    aCustomMult = modifierValue,
+                    attackerHelp = "x"..modifierValue.." Attack vs. "..registeredCombatGroupNames[groupNumber],
+                    attackerPedia = "x"..modifierValue.." Attack vs. "..registeredCombatGroupNames[groupNumber],
+                }
+                combatMod.registerCombatModificationRule(combatModRule)
+            else
+                error("rules: "..luaCombatGroupsSection.." column D should have "..numberOfCombatGroups.." * or digits 0-9.  "..rulesTable[luaCombatGroupsSection][groupNumber][0].." row doesn't match that specification.  Received: "..attackModifierMask)
+            end
+        end
+        -- go through 16 possible defence modifiers
+        local defenceModifierMask = rulesTable[luaCombatGroupsSection][unitTypeID][4]
+        for groupNumber=0,numberOfCombatGroups-1 do
+            local defenceModifier = string.sub(defenceModifierMask,-(groupNumber+1),-(groupNumber+1))
+            if defenceModifier == "*" then
+                -- no change
+            elseif type(tonumber(defenceModifier)) == "number" then
+                local modifierValue = increment*tonumber(defenceModifier)
+                local combatModRule = {
+                    attacker = traits.rulesLST.combatGroups[groupNumber],
+                    defender = unitType,
+                    dCustomMult = modifierValue,
+                    defenderHelp = "x"..modifierValue.." Defense vs. "..registeredCombatGroupNames[groupNumber],
+                    defenderPedia = "x"..modifierValue.." Defense vs. "..registeredCombatGroupNames[groupNumber],
+                }
+                combatMod.registerCombatModificationRule(combatModRule)
+            else
+                error("rules: "..luaCombatGroupsSection.." column E should have "..numberOfCombatGroups.." * or digits 0-9.  "..rulesTable[luaCombatGroupsSection][groupNumber][0].." row doesn't match that specification.  Received: "..defenceModifierMask)
+            end
+        end
+    end
+end
 
+--[==[
 if rulesTable[luaCombatGroupsSection] then
     checkNames(luaCombatGroupsSection)
 
@@ -204,6 +270,7 @@ else
     end
 
 end
+--]==]
 
 local function makeGenerateSectionWithUnits(preamble,sectionName,MakeBForward)
     return function()

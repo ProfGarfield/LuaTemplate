@@ -1,7 +1,7 @@
 -- this file can be deleted if it is not necessary
 --
 --
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -10,7 +10,8 @@ local fileModified = false -- set this to true if you change this file for your 
 --
 --
 --
-
+local configuration = require("configuration")
+local help = require("help")
 
 local register = {}
 
@@ -40,6 +41,16 @@ function register.onGetFormattedDate(turn,defaultDateString)
     if _global.eventTesting then
         --print(turn,civ.getTurn())
         return "Testing Turn "..turn
+    end
+    if civ.getCurrentTribe().isHuman and civ.getActiveUnit() and configuration.getSettingValue("useDateTooltip") and not civ.getOpenCity() then
+        -- Second argument is what to show if the tooltip fails
+        -- e.g. if events delete the active unit.  Here I prepend * before
+        -- the defaultDateString so it is obvious that the tooltip failed
+        -- (Although in in the case of deleted unit, a new date will be 
+        -- requested before the tooltip can be read by a human)
+        return help.dateTooltip(civ.getActiveUnit(),"*"..defaultDateString)
+    else
+        return defaultDateString
     end
     return defaultDateString
 end

@@ -1,4 +1,4 @@
-local versionNumber = 12
+local versionNumber = 15
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -120,6 +120,7 @@ gen.constants = {
     cityStyleFarEast = 2,
     cityStyleMedieval = 3,
     oceanBaseTerrainType = 10,
+    deletedUnitCoordinate = 65336
 }
 gen.c = gen.constants
 
@@ -2646,6 +2647,7 @@ end
 -- Returns the movement allowance of a unit after
 -- taking into account Nuclear Power tech, Magellan's Expedition, and Lighthouse.
 -- Returns "atomic" movement points (that is, the movement recorded by `unit.moveSpent`, or "regular" movement points * `totpp.movementMultipliers.aggregate`
+-- Takes into account the customCosmic module if it is enabled
 ---@param unit unitObject
 ---@return integer atomicMovementPoints
 function gen.fullHealthMovementAllowance(unit)
@@ -2677,6 +2679,7 @@ gen.wonderModifiedMoves = gen.fullHealthMovementAllowance
 -- Returns movement allowance for a unit after taking damage
 -- into account.
 -- Returns "atomic" movement points (that is, the movement recorded by `unit.moveSpent`, or "regular" movement points * `totpp.movementMultipliers.aggregate`
+-- Takes into account the customCosmic module if it is enabled
 ---@param unit unitObject
 ---@return integer atomicMovementPoints
 function gen.maxMoves(unit)
@@ -2718,6 +2721,7 @@ local maxMoves = gen.maxMoves
 -- gen.moveRemaining(unit)
 
 -- Returns gen.maxMoves-unit.moveSpent
+-- Takes into account the customCosmic module if it is enabled
 -- bug fixed by Knighttime
 ---@param unit unitObject
 ---@return integer atomicMovementPoints
@@ -3569,6 +3573,32 @@ function gen.getAdjacentTiles(tile)
 end
 local getAdjacentTiles = gen.getAdjacentTiles
 
+
+--[[Returns true if `tile` is a valid location for a unit of type
+`unitType`, with owner `tribe`, false otherwise.  This is the method
+used to determine if a unit can be placed on a tile using the macro events.  (So false for a ground unit on the ocean even if a  ship
+is present).  Copy of function written by The Nameless One in 
+civlua.lua.  Re-written here so that generalLibrary.lua has no
+dependencies.]]
+---@param unitType unitTypeObject
+---@param tribe tribeObject
+---@param tile tileObject
+---@return boolean
+function gen.isValidUnitLocation(unitType, tribe, tile)
+  if tile and unitType:canEnter(tile) and
+    (tile.defender == nil or tile.defender == tribe) then
+    local city = tile.city
+    if unitType.domain == gen.c.domainSea then
+      return tile.terrain.type == gen.c.oceanBaseTerrainType or
+        city ~= nil and city.coastal and city.owner == tribe
+    else
+      return (tile.terrain.type ~= gen.c.oceanBaseTerrainType or unitType.domain == gen.c.domainAir) and
+        (city == nil or city.owner == tribe)
+    end
+  end
+  return false
+end
+
 -- gen.moveUnitAdjacent(unit,destRankFn=suitableDefault)-->tile or false
 
 -- Moves the unit to an adjacent tile, choosing the tile based on  
@@ -3581,7 +3611,7 @@ local getAdjacentTiles = gen.getAdjacentTiles
 ---@return tileObject|false destination The tile the unit was moved to, or false if it could not be moved.
 function gen.moveUnitAdjacent(unit,destRankFn)
     local function defaultDestinationRank(theUnit,destTile)
-        if (destTile.defender and destTile.defender ~=theUnit.owner) or(destTile.city and destTile.city.owner ~= theUnit.owner) or (not civ.canEnter(theUnit.type,destTile)) then
+        if (destTile.defender and destTile.defender ~=theUnit.owner) or(destTile.city and destTile.city.owner ~= theUnit.owner) or (not gen.isValidUnitLocation(theUnit.type,theUnit.owner,destTile)) then
             return false
         end
         if destTile.defender then
@@ -4823,12 +4853,6 @@ function gen.createUnit(unitType,tribe,locations,options)
     end
     return returnUnits
 end
-
-gen.createUnit(civ.getUnitType(0),civ.getTribe(0),
-    {
-        {0,0},
-        {2,2},
-    },{})
 
 
 -- gen.getTileProduction(tile,city) --> integer (food), integer(shields), integer(trade)
@@ -9254,6 +9278,161 @@ function gen.cityProduction(city,item)
     registeredCityProductionFunction(city,prod)
 end
 
+
+--[[
+Rounds a number to a certain number of decimal places.
+If decimalPlaces is not supplied, the number is rounded to the nearest integer.
+If decimalPlaces is negative, the number is rounded to the nearest power of 10.
+gen.round(123.4567) --> 123
+gen.round(123.4567,2) --> 123.46
+gen.round(123.4567,-2) --> 100
+]]
+---@param number number
+---@param decimalPlaces integer # Default is 0.
+---@return number
+function gen.round(number,decimalPlaces)
+    decimalPlaces = decimalPlaces or 0
+    local factor = 10^decimalPlaces
+    return math.floor(number*factor+0.5)/factor
+end
+
+--[[
+Floors a number to a certain number of decimal places.
+If decimalPlaces is not supplied, the number is floored to the nearest integer.
+If decimalPlaces is negative, the number is floored to the nearest power of 10.
+gen.floor(123.4567) --> 123
+gen.floor(123.4567,2) --> 123.45
+gen.floor(123.4567,-2) --> 100
+]]
+---@param number number
+---@param decimalPlaces integer # Default is 0.
+---@return number
+function gen.floor(number,decimalPlaces)
+    decimalPlaces = decimalPlaces or 0
+    local factor = 10^decimalPlaces
+    return math.floor(number*factor)/factor
+end
+
+--[[
+Ceilings a number to a certain number of decimal places.
+If decimalPlaces is not supplied, the number is ceilinged to the nearest integer.
+If decimalPlaces is negative, the number is ceilinged to the nearest power of 10.
+gen.ceil(123.4567) --> 124
+gen.ceil(123.4567,2) --> 123.46
+gen.ceil(123.4567,-2) --> 200
+]]
+---@param number number
+---@param decimalPlaces integer # Default is 0.
+---@return number
+function gen.ceil(number,decimalPlaces)
+    decimalPlaces = decimalPlaces or 0
+    local factor = 10^decimalPlaces
+    return math.ceil(number*factor)/factor
+end
+
+
+-- the reserveCityWorkedTiles table reverses this
+-- chart of how city.workers determine which tiles are worked 
+--      #       #       #       #       #
+--          #       #       #       #       #
+--      #       #       #       #       #
+--          #       20      13      #       #
+--      #       12      8       9       #
+--          19      7       1       14      #
+--      #       6       21      2       #
+--          18      5       3       15      #
+--      #       11      4       10      #
+--          #       17      16      #       #
+--      #       #       #       #       #
+--          #       #       #       #       #
+-- This way, we can determine if a city is working a
+-- given tile.  The tile we're asking about is number
+-- 21 on this chart.  E.g. if we're asking about tile 13, 
+-- the corresponding value in the table is 17.  If we're 
+-- asking about tile 2, the corresponding value is 6.
+local reverseCityWorkedTiles = {
+    [1] = 5,
+    [2] = 6,
+    [3] = 7,
+    [4] = 8,
+    [5] = 1,
+    [6] = 2,
+    [7] = 3,
+    [8] = 4,
+    [9] = 11,
+    [10] = 12,
+    [11] = 9,
+    [12] = 10,
+    [13] = 17,
+    [14] = 18,
+    [15] = 19,
+    [16] = 20,
+    [17] = 13,
+    [18] = 14,
+    [19] = 15,
+    [20] = 16,
+    [21] = 21,
+}
+
+--[[
+Returns the city that is working the tile, or nil if no city is working the tile.
+Does not account for the bug where 2 cities on either side of the date line
+are working the same tile (which is fixed by a TOTPP patch anyway).
+]]
+---@param tile tileObject
+---@return cityObject|nil
+function gen.getCityWorkingTile(tile)
+    for index, possibleCityTile in pairs(gen.cityRadiusTiles(tile)) do
+        local city = possibleCityTile.city
+        local workerIndex = reverseCityWorkedTiles[index]
+        if city and gen.isBit1(city.workers,workerIndex) then
+            return city
+        end
+    end
+    return nil
+end
+
+--[[
+Returns the smallest and largest (number) keys in a table.
+Returns nil if there are no numerical keys in the table.
+]]
+---@param table table
+---@return number|nil smallestKey
+---@return number|nil largestKey
+function gen.extremeKeys(table)
+    local smallestKey = math.huge --[[@as number|nil]]
+    local largestKey = -math.huge --[[@as number|nil]]
+    for key,_ in pairs(table) do
+        if type(key) == "number" then
+            if key < smallestKey then
+                smallestKey = key
+            end
+            if key > largestKey then
+                largestKey = key
+            end
+        end
+    end
+    if smallestKey == math.huge then
+        smallestKey = nil
+    end
+    if largestKey == -math.huge then
+        largestKey = nil
+    end
+    return smallestKey,largestKey
+end
+
+--[[Returns true if a tile has the coordinates designated for deleted
+or killed units, and false otherwise.]]
+---@param tile tileObject
+---@return boolean
+function gen.isDeletedUnitTile(tile)
+    -- Deleted units are placed on tile (65336,65336,65336)
+    -- only need to check one of them, since this is well outside
+    -- the maximum map size
+    return tile.x == 65336 
+end
+
+-- If the console exists, make gen available through it.
 
 if rawget(_G,"console") then
     _G["console"].gen = gen
