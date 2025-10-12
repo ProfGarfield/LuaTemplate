@@ -150,6 +150,8 @@ created new help module, replacing helpKey.lua
 fixed bug in gen.moveUnitAdjacent, where land units could be placed at sea
 with the default placement function
 
+rules.lua/rules_lst.txt now use the combatModifiers module for @LSTCOMBATGROUPS
+
 last update
 
 todo
