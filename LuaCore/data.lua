@@ -1,4 +1,4 @@
-local versionNumber = 2
+local versionNumber = 3
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -479,11 +479,13 @@ Defines a phrase for data, which keeps string values.
     - "onTurn" means at the very beginning of the onTurn event (before all other code).
     - "custom" means the update must be programmed in manually using data.update.
     - Default value is "never".
+* allowedValuesTable = table|nil
+    - A table of allowed values for the phrase. If this is provided, then the phrase can only be set to a string that is a key or value in the table. If it is not provided, then any string value is allowed.
 ]]
 ---@param phraseName string The name of the phrase.
 ---@param defaultValue? string If the underlying stored value is nil, this is the value the phrase takes on.
 ---@param resetTime? "never"|"onTurn"|"custom" Gives the time when the phrase's stored value is reset to nil.
----@param allowedValuesTable? table A table of allowed values for the phrase.  If this is provided, then the phrase can only be set to a string that is a key or value in the table.  If it is not provided, then any string value is allowed.
+---@param allowedValuesTable? table The allowed values for the phrase. If nil, no restrictions.
 function data.definePhrase(phraseName,defaultValue,resetTime,allowedValuesTable)
     if resetTime and resetTime ~= "never" and resetTime ~= "onTurn" and resetTime ~= "custom" then
         error("data.definePhrase: resetTime (arg #3) must be nil, 'never', 'onTurn', or 'custom'")
@@ -512,12 +514,14 @@ written for a specific scenario.
     - "onTurn" means at the very beginning of the onTurn event (before all other code).
     - "custom" means the update must be programmed in manually using data.update.
     - Default value is "never".
+* allowedValuesTable = table|nil
+    - A table of allowed values for the phrase. If this is provided, then the phrase can only be set to a string that is a key or value in the table. If it is not provided, then any string value is allowed.
 ]]
 ---@param moduleName string The name of the module.
 ---@param phraseName string The name of the phrase.
 ---@param defaultValue? string If the underlying stored value is nil, this is the value the phrase takes on.
 ---@param resetTime? "never"|"onTurn"|"custom" Gives the time when the phrase's stored value is reset to nil.
----@param allowedValuesTable? table A table of allowed values for the phrase.  If this is provided, then the phrase can only be set to a string that is a key or value in the table.  If it is not provided, then any string value is allowed.
+---@param allowedValuesTable? table The allowed values for the phrase. If nil, no restrictions.
 function data.defineModulePhrase(moduleName,phraseName,defaultValue,resetTime,allowedValuesTable)
     if resetTime and resetTime ~= "never" and resetTime ~= "onTurn" and resetTime ~= "custom" then
         error("data.defineModulePhrase: resetTime (arg #4) must be nil, 'never', 'onTurn', or 'custom'")

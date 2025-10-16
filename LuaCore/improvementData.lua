@@ -1,5 +1,5 @@
 
-local versionNumber = 1
+local versionNumber = 2
 local fileModified = false -- set this to true if you change this file for your scenario
 -- if another file requires this file, it checks the version number to ensure that the
 -- version is recent enough to have all the expected functionality
@@ -431,11 +431,14 @@ Defines a phrase for improvement data, which keeps string values.
     - If improvement has no owner, onTribeTurnBegin and onTribeTurnEnd updates happen during the onTurn update.
     - "custom" means the update must be programmed in manually using improvementData.update.
     - Default value is "never".
+* allowedValuesTable = table|nil
+    - A table of allowed values for the phrase. If this is provided, then the phrase can only be set to a string that is a key or value in the table. If it is not provided, then any string value is allowed.
 ]]
 ---@param phraseName string The name of the phrase.
 ---@param defaultValue? string If the underlying stored value is nil, this is the value the phrase takes on.
 ---@param resetTime? "never"|"onTurn"|"onTribeTurnBegin"|"onTribeTurnEnd"|"custom" Gives the time when the phrase's stored value is reset to nil.
-function improvementData.definePhrase(phraseName,defaultValue,resetTime)
+---@param allowedValuesTable? table The allowed values for the phrase. If nil, no restrictions.
+function improvementData.definePhrase(phraseName,defaultValue,resetTime,allowedValuesTable)
 end
 
 
@@ -461,12 +464,15 @@ written for a specific scenario.
     - If improvement has no owner, onTribeTurnBegin and onTribeTurnEnd updates happen during the onTurn update.
     - "custom" means the update must be programmed in manually using improvementData.update.
     - Default value is "never".
+* allowedValuesTable = table|nil
+    - A table of allowed values for the phrase. If this is provided, then the phrase can only be set to a string that is a key or value in the table. If it is not provided, then any string value is allowed.
 ]]
 ---@param moduleName string The name of the module.
 ---@param phraseName string The name of the phrase.
 ---@param defaultValue? string If the underlying stored value is nil, this is the value the phrase takes on.
 ---@param resetTime? "never"|"onTurn"|"onTribeTurnBegin"|"onTribeTurnEnd"|"custom" Gives the time when the phrase's stored value is reset to nil.
-function improvementData.defineModulePhrase(moduleName,phraseName,defaultValue,resetTime)
+---@param allowedValuesTable? table The allowed values for the phrase. If nil, no restrictions.
+function improvementData.defineModulePhrase(moduleName,phraseName,defaultValue,resetTime,allowedValuesTable)
 end
 
 
